@@ -7,9 +7,8 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  updateProfile,
 } from "firebase/auth";
-import { auth, getAuthErrorMessage } from "@/lib";
+import { getFirebaseAuth, getAuthErrorMessage } from "@/lib";
 
 export const AuthContext = createContext(null);
 
@@ -26,8 +25,11 @@ export default function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const auth = getFirebaseAuth();
+
   // Listen to auth state changes
   useEffect(() => {
+    if (!auth) return null;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);

@@ -1,8 +1,117 @@
-import { createContext, useContext } from "react";
+"use client";
+
+import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  updateProfile,
+} from "firebase/auth";
+import { auth, getAuthErrorMessage } from "@/lib";
 
 export const AuthContext = createContext(null);
-export const useAuth = () => useContext(AuthContext);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
 export default function AuthProvider({ children }) {
-  const values = {};
-  return <AuthContext.Provider value={values}>{children}</AuthContext.Provider>;
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Listen to auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Sign up with email and password
+  const signUp = async (email, password) => {
+    try {
+      setError(null);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+
+      return userCredential.user;
+    } catch (error) {
+      const userFriendlyMessage = getAuthErrorMessage(error);
+      setError(userFriendlyMessage);
+      throw new Error(userFriendlyMessage);
+    }
+  };
+
+  // Sign in with email and password
+  const signIn = async (email, password) => {
+    try {
+      setError(null);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+      return userCredential.user;
+    } catch (error) {
+      const userFriendlyMessage = getAuthErrorMessage(error);
+      setError(userFriendlyMessage);
+      throw new Error(userFriendlyMessage);
+    }
+  };
+
+  // Sign out
+  const logout = async () => {
+    try {
+      setError(null);
+      await signOut(auth);
+    } catch (error) {
+      const userFriendlyMessage = getAuthErrorMessage(error);
+      setError(userFriendlyMessage);
+      throw new Error(userFriendlyMessage);
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (email) => {
+    try {
+      setError(null);
+      await sendPasswordResetEmail(auth, email);
+      return {
+        success: true,
+        message: "Password reset email sent! Check your inbox.",
+      };
+    } catch (error) {
+      const userFriendlyMessage = getAuthErrorMessage(error);
+      setError(userFriendlyMessage);
+      throw new Error(userFriendlyMessage);
+    }
+  };
+
+  const values = {
+    user,
+    loading,
+    error,
+    signUp,
+    signIn,
+    logout,
+    resetPassword,
+  };
+
+  return (
+    <AuthContext.Provider value={values}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 }

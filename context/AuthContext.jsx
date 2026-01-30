@@ -22,6 +22,7 @@ export const useAuth = () => {
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [username, setUsername] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -32,6 +33,7 @@ export default function AuthProvider({ children }) {
     if (!auth) return null;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      setUsername(user.displayName || user.email);
       setLoading(false);
     });
 
@@ -103,6 +105,7 @@ export default function AuthProvider({ children }) {
 
   const values = {
     user,
+    username,
     loading,
     error,
     signUp,

@@ -1,14 +1,18 @@
+"use client";
 import React from "react";
-import { ArrowLeft, Menu } from "react-feather";
+import { ArrowLeft, Menu, Settings } from "react-feather";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChatList } from "@/components";
+import { ExpandMenu, OutlinedButton, UserSettingsButton } from "@/components";
+import { useAuth } from "@/context";
 
 function Sidebar({ state = true, onClick }) {
+  const { username } = useAuth();
+  const sidebarWidth = 252;
   // Sidebar width animation
   const sidebarVariants = {
-    hidden: { width: 52, transition: { duration: 0.3 } }, // collapsed width
+    hidden: { width: state ? sidebarWidth : 52, transition: { duration: 0.3 } },
     visible: {
-      width: 248,
+      width: sidebarWidth,
       transition: { duration: 0.3, when: "beforeChildren" },
     },
   };
@@ -20,9 +24,19 @@ function Sidebar({ state = true, onClick }) {
     exit: { opacity: 0, transition: { duration: 0.2 } },
   };
 
+  // Replace: Temp Chats
+  const recentChats = [
+    { id: "chat-1", label: "Recent conversation 1", path: "/chat/1" },
+    { id: "chat-2", label: "Recent conversation 2", path: "/chat/2" },
+  ];
+
+  const starredChats = [
+    { id: "star-1", label: "Important chat", path: "/chat/5" },
+  ];
+
   return (
     <div
-      className={`border-r border-neutral-700 flex flex-col gap-3 items-end`}
+      className={`border-r border-neutral-800 flex flex-col gap-3 items-end bg-neutral-950`}
     >
       <button
         type="button"
@@ -48,8 +62,9 @@ function Sidebar({ state = true, onClick }) {
         </motion.div>
       </button>
 
+      {/* Sidebar Panel */}
       <motion.div
-        className="flex flex-col flex-1 justify-between px-2.5 pb-3 overflow-hidden"
+        className="flex flex-col flex-1 justify-between px-4 py-2 overflow-hidden"
         variants={sidebarVariants}
         initial="hidden"
         animate={state ? "visible" : "hidden"}
@@ -62,7 +77,17 @@ function Sidebar({ state = true, onClick }) {
               animate="visible"
               exit="hidden"
             >
-              <ChatList />
+              <ExpandMenu title="Recent chats" items={recentChats} />
+              <ExpandMenu
+                title="Starred"
+                items={starredChats}
+                className="mt-4"
+              />
+              <OutlinedButton
+                href="/settings"
+                text={username}
+                icon={<Settings size={17} strokeWidth={1} />}
+              />
             </motion.nav>
           )}
         </AnimatePresence>

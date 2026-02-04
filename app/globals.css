@@ -28,3 +28,17 @@ body {
 @utility no-scrollbar {
   @apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
 }
+
+@layer base {
+  html {
+    font-size: 14px; 
+  }
+  
+  body {
+    @apply text-base;
+  }
+}
+
+@theme {
+  --font-size-base: 0.975rem;
+}

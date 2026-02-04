@@ -11,5 +11,5 @@ export default function ChatPage() {
   const searchParams = useSearchParams();
   const chatId = searchParams.get("id");
 
-  return <div>Chat ID: {chatId}</div>;
+  return <main></main>;
 }

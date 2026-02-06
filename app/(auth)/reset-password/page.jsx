@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
                 </h2>
 
                 <p className="text-sm text-center px-6 text-gray-400">
-                  We've sent you an email with instructions to reset your
+                  We&apos;ve sent you an email with instructions to reset your
                   password.
                 </p>
               </motion.div>

@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import React, { useState } from "react";
-
+import { useRouter } from "next/navigation";
 import { ChevronDown } from "react-feather";
 
-function ChatList({
+export default function ChatList({
   label = "label",
   list = [],
   button = null,
@@ -13,9 +12,14 @@ function ChatList({
   defaultExpanded = true,
 }) {
   const [isOpen, setIsOpen] = useState(defaultExpanded);
+  const router = useRouter();
 
   const handleToggleChats = () => {
     setIsOpen((prev) => !prev);
+  };
+
+  const handleListItemOnClick = (type, id) => {
+    router.push(`/${type}/${id}`);
   };
 
   return (
@@ -36,15 +40,11 @@ function ChatList({
           {list.map((item) => (
             <li
               key={item.id}
-              className="hover:bg-neutral-900 w-full text-left rounded-lg cursor-pointer transition duration-75 truncate"
+              onClick={() => handleListItemOnClick(item.type, item.id)}
+              className="hover:bg-neutral-900 w-full text-left rounded-lg cursor-pointer transition duration-75 truncate px-3 py-2 flex items-center gap-2"
             >
-              <Link
-                href={item.path}
-                className="px-3 py-2 flex items-center gap-2"
-              >
-                {listIcon && listIcon}
-                {item.title}
-              </Link>
+              {listIcon && listIcon}
+              {item.title}
             </li>
           ))}
         </ul>
@@ -52,4 +52,3 @@ function ChatList({
     </div>
   );
 }
-export default ChatList;

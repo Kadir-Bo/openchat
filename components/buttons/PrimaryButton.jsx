@@ -1,9 +1,8 @@
 import Link from "next/link";
 import React from "react";
-import { Plus } from "react-feather";
 import { twMerge } from "tailwind-merge";
 
-function PrimaryButton({
+export default function PrimaryButton({
   text = "button",
   icon = null,
   iconSize = 19,
@@ -15,7 +14,7 @@ function PrimaryButton({
   const defaultClasses = `
     min-w-max
     w-full
-    font-medium
+    font-normal
     text-base
     flex
     justify-start
@@ -57,5 +56,3 @@ function PrimaryButton({
     </button>
   );
 }
-
-export default PrimaryButton;

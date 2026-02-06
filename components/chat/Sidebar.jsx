@@ -11,13 +11,14 @@ import {
   UserProfileImage,
   ChatList,
 } from "@/components";
+import { useAuth } from "@/context";
 import Logo from "@/assets/openchat_logo.webp";
+import { useRouter } from "next/navigation";
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   Folder,
-  FolderPlus,
   LogOut,
   Menu,
   Plus,
@@ -25,8 +26,12 @@ import {
   Sliders,
 } from "react-feather";
 
-function Sidebar() {
+export default function Sidebar() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
+  const { user, logout } = useAuth();
+  const { displayName, email, photoURL: userImage } = user;
+  const username = displayName || email;
 
   const handleToggleSidebar = () => {
     setIsOpen((prev) => !prev);
@@ -47,52 +52,47 @@ function Sidebar() {
   };
 
   // Drop Down Menu Actions
-  const signOut = () => {
-    alert("sign out");
+  const signOut = async () => {
+    const signOut = await logout();
+    if (signOut) {
+      router.push("/");
+    }
   };
-  // Example Data for User
+
+  // Example
+  // Recent Chat Example Data
   const recentChats = [
     {
-      id: "chat-1",
-      title: "chat 1",
-      path: "/chat?id=1",
+      id: "chat_f9a3c2e1",
+      title: "Landing page copy review",
+      type: "chat",
     },
     {
-      id: "chat-2",
-      title: "chat 2",
-      path: "/chat?id=2",
+      id: "chat_72bd91af",
+      title: "Auth flow bug investigation",
+      type: "chat",
     },
     {
-      id: "chat-3",
-      title: "chat 3",
-      path: "/chat?id=3",
+      id: "chat_c41e8d90",
+      title: "Pricing strategy brainstorming",
+      type: "chat",
+    },
+    {
+      id: "proj_website-redesign",
+      title: "Website Redesign",
+      type: "project",
+    },
+    {
+      id: "proj_shorts-ai",
+      title: "Shorts AI Platform",
+      type: "project",
+    },
+    {
+      id: "proj_admin-dashboard",
+      title: "Internal Admin Dashboard",
+      type: "project",
     },
   ];
-  const recentProjects = [
-    {
-      id: "project-1",
-      title: "project 1",
-      path: "/chat?id=project_chat_1",
-    },
-    {
-      id: "project-2",
-      title: "project 2",
-      path: "/chat?id=project_chat_2",
-    },
-    {
-      id: "project-3",
-      title: "project 3",
-      path: "/chat?id=project_chat_3",
-    },
-  ];
-  const user = {
-    email: "example.name@example.com",
-    username: "John Doe",
-    image:
-      "https://img.freepik.com/free-photo/portrait-white-man-isolated_53876-40306.jpg?semt=ais_hybrid&w=740&q=80",
-  };
-  const username = user.username || user.email;
-  const userImage = user.image;
 
   // Dropdown Menu Items
 
@@ -100,13 +100,13 @@ function Sidebar() {
     {
       id: "profile-settings",
       label: "Profile Settings",
-      action: signOut,
+      href: "/settings/profile-settings",
       icon: Settings,
     },
     {
       id: "preferences-settings",
       label: "Preferences",
-      action: signOut,
+      href: "/settings/preferences-settings",
       icon: Sliders,
     },
     {
@@ -170,20 +170,22 @@ function Sidebar() {
               icon={<Plus size={19} />}
               href={"/chat"}
             />
+            <PrimaryButton
+              text="Projects"
+              icon={<Folder size={19} />}
+              href={"/projects"}
+            />
             <div>
               <ChatList
-                label={"projects"}
+                label={"Projects"}
                 defaultExpanded={false}
-                list={recentProjects}
+                list={recentChats.filter((item) => item.type === "project")}
                 listIcon={<Folder size={19} />}
-                button={
-                  <PrimaryButton
-                    text="New Project"
-                    icon={<FolderPlus size={19} />}
-                  />
-                }
               />
-              <ChatList label={"recent chats"} list={recentChats} />
+              <ChatList
+                label={"Recent Chats"}
+                list={recentChats.filter((item) => item.type === "chat")}
+              />
             </div>
             <DropDownMenu
               trigger={
@@ -202,13 +204,13 @@ function Sidebar() {
                     {id === dropDownMenuItems.length - 1 && (
                       <div className="border-t border-neutral-500/20 my-2"></div>
                     )}
-                    <button
-                      className={`w-full flex items-center justify-start gap-2.5 text-left px-3 py-2 hover:bg-neutral-800/50 rounded-lg transition cursor-pointer ${button.id === "sign-out" ? "text-red-400" : ""}`}
+                    <PrimaryButton
+                      text={button.label}
+                      icon={<button.icon size={17} />}
                       onClick={button?.action}
-                    >
-                      <button.icon size={17} />
-                      {button.label}
-                    </button>
+                      href={button.href}
+                      className={`border-transparent hover:border-transparent hover:bg-neutral-800/50 ${button.id === "sign-out" ? "text-red-400" : ""}`}
+                    />
                   </React.Fragment>
                 ))}
               </ul>
@@ -219,5 +221,3 @@ function Sidebar() {
     </motion.div>
   );
 }
-
-export default Sidebar;

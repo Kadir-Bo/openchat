@@ -1,7 +1,7 @@
 import Image from "next/image";
 import React from "react";
 
-function UserProfileImage({ image, username }) {
+export default function UserProfileImage({ image, username }) {
   const letter = username.trim().slice(0, 1);
   return (
     <div className="w-8 h-8 rounded-full border border-neutral-800 flex items-center justify-center bg-neutral-950 overflow-hidden">
@@ -19,5 +19,3 @@ function UserProfileImage({ image, username }) {
     </div>
   );
 }
-
-export default UserProfileImage;

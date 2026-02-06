@@ -1,7 +1,5 @@
 import React from "react";
 
-function ChatSettingsPage() {
-  return <div>ChatSettingsPage</div>;
+export default function Settings() {
+  return <div>Settings</div>;
 }
-
-export default ChatSettingsPage;

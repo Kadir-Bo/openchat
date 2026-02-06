@@ -29,8 +29,8 @@ export default function SignUpPage() {
   };
 
   return (
-    <div>
-      <div className="max-w-sm w-full p-6 shadow-lg shadow-neutral-800/5 border border-neutral-900 rounded-lg bg-neutral-800/5">
+    <div className="w-full max-w-sm">
+      <div className="p-6 shadow-lg shadow-neutral-800/5 border border-neutral-900 rounded-lg bg-neutral-800/5">
         <h2 className="text-2xl font-semibold mb-6 text-center">
           Create Account
         </h2>

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-function DropDownMenu({ trigger, children, className = "" }) {
+export default function DropDownMenu({ trigger, children, className = "" }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -49,5 +49,3 @@ function DropDownMenu({ trigger, children, className = "" }) {
     </div>
   );
 }
-
-export default DropDownMenu;

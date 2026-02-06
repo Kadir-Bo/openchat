@@ -28,8 +28,8 @@ export default function SignInPage() {
   };
 
   return (
-    <div>
-      <div className="max-w-sm w-full p-6 shadow-lg shadow-neutral-800/5 border border-neutral-900 rounded-lg bg-neutral-800/5">
+    <div className="w-full max-w-sm">
+      <div className="p-6 shadow-lg shadow-neutral-800/5 border border-neutral-900 rounded-lg bg-neutral-800/5">
         <h2 className="text-2xl font-semibold mb-6 text-center">Sign In</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4 px-6">
@@ -74,7 +74,7 @@ export default function SignInPage() {
 
         <div className="mt-4 text-center text-sm">
           <Link
-            href="/forgot-password"
+            href="/reset-password"
             className="text-blue-600 hover:underline"
           >
             Forgot password?

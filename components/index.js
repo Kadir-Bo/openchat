@@ -4,6 +4,7 @@ export { default as UserProfileImage } from "./chat/UserProfileImage";
 export { default as ChatList } from "./chat/ChatList";
 export { default as ChatInterface } from "./chat/ChatInterface";
 export { default as ChatConversation } from "./chat/ChatConversation";
+export { default as MessageBubble } from "./chat/MessageBubble";
 // Button Components
 export { default as PrimaryButton } from "./buttons/PrimaryButton";
 // UI Components

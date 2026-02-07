@@ -4,8 +4,8 @@ import { ChatConversation, ChatInterface } from "@/components";
 
 export default function ChatIDPage() {
   return (
-    <main className="bg-neutral-900/60 w-full">
-      <div className="max-w-4xl mx-auto flex flex-col items-center justify-start">
+    <main className="bg-neutral-900/60 w-full min-h-screen">
+      <div className="flex flex-col h-screen">
         <ChatConversation />
         <ChatInterface />
       </div>

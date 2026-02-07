@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "react-feather";
+import { truncateText } from "@/lib";
 
 export default function ChatList({
   label = "label",
@@ -23,9 +24,9 @@ export default function ChatList({
   };
 
   return (
-    <div className="group py-2.5 w-full">
+    <div className="py-2.5 w-full">
       <button
-        className="min-w-max w-full pl-1.5 text-sm text-gray-300/90 flex items-center gap-px ml-1 cursor-pointer hover:text-gray-200/80 transition-all duration-75"
+        className="group min-w-max w-full pl-2.5 text-sm text-gray-300/90 flex items-center gap-px ml-1 cursor-pointer hover:text-gray-200/80 transition-all duration-75"
         onClick={handleToggleChats}
       >
         {label}
@@ -35,7 +36,7 @@ export default function ChatList({
         />
       </button>
       {isOpen && (
-        <ul className="mt-1 w-full p-2 flex flex-col gap-2">
+        <ul className="mt-1 w-full py-2 px-1 flex flex-col gap-2">
           {button && <li>{button}</li>}
           {list.map((item) => (
             <li
@@ -44,7 +45,7 @@ export default function ChatList({
               className="hover:bg-neutral-900 w-full text-left rounded-lg cursor-pointer transition duration-75 truncate px-3 py-2 flex items-center gap-2"
             >
               {listIcon && listIcon}
-              {item.title}
+              <span className="truncate">{item.title}</span>
             </li>
           ))}
         </ul>

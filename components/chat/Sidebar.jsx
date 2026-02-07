@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -11,7 +11,7 @@ import {
   UserProfileImage,
   ChatList,
 } from "@/components";
-import { useAuth } from "@/context";
+import { useAuth, useDatabase } from "@/context";
 import Logo from "@/assets/openchat_logo.webp";
 import { useRouter } from "next/navigation";
 
@@ -29,13 +29,38 @@ import {
 export default function Sidebar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
+  const [conversations, setConversations] = useState([]);
+
   const { user, logout } = useAuth();
+  const { subscribeToConversations } = useDatabase();
+
   const { displayName, email, photoURL: userImage } = user;
   const username = displayName || email;
 
   const handleToggleSidebar = () => {
     setIsOpen((prev) => !prev);
   };
+
+  // Real-time Listener für Conversations
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = subscribeToConversations((newConversations) => {
+      setConversations(newConversations);
+    });
+
+    return () => unsubscribe();
+  }, [user, subscribeToConversations]);
+
+  // Konvertiere Conversations in das richtige Format für ChatList
+  const recentChats = conversations.map((conv) => ({
+    id: conv.id,
+    title: conv.title,
+    type: "chat",
+  }));
+
+  // Filtere nach Projects (wenn du später Projects hinzufügst)
+  const projects = []; // Später: Filter nach conv.isProject oder ähnlich
 
   const sidebarVariants = {
     open: { width: "280px" },
@@ -59,43 +84,7 @@ export default function Sidebar() {
     }
   };
 
-  // Example
-  // Recent Chat Example Data
-  const recentChats = [
-    {
-      id: "chat_f9a3c2e1",
-      title: "Landing page copy review",
-      type: "chat",
-    },
-    {
-      id: "chat_72bd91af",
-      title: "Auth flow bug investigation",
-      type: "chat",
-    },
-    {
-      id: "chat_c41e8d90",
-      title: "Pricing strategy brainstorming",
-      type: "chat",
-    },
-    {
-      id: "proj_website-redesign",
-      title: "Website Redesign",
-      type: "project",
-    },
-    {
-      id: "proj_shorts-ai",
-      title: "Shorts AI Platform",
-      type: "project",
-    },
-    {
-      id: "proj_admin-dashboard",
-      title: "Internal Admin Dashboard",
-      type: "project",
-    },
-  ];
-
   // Dropdown Menu Items
-
   const dropDownMenuItems = [
     {
       id: "profile-settings",
@@ -116,9 +105,10 @@ export default function Sidebar() {
       icon: LogOut,
     },
   ];
+
   return (
     <motion.div
-      className="bg-neutral-800/10 border-r border-r-neutral-500/10 overflow-hidden flex flex-col"
+      className="bg-neutral-800/10 border-r min-w-60 border-r-neutral-500/10 overflow-hidden flex flex-col"
       variants={sidebarVariants}
       initial={false}
       animate={isOpen ? "open" : "closed"}
@@ -163,7 +153,7 @@ export default function Sidebar() {
             animate="animate"
             exit="exit"
             transition={{ duration: 0.2, delay: 0.1 }}
-            className="p-1.5 flex flex-col gap-2 flex-1"
+            className="p-1.5 flex flex-col gap-2 flex-1 overflow-y-auto"
           >
             <PrimaryButton
               text="New Chat"
@@ -175,18 +165,25 @@ export default function Sidebar() {
               icon={<Folder size={19} />}
               href={"/projects"}
             />
-            <div>
-              <ChatList
-                label={"Projects"}
-                defaultExpanded={false}
-                list={recentChats.filter((item) => item.type === "project")}
-                listIcon={<Folder size={19} />}
-              />
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              {/* Projects Section - nur anzeigen wenn vorhanden */}
+              {projects.length > 0 && (
+                <ChatList
+                  label={"Projects"}
+                  defaultExpanded={false}
+                  list={projects}
+                  listIcon={<Folder size={19} />}
+                />
+              )}
+
+              {/* Recent Chats Section */}
               <ChatList
                 label={"Recent Chats"}
-                list={recentChats.filter((item) => item.type === "chat")}
+                list={recentChats}
+                defaultExpanded={true}
               />
             </div>
+
             <DropDownMenu
               trigger={
                 <PrimaryButton
@@ -194,7 +191,7 @@ export default function Sidebar() {
                   icon={
                     <UserProfileImage image={userImage} username={username} />
                   }
-                  className="gap-1"
+                  className="gap-2 text-sm"
                 />
               }
             >

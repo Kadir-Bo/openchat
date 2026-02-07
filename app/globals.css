@@ -1,15 +1,10 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
+/* ==================== CSS Variables ==================== */
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-noto-sans);
-  --font-mono: var(--font-roboto-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,76 +14,249 @@
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-family-sans);
+/* ==================== Theme Configuration ==================== */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-noto-sans);
+  --font-mono: var(--font-roboto-mono);
+  --font-size-base: 0.975rem;
 }
 
+/* ==================== Base Styles ==================== */
+@layer base {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    @apply text-base;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-family-sans);
+  }
+
+  /* Autofill Styles */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    transition: background-color 5000s ease-in-out 0s;
+    -webkit-box-shadow: 0 0 0px 1000px var(--input-box-shadow-color, #0f0f0f)
+      inset;
+    -webkit-text-fill-color: white;
+  }
+
+  /* Scrollbar Styles - Webkit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  /* Scrollbar Styles - Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
+
+  /* Dark Mode Scrollbar */
+  @media (prefers-color-scheme: dark) {
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    * {
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    }
+  }
+}
+
+/* ==================== Custom Utilities ==================== */
 @utility no-scrollbar {
   @apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
 }
 
-@layer base {
-  html {
-    font-size: 14px; 
-  }
-  
-  body {
-    @apply text-base;
-  }
-
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  transition: background-color 5000s ease-in-out 0s;
-  -webkit-box-shadow: 0 0 0px 1000px var(--input-box-shadow-color, #0f0f0f) inset;
-  -webkit-text-fill-color: white;
-}
-
-/* Scrollbar */
-/* For Webkit browsers (Chrome, Safari, Edge) */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-/* For Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
-}
-
-/* Dark mode variant */
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  * {
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+/* ==================== Markdown/Prose Styles ==================== */
+@layer utilities {
+  .prose-custom {
+    --tw-prose-body: rgb(229 229 229);
+    --tw-prose-headings: rgb(250 250 250);
+    --tw-prose-lead: rgb(212 212 212);
+    --tw-prose-links: rgb(96 165 250);
+    --tw-prose-bold: rgb(250 250 250);
+    --tw-prose-counters: rgb(163 163 163);
+    --tw-prose-bullets: rgb(115 115 115);
+    --tw-prose-hr: rgb(64 64 64);
+    --tw-prose-quotes: rgb(212 212 212);
+    --tw-prose-quote-borders: rgb(64 64 64);
+    --tw-prose-captions: rgb(163 163 163);
+    --tw-prose-code: rgb(250 250 250);
+    --tw-prose-pre-code: rgb(229 229 229);
+    --tw-prose-pre-bg: rgb(23 23 23);
+    --tw-prose-th-borders: rgb(64 64 64);
+    --tw-prose-td-borders: rgb(82 82 82);
   }
 }
-}
 
-@theme {
-  --font-size-base: 0.975rem;
+/* ==================== Component Styles ==================== */
+@layer components {
+  /* Markdown Container */
+  .markdown {
+    @apply text-neutral-200 text-sm leading-relaxed;
+  }
+
+  /* Headings */
+  .markdown h1,
+  .markdown h2,
+  .markdown h3,
+  .markdown h4,
+  .markdown h5,
+  .markdown h6 {
+    @apply font-bold text-neutral-100 mb-3;
+  }
+
+  .markdown h1 {
+    @apply text-2xl mt-6 first:mt-0;
+  }
+
+  .markdown h2 {
+    @apply text-xl mt-5 first:mt-0;
+  }
+
+  .markdown h3 {
+    @apply text-lg mt-4 first:mt-0;
+  }
+
+  .markdown h4 {
+    @apply text-base mt-3 first:mt-0;
+  }
+
+  /* Paragraphs */
+  .markdown p {
+    @apply mb-4 last:mb-0;
+  }
+
+  /* Lists */
+  .markdown ul,
+  .markdown ol {
+    @apply mb-4 ml-5 space-y-2;
+  }
+
+  .markdown ul {
+    @apply list-disc;
+  }
+
+  .markdown ol {
+    @apply list-decimal;
+  }
+
+  .markdown li {
+    @apply ml-1;
+  }
+
+  .markdown li > p {
+    @apply mb-2;
+  }
+
+  /* Nested Lists */
+  .markdown ul ul,
+  .markdown ol ul,
+  .markdown ul ol,
+  .markdown ol ol {
+    @apply mt-2 mb-2;
+  }
+
+  /* Code */
+  .markdown code {
+    @apply bg-neutral-800 text-neutral-100 px-1.5 py-0.5 rounded text-xs font-mono;
+  }
+
+  .markdown pre {
+    @apply bg-neutral-900 p-4 rounded-lg overflow-x-auto mb-4 border border-neutral-800;
+  }
+
+  .markdown pre code {
+    @apply bg-transparent p-0 text-xs;
+  }
+
+  /* Links */
+  .markdown a {
+    @apply text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors;
+  }
+
+  /* Blockquotes */
+  .markdown blockquote {
+    @apply border-l-4 border-neutral-700 pl-4 italic text-neutral-400 my-4;
+  }
+
+  .markdown blockquote p {
+    @apply mb-2 last:mb-0;
+  }
+
+  /* Emphasis */
+  .markdown strong {
+    @apply font-bold text-neutral-100;
+  }
+
+  .markdown em {
+    @apply italic;
+  }
+
+  /* Horizontal Rule */
+  .markdown hr {
+    @apply border-neutral-800 my-6;
+  }
+
+  /* Tables */
+  .markdown table {
+    @apply w-full border-collapse mb-4 text-sm;
+  }
+
+  .markdown thead {
+    @apply bg-neutral-800;
+  }
+
+  .markdown th {
+    @apply border border-neutral-700 px-4 py-2 font-semibold text-left;
+  }
+
+  .markdown td {
+    @apply border border-neutral-700 px-4 py-2;
+  }
+
+  .markdown tbody tr:hover {
+    @apply bg-neutral-800/50;
+  }
+
+  /* Images */
+  .markdown img {
+    @apply rounded-lg my-4 max-w-full h-auto;
+  }
+
+  /* Inline Code in Links */
+  .markdown a code {
+    @apply text-blue-400;
+  }
+
+  /* Task Lists */
+  .markdown input[type="checkbox"] {
+    @apply mr-2;
+  }
 }

@@ -9,5 +9,7 @@ export { default as MessageBubble } from "./chat/MessageBubble";
 export { default as PrimaryButton } from "./buttons/PrimaryButton";
 // UI Components
 export { default as DropDownMenu } from "./ui/DropDownMenu";
+export { default as Searchbar } from "./ui/Searchbar";
+export { default as ProjectCard } from "./ui/ProjectCard";
 // Animation Debug
 export { default as AnimationController } from "./animation/debug/AnimationController";

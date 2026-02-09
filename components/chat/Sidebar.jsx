@@ -108,13 +108,13 @@ export default function Sidebar() {
 
   return (
     <motion.div
-      className="bg-neutral-800/10 border-r min-w-60 border-r-neutral-500/10 overflow-hidden flex flex-col"
+      className="bg-neutral-800/10 border-r border-r-neutral-500/10 overflow-hidden flex flex-col"
       variants={sidebarVariants}
       initial={false}
       animate={isOpen ? "open" : "closed"}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
-      <div className="flex items-center justify-between h-12">
+      <div className="flex items-center justify-between h-12 ">
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -137,7 +137,7 @@ export default function Sidebar() {
             </motion.div>
           )}
           <button
-            className="p-3 ml-auto outline-none cursor-pointer"
+            className="p-3 outline-none cursor-pointer"
             onClick={handleToggleSidebar}
           >
             {isOpen ? <ArrowLeft /> : <Menu />}
@@ -153,7 +153,7 @@ export default function Sidebar() {
             animate="animate"
             exit="exit"
             transition={{ duration: 0.2, delay: 0.1 }}
-            className="p-1.5 flex flex-col gap-2 flex-1 overflow-y-auto"
+            className="p-1.5 flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-hidden"
           >
             <PrimaryButton
               text="New Chat"
@@ -166,7 +166,7 @@ export default function Sidebar() {
               href={"/projects"}
             />
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
-              {/* Projects Section - nur anzeigen wenn vorhanden */}
+              {/* Projects Section */}
               {projects.length > 0 && (
                 <ChatList
                   label={"Projects"}
@@ -195,7 +195,7 @@ export default function Sidebar() {
                 />
               }
             >
-              <ul className="p-2">
+              <ul className="p-2 w-full overflow-hidden">
                 {dropDownMenuItems.map((button, id) => (
                   <React.Fragment key={button.id}>
                     {id === dropDownMenuItems.length - 1 && (
@@ -206,7 +206,7 @@ export default function Sidebar() {
                       icon={<button.icon size={17} />}
                       onClick={button?.action}
                       href={button.href}
-                      className={`border-transparent hover:border-transparent hover:bg-neutral-800/50 ${button.id === "sign-out" ? "text-red-400" : ""}`}
+                      className={`border-transparent shadow-none hover:border-transparent hover:bg-neutral-800/50 ${button.id === "sign-out" ? "text-red-400" : ""}`}
                     />
                   </React.Fragment>
                 ))}

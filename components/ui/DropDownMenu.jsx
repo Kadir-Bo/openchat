@@ -2,13 +2,25 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { twMerge } from "tailwind-merge";
 
-export default function DropDownMenu({ trigger, children, className = "" }) {
+export default function DropDownMenu({
+  trigger,
+  children,
+  className = "",
+  menuClassName = "",
+  closeOnClick = true,
+  ...props
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const toggleDropdown = () => {
     setIsOpen((prev) => !prev);
+  };
+
+  const closeDropdown = () => {
+    setIsOpen(false);
   };
 
   useEffect(() => {
@@ -28,8 +40,35 @@ export default function DropDownMenu({ trigger, children, className = "" }) {
     exit: { opacity: 0, y: 10, scale: 0.95 },
   };
 
+  const defaultContainerClasses = "mt-auto relative";
+
+  const defaultMenuClasses = `
+    absolute
+    bottom-full
+    left-0
+    w-full
+    mb-2
+    bg-neutral-900
+    border
+    border-neutral-500/30
+    rounded-lg
+    shadow-lg
+    overflow-hidden
+  `;
+
+  // Handle clicks inside the menu
+  const handleMenuClick = (e) => {
+    if (closeOnClick) {
+      closeDropdown();
+    }
+  };
+
   return (
-    <div className={`mt-auto relative ${className}`} ref={dropdownRef}>
+    <div
+      className={twMerge(defaultContainerClasses, className)}
+      ref={dropdownRef}
+      {...props}
+    >
       <div onClick={toggleDropdown}>{trigger}</div>
 
       <AnimatePresence>
@@ -40,7 +79,8 @@ export default function DropDownMenu({ trigger, children, className = "" }) {
             animate="visible"
             exit="exit"
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute bottom-full left-0 w-full mb-2 bg-neutral-900 border border-neutral-500/30 rounded-lg shadow-lg overflow-hidden"
+            className={twMerge(defaultMenuClasses, menuClassName)}
+            onClick={handleMenuClick}
           >
             {children}
           </motion.div>

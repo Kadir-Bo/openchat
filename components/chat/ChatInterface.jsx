@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
 
 import { PrimaryButton } from "@/components";
@@ -11,7 +12,19 @@ import { useDatabase } from "@/context";
 import { ArrowUp, Plus, Loader } from "react-feather";
 import { generateConversationTitle, streamResponse } from "@/lib";
 
-export default function ChatInterface() {
+export default function ChatInterface({
+  className = "",
+  containerClassName = "",
+  textareaClassName = "",
+  buttonClassName = "",
+  newChatButtonClassName = "",
+  sendButtonClassName = "",
+  statusClassName = "",
+  counterClassName = "",
+  buttonIconSize = 21,
+  textAreaGrowHeight = 180,
+  buttonContainerHeight = 50,
+}) {
   const router = useRouter();
   const params = useParams();
   const [userInput, setUserInput] = useState("");
@@ -19,7 +32,6 @@ export default function ChatInterface() {
   const textareaRef = useRef(null);
   const { createConversation, addMessage } = useDatabase();
 
-  // Hole conversationId aus URL-Parametern
   const conversationId = params?.chatId || null;
 
   const handleUserInputOnChange = (e) => {
@@ -29,14 +41,22 @@ export default function ChatInterface() {
   const isExpanded = userInput.includes("\n");
   const hasInput = userInput.trim().length > 0;
 
-  // Auto-resize textarea
+  const maxTextareaHeight = textAreaGrowHeight - buttonContainerHeight - 16;
+
+  // Auto-resize textarea - runs on every userInput change AND isExpanded change
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 220)}px`;
+
+      // If not expanded, reset to single line height
+      if (!isExpanded) {
+        textarea.style.height = "auto";
+      } else {
+        textarea.style.height = `${Math.min(textarea.scrollHeight, maxTextareaHeight)}px`;
+      }
     }
-  }, [userInput]);
+  }, [userInput, isExpanded, maxTextareaHeight]);
 
   // Focus textarea on mount
   useEffect(() => {
@@ -50,7 +70,7 @@ export default function ChatInterface() {
     },
     animate: {
       borderRadius: 32,
-      height: 180,
+      height: textAreaGrowHeight,
     },
   };
 
@@ -62,29 +82,96 @@ export default function ChatInterface() {
       position: "absolute",
       left: 8,
       top: 8,
-      maxHeight: 220,
+      right: 8,
+      bottom: buttonContainerHeight + 8,
     },
   };
 
-  const buttonClass =
-    "h-15 w-15 border-none shadow-none rounded-none p-2 flex items-center justify-center hover:bg-transparent hover:border-transparent hover:text-neutral-950 group focus:border-transparent";
+  const defaultButtonClass = `
+    h-15
+    w-15
+    border-none
+    shadow-none
+    rounded-none
+    p-2
+    flex
+    items-center
+    justify-center
+    hover:bg-transparent
+    hover:border-transparent
+    hover:text-neutral-950
+    group
+    focus:border-transparent
+  `;
 
-  const buttonContainerClass = `rounded-full border p-2 border-neutral-800 group-hover:border-neutral-200 group-hover:bg-neutral-200 group-focus-within:scale-95 transition-all duration-300`;
+  const defaultButtonContainerClass = `
+    rounded-full
+    border
+    p-2
+    border-neutral-800
+    group-hover:border-neutral-200
+    group-hover:bg-neutral-200
+    group-focus-within:scale-95
+    transition-all
+    duration-300
+  `;
+
+  const defaultWrapperClasses = `
+    pb-12
+    pt-2
+    w-full
+    relative
+    max-w-4xl
+    mx-auto
+  `;
+
+  const defaultContainerClasses = `
+    bg-neutral-900
+    flex
+    flex-col
+    justify-end
+    relative
+  `;
+
+  const defaultTextareaClasses = `
+    resize-none
+    w-full
+    p-3
+    overflow-y-auto
+    outline-none
+    disabled:opacity-50
+    disabled:cursor-not-allowed
+  `;
+
+  const defaultCounterClasses = `
+    absolute
+    bottom-2
+    right-2
+    text-xs
+    text-neutral-500
+  `;
+
+  const defaultStatusClasses = `
+    mt-2
+    text-center
+    text-sm
+    text-neutral-500
+    animate-pulse
+    absolute
+    w-full
+  `;
 
   const handleSendMessage = async () => {
-    // Validierung
     if (!hasInput || isLoading) return;
 
     const messageText = userInput.trim();
-    setUserInput(""); // Leere Input sofort
+    setUserInput("");
     setIsLoading(true);
 
     try {
       let chatId = conversationId;
 
-      // Erstelle neue Conversation beim ersten Message
       if (!chatId) {
-        // Generiere Titel (mit Fallback auf erste 3 Wörter)
         const title = await generateConversationTitle(
           messageText,
           streamResponse,
@@ -93,28 +180,23 @@ export default function ChatInterface() {
         const newConv = await createConversation(title, "openai/gpt-oss-120b");
         chatId = newConv.id;
 
-        // Redirect zu neuer Chat-Seite
         router.push(`/chat/${chatId}`);
       }
 
-      // Speichere User-Message
       await addMessage(chatId, {
         role: "user",
         content: messageText,
         model: "openai/gpt-oss-120b",
       });
 
-      // Streame AI-Antwort
       const aiResponse = await streamResponse(
         messageText,
         "openai/gpt-oss-120b",
         (chunk, accumulated) => {
-          // Optional: Live-Updates während Streaming
           console.log("Streaming:", accumulated.substring(0, 50) + "...");
         },
       );
 
-      // Speichere AI-Antwort
       await addMessage(chatId, {
         role: "assistant",
         content: aiResponse,
@@ -125,8 +207,6 @@ export default function ChatInterface() {
     } catch (error) {
       console.error("Fehler beim Senden der Nachricht:", error);
       alert(`Fehler: ${error.message}`);
-
-      // Bei Fehler: Stelle User-Input wieder her
       setUserInput(messageText);
     } finally {
       setIsLoading(false);
@@ -135,28 +215,25 @@ export default function ChatInterface() {
   };
 
   const handleNewChat = () => {
-    // Redirect zur Home-Seite für neuen Chat
     router.push("/");
     console.log("Neuer Chat gestartet");
   };
 
   const handleKeyDown = (e) => {
-    // Enter ohne Shift = Senden
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
 
-    // Escape = Clear input
     if (e.key === "Escape") {
       setUserInput("");
     }
   };
 
   return (
-    <div className="pb-12 pt-2 w-full relative max-w-4xl mx-auto">
+    <div className={twMerge(defaultWrapperClasses, className)}>
       <motion.div
-        className={`bg-neutral-900 flex flex-col justify-end relative`}
+        className={twMerge(defaultContainerClasses, containerClassName)}
         variants={containerVariant}
         initial="initial"
         animate={isExpanded ? "animate" : "initial"}
@@ -165,15 +242,22 @@ export default function ChatInterface() {
           ease: "easeOut",
         }}
       >
-        <div className="flex justify-between items-center">
+        <div
+          className="flex justify-between items-center"
+          style={{ height: `${buttonContainerHeight}px` }}
+        >
           {/* New Chat Button */}
           <PrimaryButton
-            className={buttonClass}
+            className={twMerge(
+              defaultButtonClass,
+              buttonClassName,
+              newChatButtonClassName,
+            )}
             onClick={handleNewChat}
             disabled={isLoading}
             text={
-              <div className={buttonContainerClass}>
-                <Plus size={21} />
+              <div className={defaultButtonContainerClass}>
+                <Plus size={buttonIconSize} />
               </div>
             }
           />
@@ -184,7 +268,7 @@ export default function ChatInterface() {
             name="user-input"
             id="user-input"
             placeholder="ask anything"
-            className="resize-none w-[calc(100%-16px)] p-3 overflow-y-auto max-h-82 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className={twMerge(defaultTextareaClasses, textareaClassName)}
             value={userInput}
             onChange={handleUserInputOnChange}
             onKeyDown={handleKeyDown}
@@ -198,13 +282,17 @@ export default function ChatInterface() {
 
           {/* Send Button */}
           <PrimaryButton
-            className={buttonClass}
+            className={twMerge(
+              defaultButtonClass,
+              buttonClassName,
+              sendButtonClassName,
+            )}
             onClick={handleSendMessage}
             disabled={!hasInput || isLoading}
             text={
               <div
                 className={clsx(
-                  buttonContainerClass,
+                  defaultButtonContainerClass,
                   hasInput && !isLoading
                     ? "bg-neutral-200 border-neutral-200 text-neutral-950"
                     : "",
@@ -212,9 +300,9 @@ export default function ChatInterface() {
                 )}
               >
                 {isLoading ? (
-                  <Loader size={21} className="animate-spin" />
+                  <Loader size={buttonIconSize} className="animate-spin" />
                 ) : (
-                  <ArrowUp size={21} />
+                  <ArrowUp size={buttonIconSize} />
                 )}
               </div>
             }
@@ -223,7 +311,7 @@ export default function ChatInterface() {
 
         {/* Character Counter */}
         {userInput.length > 3500 && (
-          <div className="absolute bottom-2 right-2 text-xs text-neutral-500">
+          <div className={twMerge(defaultCounterClasses, counterClassName)}>
             {userInput.length}/4000
           </div>
         )}
@@ -231,7 +319,7 @@ export default function ChatInterface() {
 
       {/* Status Display */}
       {isLoading && (
-        <div className="mt-2 text-center text-sm text-neutral-500 animate-pulse absolute w-full">
+        <div className={twMerge(defaultStatusClasses, statusClassName)}>
           Generating response...
         </div>
       )}

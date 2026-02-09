@@ -152,6 +152,480 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
+  // ==================== PROJECT OPERATIONS ====================
+
+  /* Erstellt ein neues Projekt */
+  const createProject = useCallback(
+    async (projectData) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const project = {
+          userId: user.uid,
+          name: projectData.name || "Neues Projekt",
+          description: projectData.description || "",
+          color: projectData.color || "#3b82f6",
+          icon: projectData.icon || "folder",
+          isArchived: false,
+          conversationIds: [], // Array von Conversation-IDs
+          documents: [], // Array von Dokumenten
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        const projectRef = await addDoc(collection(db, "projects"), project);
+
+        console.log("✅ Projekt erstellt mit ID:", projectRef.id);
+
+        return { id: projectRef.id, ...project };
+      } catch (err) {
+        return handleError(err, "Fehler beim Erstellen des Projekts");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Lädt alle Projekte eines Users */
+  const getProjects = useCallback(
+    async (includeArchived = false) => {
+      if (!user || !db) return [];
+      setLoading(true);
+      resetError();
+
+      try {
+        let q = query(
+          collection(db, "projects"),
+          where("userId", "==", user.uid),
+          orderBy("updatedAt", "desc"),
+        );
+
+        if (!includeArchived) {
+          q = query(
+            collection(db, "projects"),
+            where("userId", "==", user.uid),
+            where("isArchived", "==", false),
+            orderBy("updatedAt", "desc"),
+          );
+        }
+
+        const snapshot = await getDocs(q);
+        const projects = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        return projects;
+      } catch (err) {
+        return handleError(err, "Fehler beim Laden der Projekte");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Lädt ein einzelnes Projekt */
+  const getProject = useCallback(
+    async (projectId) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        const projectDoc = await getDoc(projectRef);
+
+        if (projectDoc.exists()) {
+          const data = projectDoc.data();
+          // Security check
+          if (data.userId !== user.uid) {
+            throw new Error("Unauthorized access");
+          }
+          return { id: projectDoc.id, ...data };
+        }
+        return null;
+      } catch (err) {
+        return handleError(err, "Fehler beim Laden des Projekts");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Aktualisiert ein Projekt */
+  const updateProject = useCallback(
+    async (projectId, updates) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        await updateDoc(projectRef, {
+          ...updates,
+          updatedAt: serverTimestamp(),
+        });
+        return true;
+      } catch (err) {
+        return handleError(err, "Fehler beim Aktualisieren des Projekts");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Löscht ein Projekt */
+  const deleteProject = useCallback(
+    async (projectId) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        await deleteDoc(projectRef);
+        return true;
+      } catch (err) {
+        return handleError(err, "Fehler beim Löschen des Projekts");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Fügt eine Conversation zu einem Projekt hinzu */
+  const addConversationToProject = useCallback(
+    async (projectId, conversationId) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        const projectDoc = await getDoc(projectRef);
+
+        if (projectDoc.exists()) {
+          const currentConversations = projectDoc.data().conversationIds || [];
+
+          // Prüfe ob Conversation bereits im Projekt ist
+          if (!currentConversations.includes(conversationId)) {
+            await updateDoc(projectRef, {
+              conversationIds: [...currentConversations, conversationId],
+              updatedAt: serverTimestamp(),
+            });
+          }
+
+          // Update auch die Conversation mit der Projekt-Referenz
+          const conversationRef = doc(db, "conversations", conversationId);
+          await updateDoc(conversationRef, {
+            projectId: projectId,
+            updatedAt: serverTimestamp(),
+          });
+
+          return true;
+        }
+        return null;
+      } catch (err) {
+        return handleError(
+          err,
+          "Fehler beim Hinzufügen der Conversation zum Projekt",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Entfernt eine Conversation aus einem Projekt */
+  const removeConversationFromProject = useCallback(
+    async (projectId, conversationId) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        const projectDoc = await getDoc(projectRef);
+
+        if (projectDoc.exists()) {
+          const currentConversations = projectDoc.data().conversationIds || [];
+          const updatedConversations = currentConversations.filter(
+            (id) => id !== conversationId,
+          );
+
+          await updateDoc(projectRef, {
+            conversationIds: updatedConversations,
+            updatedAt: serverTimestamp(),
+          });
+
+          // Entferne auch die Projekt-Referenz von der Conversation
+          const conversationRef = doc(db, "conversations", conversationId);
+          await updateDoc(conversationRef, {
+            projectId: null,
+            updatedAt: serverTimestamp(),
+          });
+
+          return true;
+        }
+        return null;
+      } catch (err) {
+        return handleError(
+          err,
+          "Fehler beim Entfernen der Conversation aus dem Projekt",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Fügt ein Dokument zu einem Projekt hinzu */
+  const addDocumentToProject = useCallback(
+    async (projectId, document) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        const projectDoc = await getDoc(projectRef);
+
+        if (projectDoc.exists()) {
+          const currentDocuments = projectDoc.data().documents || [];
+
+          const newDocument = {
+            id: doc(collection(db, "temp")).id, // Generiere eine ID
+            name: document.name,
+            type: document.type, // z.B. 'text', 'markdown', 'code'
+            content: document.content,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+          };
+
+          await updateDoc(projectRef, {
+            documents: [...currentDocuments, newDocument],
+            updatedAt: serverTimestamp(),
+          });
+
+          return newDocument;
+        }
+        return null;
+      } catch (err) {
+        return handleError(
+          err,
+          "Fehler beim Hinzufügen des Dokuments zum Projekt",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Aktualisiert ein Dokument in einem Projekt */
+  const updateDocumentInProject = useCallback(
+    async (projectId, documentId, updates) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        const projectDoc = await getDoc(projectRef);
+
+        if (projectDoc.exists()) {
+          const currentDocuments = projectDoc.data().documents || [];
+          const updatedDocuments = currentDocuments.map((doc) =>
+            doc.id === documentId
+              ? {
+                  ...doc,
+                  ...updates,
+                  updatedAt: Timestamp.now(),
+                }
+              : doc,
+          );
+
+          await updateDoc(projectRef, {
+            documents: updatedDocuments,
+            updatedAt: serverTimestamp(),
+          });
+
+          return true;
+        }
+        return null;
+      } catch (err) {
+        return handleError(err, "Fehler beim Aktualisieren des Dokuments");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Entfernt ein Dokument aus einem Projekt */
+  const removeDocumentFromProject = useCallback(
+    async (projectId, documentId) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        const projectDoc = await getDoc(projectRef);
+
+        if (projectDoc.exists()) {
+          const currentDocuments = projectDoc.data().documents || [];
+          const updatedDocuments = currentDocuments.filter(
+            (doc) => doc.id !== documentId,
+          );
+
+          await updateDoc(projectRef, {
+            documents: updatedDocuments,
+            updatedAt: serverTimestamp(),
+          });
+
+          return true;
+        }
+        return null;
+      } catch (err) {
+        return handleError(err, "Fehler beim Entfernen des Dokuments");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Lädt alle Conversations eines Projekts */
+  const getProjectConversations = useCallback(
+    async (projectId) => {
+      if (!user || !db) return [];
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        const projectDoc = await getDoc(projectRef);
+
+        if (projectDoc.exists()) {
+          const conversationIds = projectDoc.data().conversationIds || [];
+
+          if (conversationIds.length === 0) return [];
+
+          // Lade alle Conversations
+          const conversations = await Promise.all(
+            conversationIds.map(async (convId) => {
+              const convRef = doc(db, "conversations", convId);
+              const convDoc = await getDoc(convRef);
+              return convDoc.exists()
+                ? { id: convDoc.id, ...convDoc.data() }
+                : null;
+            }),
+          );
+
+          return conversations.filter((conv) => conv !== null);
+        }
+        return [];
+      } catch (err) {
+        return handleError(err, "Fehler beim Laden der Projekt-Conversations");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Sucht Projekte nach Name */
+  const searchProjects = useCallback(
+    async (searchTerm) => {
+      if (!user || !db || !searchTerm) return [];
+      setLoading(true);
+      resetError();
+
+      try {
+        const q = query(
+          collection(db, "projects"),
+          where("userId", "==", user.uid),
+          orderBy("updatedAt", "desc"),
+        );
+
+        const snapshot = await getDocs(q);
+        const projects = snapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .filter(
+            (project) =>
+              project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              project.description
+                ?.toLowerCase()
+                .includes(searchTerm.toLowerCase()),
+          );
+
+        return projects;
+      } catch (err) {
+        return handleError(err, "Fehler beim Suchen der Projekte");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
+  /* Real-time Listener für Projekte */
+  const subscribeToProjects = useCallback(
+    (callback, includeArchived = false) => {
+      if (!user || !db) return () => {};
+
+      try {
+        let q = query(
+          collection(db, "projects"),
+          where("userId", "==", user.uid),
+          orderBy("updatedAt", "desc"),
+        );
+
+        if (!includeArchived) {
+          q = query(
+            collection(db, "projects"),
+            where("userId", "==", user.uid),
+            where("isArchived", "==", false),
+            orderBy("updatedAt", "desc"),
+          );
+        }
+
+        const unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            const projects = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            callback(projects);
+          },
+          (err) => {
+            handleError(err, "Fehler beim Real-time Update der Projekte");
+          },
+        );
+
+        return unsubscribe;
+      } catch (err) {
+        handleError(err, "Fehler beim Erstellen des Projekt-Listeners");
+        return () => {};
+      }
+    },
+    [user, db, handleError],
+  );
+
   // ==================== CONVERSATION OPERATIONS ====================
 
   /* Erstellt eine neue Conversation */
@@ -595,6 +1069,21 @@ export default function DatabaseProvider({ children }) {
     createOrUpdateUser,
     getUserProfile,
     updateUserPreferences,
+
+    // Project Operations
+    createProject,
+    getProjects,
+    getProject,
+    updateProject,
+    deleteProject,
+    addConversationToProject,
+    removeConversationFromProject,
+    addDocumentToProject,
+    updateDocumentInProject,
+    removeDocumentFromProject,
+    getProjectConversations,
+    searchProjects,
+    subscribeToProjects,
 
     // Conversation Operations
     createConversation,

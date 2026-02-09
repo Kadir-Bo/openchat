@@ -30,7 +30,7 @@ export default function ProjectIDPage() {
     router.push(`/chat/${chatId}`);
   };
   return (
-    <div className="max-w-4xl mx-auto min-h-screen flex items-start justify-center gap-8 pt-20">
+    <div className="max-w-4xl mx-auto min-h-screen flex items-start justify-center gap-8 py-8">
       <div className="flex-1 flex flex-col gap-4">
         <PrimaryButton
           text="All Projects"

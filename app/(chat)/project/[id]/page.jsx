@@ -34,7 +34,7 @@ export default function ProjectIDPage() {
       <div className="flex-1 flex flex-col gap-4">
         <PrimaryButton
           text="All Projects"
-          href={"/settings"}
+          href={"/projects"}
           icon={<ArrowLeft size={15} />}
           className="border-none hover:bg-transparent text-neutral-400 hover:text-neutral-100 w-max text-sm"
         />

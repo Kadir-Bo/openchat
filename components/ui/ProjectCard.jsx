@@ -1,8 +1,8 @@
 import React from "react";
 import { formatDate } from "@/lib";
 import Link from "next/link";
-export default function ProjectCard({ project }) {
-  const { title, description, lastActivityAt, id } = project;
+export default function ProjectCard({ project, sort }) {
+  const { title, description, lastActivityAt, createdAt, id } = project;
 
   return (
     <Link href={`/project/${id}`}>
@@ -14,7 +14,11 @@ export default function ProjectCard({ project }) {
           </p>
         </div>
         <div className="flex justify-between items-center text-sm text-neutral-500">
-          <span>Updated: {formatDate(lastActivityAt)}</span>
+          {sort === "date" ? (
+            <span>Created: {formatDate(createdAt)}</span>
+          ) : (
+            <span>Updated: {formatDate(lastActivityAt)}</span>
+          )}
         </div>
       </div>
     </Link>

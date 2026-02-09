@@ -6,7 +6,7 @@ import {
   ProjectCard,
   Searchbar,
 } from "@/components";
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Plus } from "react-feather";
 import { EXAMPLE_PROJECTS } from "@/lib";
 
@@ -18,13 +18,58 @@ const FILTER_OPTIONS = [
 
 export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].sort);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSortChange = (sortValue) => () => {
     setSortBy(sortValue);
   };
-  const activeSort = FILTER_OPTIONS.find((item) => item.sort === sortBy);
 
-  const handleSearchProjects = () => {};
+  const handleSearchProjects = useCallback((query) => {
+    setSearchQuery(query);
+  }, []);
+
+  // Filter and sort projects
+  const filteredAndSortedProjects = useMemo(() => {
+    // First, filter by search query
+    let filtered = EXAMPLE_PROJECTS;
+
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase();
+      filtered = EXAMPLE_PROJECTS.filter((project) => {
+        const searchableText = [project.title, project.description]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(lowerQuery);
+      });
+    }
+
+    // Then, sort the filtered results
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.title.localeCompare(b.title);
+
+        case "date":
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
+          return dateB - dateA; // Most recent first
+
+        case "activity":
+          const activityA = new Date(a.lastActivityAt);
+          const activityB = new Date(b.lastActivityAt);
+          return activityB - activityA; // Most recent first
+
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [searchQuery, sortBy]);
+
+  const activeSort = FILTER_OPTIONS.find((item) => item.sort === sortBy);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center max-w-4xl mx-auto py-8 gap-6">
@@ -63,11 +108,23 @@ export default function ProjectsPage() {
           </ul>
         </DropDownMenu>
       </div>
+
       <Searchbar onSearch={handleSearchProjects} />
-      <div className="grid grid-cols-2 gap-6 mt-6">
-        {EXAMPLE_PROJECTS.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
+
+      <div className="grid grid-cols-2 gap-6 mt-6 w-full">
+        {filteredAndSortedProjects.length > 0 ? (
+          filteredAndSortedProjects.map((project) => (
+            <ProjectCard key={project.id} project={project} sort={sortBy} />
+          ))
+        ) : (
+          <div className="col-span-2 text-center py-12 text-neutral-400">
+            {searchQuery ? (
+              <>No projects found matching &quot;{searchQuery}&quot;</>
+            ) : (
+              <>No projects available</>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ export default function ChatLayout({ children }) {
     <PrivateRoute>
       <main className="min-h-screen flex flex-row">
         <Sidebar />
-        {children}
+        <div className="bg-neutral-900/40 flex-1">{children}</div>
       </main>
     </PrivateRoute>
   );

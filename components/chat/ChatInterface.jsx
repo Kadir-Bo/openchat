@@ -7,30 +7,39 @@ import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
 
 import { PrimaryButton } from "@/components";
-import { useDatabase } from "@/context";
+import { useChat, useDatabase } from "@/context";
 
 import { ArrowUp, Plus, Loader } from "react-feather";
-import { generateConversationTitle, streamResponse } from "@/lib";
+import { generateTitleFromResponse, streamResponse } from "@/lib";
 
 export default function ChatInterface({
+  project_id,
   className = "",
   containerClassName = "",
   textareaClassName = "",
+  textareaExpandedClassName = "",
   buttonClassName = "",
-  newChatButtonClassName = "",
+  extrasButtonClassName = "",
   sendButtonClassName = "",
   statusClassName = "",
   counterClassName = "",
   buttonIconSize = 21,
   textAreaGrowHeight = 180,
   buttonContainerHeight = 50,
+  placeholder = "ask anything",
 }) {
   const router = useRouter();
   const params = useParams();
   const [userInput, setUserInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { updateStreamResponse } = useChat();
   const textareaRef = useRef(null);
-  const { createConversation, addMessage } = useDatabase();
+  const {
+    createConversation,
+    updateConversation,
+    addMessage,
+    addConversationToProject,
+  } = useDatabase();
 
   const conversationId = params?.chatId || null;
 
@@ -172,52 +181,70 @@ export default function ChatInterface({
       let chatId = conversationId;
 
       if (!chatId) {
-        const title = await generateConversationTitle(
-          messageText,
-          streamResponse,
+        // Create new conversation with temporary title
+        const newConv = await createConversation(
+          "New Chat",
+          "openai/gpt-oss-120b",
         );
-
-        const newConv = await createConversation(title, "openai/gpt-oss-120b");
         chatId = newConv.id;
+
+        if (project_id) {
+          await addConversationToProject(project_id, chatId);
+        }
 
         router.push(`/chat/${chatId}`);
       }
 
+      // Add user message
       await addMessage(chatId, {
         role: "user",
         content: messageText,
         model: "openai/gpt-oss-120b",
       });
 
-      const aiResponse = await streamResponse(
+      let accumulatedResponse = "";
+
+      // Stream the response
+      await streamResponse(
         messageText,
         "openai/gpt-oss-120b",
         (chunk, accumulated) => {
-          console.log("Streaming:", accumulated.substring(0, 50) + "...");
+          accumulatedResponse = accumulated;
+          updateStreamResponse(accumulated);
         },
+        false,
+        50,
       );
 
+      // Add the complete assistant message
       await addMessage(chatId, {
         role: "assistant",
-        content: aiResponse,
+        content: accumulatedResponse,
         model: "openai/gpt-oss-120b",
       });
 
-      console.log("Message erfolgreich gesendet und gespeichert");
+      // Generate title from the AI response only for new Conversations
+      if (!conversationId) {
+        const title = await generateTitleFromResponse(
+          messageText,
+          accumulatedResponse,
+          streamResponse,
+        );
+
+        // Update conversation title in database
+        await updateConversation(chatId, { title });
+      }
     } catch (error) {
-      console.error("Fehler beim Senden der Nachricht:", error);
-      alert(`Fehler: ${error.message}`);
+      console.error("Error sending message:", error);
       setUserInput(messageText);
     } finally {
       setIsLoading(false);
+      updateStreamResponse("");
       textareaRef.current?.focus();
     }
   };
 
-  const handleNewChat = () => {
-    router.push("/");
-    console.log("Neuer Chat gestartet");
-  };
+  const handleExtras = () => {};
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -246,14 +273,14 @@ export default function ChatInterface({
           className="flex justify-between items-center"
           style={{ height: `${buttonContainerHeight}px` }}
         >
-          {/* New Chat Button */}
+          {/* Extras Button */}
           <PrimaryButton
             className={twMerge(
               defaultButtonClass,
               buttonClassName,
-              newChatButtonClassName,
+              extrasButtonClassName,
             )}
-            onClick={handleNewChat}
+            onClick={handleExtras}
             disabled={isLoading}
             text={
               <div className={defaultButtonContainerClass}>
@@ -267,8 +294,12 @@ export default function ChatInterface({
             ref={textareaRef}
             name="user-input"
             id="user-input"
-            placeholder="ask anything"
-            className={twMerge(defaultTextareaClasses, textareaClassName)}
+            placeholder={placeholder}
+            className={twMerge(
+              defaultTextareaClasses,
+              textareaClassName,
+              isExpanded && textareaExpandedClassName,
+            )}
             value={userInput}
             onChange={handleUserInputOnChange}
             onKeyDown={handleKeyDown}

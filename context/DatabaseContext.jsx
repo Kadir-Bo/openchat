@@ -164,20 +164,18 @@ export default function DatabaseProvider({ children }) {
       try {
         const project = {
           userId: user.uid,
-          name: projectData.name || "Neues Projekt",
+          title: projectData.title || "Neues Projekt",
           description: projectData.description || "",
-          color: projectData.color || "#3b82f6",
-          icon: projectData.icon || "folder",
           isArchived: false,
-          conversationIds: [], // Array von Conversation-IDs
-          documents: [], // Array von Dokumenten
+          conversationIds: [],
+          documents: [],
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
 
         const projectRef = await addDoc(collection(db, "projects"), project);
 
-        console.log("✅ Projekt erstellt mit ID:", projectRef.id);
+        console.log(" Projekt erstellt mit ID:", projectRef.id);
 
         return { id: projectRef.id, ...project };
       } catch (err) {
@@ -404,7 +402,7 @@ export default function DatabaseProvider({ children }) {
 
           const newDocument = {
             id: doc(collection(db, "temp")).id, // Generiere eine ID
-            name: document.name,
+            title: document.title,
             type: document.type, // z.B. 'text', 'markdown', 'code'
             content: document.content,
             createdAt: Timestamp.now(),
@@ -566,7 +564,7 @@ export default function DatabaseProvider({ children }) {
           }))
           .filter(
             (project) =>
-              project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
               project.description
                 ?.toLowerCase()
                 .includes(searchTerm.toLowerCase()),
@@ -632,7 +630,7 @@ export default function DatabaseProvider({ children }) {
   const createConversation = useCallback(
     async (title = "New Chat", model = "gpt-oss") => {
       if (!user || !db) {
-        console.error("❌ User oder DB nicht verfügbar:", {
+        console.error("User oder DB nicht verfügbar:", {
           user: !!user,
           db: !!db,
         });
@@ -651,7 +649,6 @@ export default function DatabaseProvider({ children }) {
           updatedAt: serverTimestamp(),
           messageCount: 0,
           isArchived: false,
-          tags: [],
         };
 
         const conversationRef = await addDoc(
@@ -659,11 +656,11 @@ export default function DatabaseProvider({ children }) {
           conversationData,
         );
 
-        console.log("✅ Conversation erstellt mit ID:", conversationRef.id);
+        console.log("Conversation erstellt mit ID:", conversationRef.id);
 
         return { id: conversationRef.id, ...conversationData };
       } catch (err) {
-        console.error("❌ Fehler beim Erstellen:", err);
+        console.error("Fehler beim Erstellen:", err);
         return handleError(err, "Fehler beim Erstellen der Conversation");
       } finally {
         setLoading(false);

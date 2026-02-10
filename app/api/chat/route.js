@@ -1,108 +1,116 @@
-export async function POST(request) {
+import { NextResponse } from "next/server";
+
+export const runtime = "edge";
+
+export async function POST(req) {
   try {
-    const body = await request.json();
-    const message = body?.message;
+    const {
+      message,
+      model = "openai/gpt-oss-120b",
+      reasoning_effort = "medium",
+    } = await req.json();
 
     if (!message?.trim()) {
-      return new Response(
-        JSON.stringify({ error: "Message cannot be empty" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
+      return NextResponse.json(
+        { error: "Message is required" },
+        { status: 400 },
       );
     }
 
-    // Get API key - try multiple ways in case env loading is weird
-    const apiKey = process.env.NVIDIA_API_KEY || process.env["NVIDIA_API_KEY"];
+    // NVIDIA NIM API Endpoint
+    const NVIDIA_API_URL =
+      "https://integrate.api.nvidia.com/v1/chat/completions";
+    const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 
-    if (!apiKey) {
-      console.error(
-        "API Key missing. Environment vars:",
-        Object.keys(process.env).filter((k) => k.includes("NVIDIA")),
-      );
-      return new Response(
-        JSON.stringify({
-          error: "API key not configured. Add NVIDIA_API_KEY to .env.local",
-          envKeys: Object.keys(process.env).filter((k) => k.includes("KEY")),
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
+    if (!NVIDIA_API_KEY) {
+      return NextResponse.json(
+        { error: "NVIDIA API key not configured" },
+        { status: 500 },
       );
     }
 
-    // Make direct fetch call to NVIDIA instead of using OpenAI SDK
-    const response = await fetch(
-      "https://integrate.api.nvidia.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
-          messages: [{ role: "user", content: message }],
-          temperature: 1,
-          top_p: 1,
-          max_tokens: 4096,
-          stream: true,
-        }),
+    // Call NVIDIA NIM API
+    const response = await fetch(NVIDIA_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${NVIDIA_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          {
+            role: "user",
+            content: message,
+          },
+        ],
+        temperature: 0.6,
+        top_p: 0.7,
+        max_tokens: 4096,
+        stream: true, // Enable streaming
+        reasoning_effort: reasoning_effort,
+      }),
+    });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("NVIDIA API Error:", response.status, errorText);
-
-      return new Response(
-        JSON.stringify({
-          error: `NVIDIA API Error: ${response.status}`,
-          details: errorText.substring(0, 200),
-        }),
-        {
-          status: response.status,
-          headers: { "Content-Type": "application/json" },
-        },
+      const errorData = await response.json();
+      console.error("NVIDIA API Error:", errorData);
+      return NextResponse.json(
+        { error: errorData.error?.message || "API request failed" },
+        { status: response.status },
       );
     }
 
-    // Stream the response
-    const reader = response.body.getReader();
+    // Create streaming response
+    const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          const reader = response.body.getReader();
+
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
 
-            const chunk = decoder.decode(value);
-            const lines = chunk.split("\n");
+            if (done) {
+              // Send done signal
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              break;
+            }
+
+            // Decode the chunk
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk
+              .split("\n")
+              .filter((line) => line.trim() !== "");
 
             for (const line of lines) {
+              // NVIDIA API sends SSE format: "data: {...}"
               if (line.startsWith("data: ")) {
+                const data = line.slice(6); // Remove "data: " prefix
+
+                // Skip [DONE] from NVIDIA
+                if (data === "[DONE]") {
+                  continue;
+                }
+
                 try {
-                  const data = JSON.parse(line.slice(6));
-                  const content = data.choices?.[0]?.delta?.content || "";
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content || "";
 
                   if (content) {
-                    controller.enqueue(
-                      new TextEncoder().encode(
-                        JSON.stringify({ content }) + "\n",
-                      ),
-                    );
+                    // Send as our format
+                    const formatted = `data: ${JSON.stringify({ content })}\n\n`;
+                    controller.enqueue(encoder.encode(formatted));
                   }
-                } catch (e) {
-                  // Ignore parse errors
+                } catch (parseError) {
+                  console.error("Parse error:", parseError);
                 }
               }
             }
           }
-          controller.close();
         } catch (error) {
           console.error("Stream error:", error);
           controller.error(error);
@@ -113,20 +121,16 @@ export async function POST(request) {
     return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
       },
     });
   } catch (error) {
-    console.error("API Error:", error);
-    return new Response(
-      JSON.stringify({
-        error: error.message,
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+    console.error("API Route Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 },
     );
   }
 }

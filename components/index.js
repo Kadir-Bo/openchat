@@ -12,5 +12,6 @@ export { default as PrimaryButton } from "./buttons/PrimaryButton";
 export { default as DropDownMenu } from "./ui/DropDownMenu";
 export { default as Searchbar } from "./ui/Searchbar";
 export { default as ProjectCard } from "./ui/ProjectCard";
+export { default as Message } from "./ui/Message";
 // Animation Debug
 export { default as AnimationController } from "./animation/debug/AnimationController";

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "react-feather";
+import { motion, AnimatePresence } from "framer-motion";
 import { truncateText } from "@/lib";
 
 export default function ChatList({
@@ -45,7 +46,15 @@ export default function ChatList({
               className="hover:bg-neutral-900 w-full text-left rounded-lg cursor-pointer transition duration-75 truncate px-3 py-2 flex items-center gap-2"
             >
               {listIcon && listIcon}
-              <span className="truncate">{item.title}</span>
+              <motion.span
+                key={item.title}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="truncate"
+              >
+                {item.title}
+              </motion.span>
             </li>
           ))}
         </ul>

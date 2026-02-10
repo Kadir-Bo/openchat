@@ -6,9 +6,9 @@ import {
   ProjectCard,
   Searchbar,
 } from "@/components";
-import React, { useCallback, useMemo, useState } from "react";
+import { useDatabase } from "@/context/DatabaseContext";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "react-feather";
-import { EXAMPLE_PROJECTS } from "@/lib";
 
 const FILTER_OPTIONS = [
   { id: "recent", sort: "activity", label: "Recent activity" },
@@ -17,8 +17,22 @@ const FILTER_OPTIONS = [
 ];
 
 export default function ProjectsPage() {
+  const { getProjects, loading } = useDatabase();
+  const [projects, setProjects] = useState([]);
   const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].sort);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Load projects on mount
+  useEffect(() => {
+    const loadProjects = async () => {
+      const fetchedProjects = await getProjects(false);
+      if (fetchedProjects) {
+        setProjects(fetchedProjects);
+      }
+    };
+
+    loadProjects();
+  }, [getProjects]);
 
   const handleSortChange = (sortValue) => () => {
     setSortBy(sortValue);
@@ -31,12 +45,12 @@ export default function ProjectsPage() {
   // Filter and sort projects
   const filteredAndSortedProjects = useMemo(() => {
     // First, filter by search query
-    let filtered = EXAMPLE_PROJECTS;
+    let filtered = projects;
 
     if (searchQuery.trim()) {
       const lowerQuery = searchQuery.toLowerCase();
-      filtered = EXAMPLE_PROJECTS.filter((project) => {
-        const searchableText = [project.title, project.description]
+      filtered = projects.filter((project) => {
+        const searchableText = [project.name, project.description]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -49,16 +63,18 @@ export default function ProjectsPage() {
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "name":
-          return a.title.localeCompare(b.title);
+          return a.name.localeCompare(b.name);
 
         case "date":
-          const dateA = new Date(a.createdAt);
-          const dateB = new Date(b.createdAt);
+          // Convert Firestore Timestamps to dates
+          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
           return dateB - dateA; // Most recent first
 
         case "activity":
-          const activityA = new Date(a.lastActivityAt);
-          const activityB = new Date(b.lastActivityAt);
+          // Use updatedAt for activity
+          const activityA = a.updatedAt?.toDate?.() || new Date(a.updatedAt);
+          const activityB = b.updatedAt?.toDate?.() || new Date(b.updatedAt);
           return activityB - activityA; // Most recent first
 
         default:
@@ -67,7 +83,7 @@ export default function ProjectsPage() {
     });
 
     return sorted;
-  }, [searchQuery, sortBy]);
+  }, [projects, searchQuery, sortBy]);
 
   const activeSort = FILTER_OPTIONS.find((item) => item.sort === sortBy);
 
@@ -79,6 +95,7 @@ export default function ProjectsPage() {
           text="New Project"
           icon={<Plus size={17} />}
           className="w-max justify-center text-sm min-w-32"
+          href="/projects/create"
           filled
         />
       </header>
@@ -111,21 +128,38 @@ export default function ProjectsPage() {
 
       <Searchbar onSearch={handleSearchProjects} />
 
-      <div className="grid grid-cols-2 gap-6 mt-6 w-full">
-        {filteredAndSortedProjects.length > 0 ? (
-          filteredAndSortedProjects.map((project) => (
-            <ProjectCard key={project.id} project={project} sort={sortBy} />
-          ))
-        ) : (
-          <div className="col-span-2 text-center py-12 text-neutral-400">
-            {searchQuery ? (
-              <>No projects found matching &quot;{searchQuery}&quot;</>
-            ) : (
-              <>No projects available</>
-            )}
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <div className="col-span-2 text-center py-12 text-neutral-400">
+          Loading projects...
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-6 mt-6 w-full">
+          {filteredAndSortedProjects.length > 0 ? (
+            filteredAndSortedProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} sort={sortBy} />
+            ))
+          ) : (
+            <div className="col-span-2 text-center py-12 text-neutral-400">
+              {searchQuery ? (
+                <>No projects found matching &quot;{searchQuery}&quot;</>
+              ) : projects.length === 0 ? (
+                <div className="flex flex-col items-center gap-4">
+                  <p>No projects yet</p>
+                  <PrimaryButton
+                    text="Create your first project"
+                    icon={<Plus size={17} />}
+                    className="w-max justify-center text-sm"
+                    href="/projects/create"
+                    filled
+                  />
+                </div>
+              ) : (
+                <>No projects available</>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

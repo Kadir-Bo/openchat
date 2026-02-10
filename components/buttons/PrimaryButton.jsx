@@ -47,7 +47,12 @@ export default function PrimaryButton({
   return href ? (
     <Link
       href={href}
-      className={twMerge(defaultClasses, activeClasses, className)}
+      className={twMerge(
+        defaultClasses,
+        filledClasses,
+        activeClasses,
+        className,
+      )}
       onClick={onClick}
       {...props}
     >

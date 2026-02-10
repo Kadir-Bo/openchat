@@ -2,11 +2,11 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
 
-import { PrimaryButton } from "@/components";
+import { PrimaryButton, AttachmentThumbnail } from "@/components";
 import { useChat, useDatabase } from "@/context";
 
 import { ArrowUp, Plus, Loader } from "react-feather";
@@ -21,8 +21,6 @@ export default function ChatInterface({
   buttonClassName = "",
   extrasButtonClassName = "",
   sendButtonClassName = "",
-  statusClassName = "",
-  counterClassName = "",
   buttonIconSize = 21,
   textAreaGrowHeight = 180,
   buttonContainerHeight = 50,
@@ -32,8 +30,24 @@ export default function ChatInterface({
   const params = useParams();
   const [userInput, setUserInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { updateStreamResponse } = useChat();
+
+  // Verwende attachments aus dem Context
+  const {
+    updateStreamResponse,
+    attachments,
+    addAttachment,
+    removeAttachment,
+    clearAttachments,
+  } = useChat();
+
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const [isExpanded, setIsExpanded] = useState(false);
+  const hasInput = userInput.trim().length > 0 || attachments.length > 0;
+
+  const maxTextareaHeight = textAreaGrowHeight - buttonContainerHeight - 16;
+
   const {
     createConversation,
     updateConversation,
@@ -47,30 +61,175 @@ export default function ChatInterface({
     setUserInput(e.target.value);
   };
 
-  const isExpanded = userInput.includes("\n");
-  const hasInput = userInput.trim().length > 0;
+  // Detect file type
+  const detectAttachmentType = (text, fileName = "") => {
+    const extension = fileName.split(".").pop()?.toLowerCase();
 
-  const maxTextareaHeight = textAreaGrowHeight - buttonContainerHeight - 16;
+    // Image files
+    if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(extension)) {
+      return "image";
+    }
 
-  // Auto-resize textarea - runs on every userInput change AND isExpanded change
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = "auto";
+    // Document files
+    if (
+      ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(extension)
+    ) {
+      return "document";
+    }
 
-      // If not expanded, reset to single line height
-      if (!isExpanded) {
-        textarea.style.height = "auto";
-      } else {
-        textarea.style.height = `${Math.min(textarea.scrollHeight, maxTextareaHeight)}px`;
+    // Code detection
+    const hasMultipleLines = text.includes("\n");
+    const looksLikeCode =
+      /[{}\[\]();]/.test(text) ||
+      /^\s*(function|const|let|var|class|import|export|def|public|private|package|interface)/m.test(
+        text,
+      );
+
+    if (
+      (hasMultipleLines && text.split("\n").length > 3 && looksLikeCode) ||
+      [
+        "js",
+        "jsx",
+        "ts",
+        "tsx",
+        "py",
+        "java",
+        "cpp",
+        "c",
+        "css",
+        "html",
+      ].includes(extension)
+    ) {
+      return "code";
+    }
+
+    // Text files
+    if (["txt", "md", "json", "xml", "csv"].includes(extension)) {
+      return "text";
+    }
+
+    return "file";
+  };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData.items;
+
+    for (let item of items) {
+      // Handle images
+      if (item.type.indexOf("image") !== -1) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+          const newAttachment = {
+            id: Date.now(),
+            type: "image",
+            name: file.name || "Pasted Image",
+            preview: event.target.result,
+            file: file,
+          };
+          addAttachment(newAttachment);
+        };
+
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      // Handle text/code
+      if (item.type === "text/plain") {
+        e.preventDefault();
+        item.getAsString((text) => {
+          const type = detectAttachmentType(text);
+
+          // Only create attachment for code, not regular text
+          if (type === "code") {
+            const newAttachment = {
+              id: Date.now(),
+              type: "code",
+              name: "Pasted Code",
+              content: text,
+            };
+            addAttachment(newAttachment);
+          } else {
+            // Regular text - paste normally into textarea
+            const textarea = textareaRef.current;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+
+            const newValue =
+              userInput.substring(0, start) + text + userInput.substring(end);
+
+            setUserInput(newValue);
+
+            setTimeout(() => {
+              textarea.selectionStart = textarea.selectionEnd =
+                start + text.length;
+              textarea.focus();
+            }, 0);
+          }
+        });
       }
     }
-  }, [userInput, isExpanded, maxTextareaHeight]);
+  };
 
-  // Focus textarea on mount
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+
+    files.forEach((file) => {
+      const reader = new FileReader();
+      const type = detectAttachmentType("", file.name);
+
+      reader.onload = (event) => {
+        const newAttachment = {
+          id: Date.now() + Math.random(),
+          type: type,
+          name: file.name,
+          content: type === "image" ? null : event.target.result,
+          preview: type === "image" ? event.target.result : null,
+          file: file,
+        };
+        addAttachment(newAttachment);
+      };
+
+      if (type === "image") {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
+    });
+
+    // Reset file input
+    e.target.value = "";
+  };
+
   useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    // Collapse when empty
+    if (userInput.trim() === "" && attachments.length === 0) {
+      setIsExpanded(false);
+      return;
+    }
+
+    // Always expand if there are attachments
+    if (attachments.length > 0) {
+      setIsExpanded(true);
+      return;
+    }
+
+    // Check for explicit newlines
+    if (userInput.includes("\n")) {
+      setIsExpanded(true);
+      return;
+    }
+
+    // Check if content wraps
+    textarea.style.height = "auto";
+    const singleLineHeight = 56; // Adjust based on your textarea styling
+    setIsExpanded(textarea.scrollHeight > singleLineHeight);
+  }, [userInput, attachments]);
 
   const containerVariant = {
     initial: {
@@ -96,92 +255,40 @@ export default function ChatInterface({
     },
   };
 
-  const defaultButtonClass = `
-    h-15
-    w-15
-    border-none
-    shadow-none
-    rounded-none
-    p-2
-    flex
-    items-center
-    justify-center
-    hover:bg-transparent
-    hover:border-transparent
-    hover:text-neutral-950
-    group
-    focus:border-transparent
-  `;
-
-  const defaultButtonContainerClass = `
-    rounded-full
-    border
-    p-2
-    border-neutral-800
-    group-hover:border-neutral-200
-    group-hover:bg-neutral-200
-    group-focus-within:scale-95
-    transition-all
-    duration-300
-  `;
-
-  const defaultWrapperClasses = `
-    pb-12
-    pt-2
-    w-full
-    relative
-    max-w-4xl
-    mx-auto
-  `;
-
-  const defaultContainerClasses = `
-    bg-neutral-900
-    flex
-    flex-col
-    justify-end
-    relative
-  `;
-
-  const defaultTextareaClasses = `
-    resize-none
-    w-full
-    p-3
-    overflow-y-auto
-    outline-none
-    disabled:opacity-50
-    disabled:cursor-not-allowed
-  `;
-
-  const defaultCounterClasses = `
-    absolute
-    bottom-2
-    right-2
-    text-xs
-    text-neutral-500
-  `;
-
-  const defaultStatusClasses = `
-    mt-2
-    text-center
-    text-sm
-    text-neutral-500
-    animate-pulse
-    absolute
-    w-full
-  `;
-
   const handleSendMessage = async () => {
     if (!hasInput || isLoading) return;
 
-    const messageText = userInput.trim();
+    // Prepare message with attachments
+    let messageText = userInput.trim();
+
+    // Store attachments for display
+    const messageAttachments = attachments.map((att) => ({
+      id: att.id,
+      type: att.type,
+      name: att.name,
+      content: att.content,
+      preview: att.preview,
+    }));
+
+    // Append attachment content to message for AI processing
+    if (attachments.length > 0) {
+      attachments.forEach((att) => {
+        if (att.type === "code") {
+          messageText += `\n\n\`\`\`\n${att.content}\n\`\`\``;
+        } else if (att.type === "text") {
+          messageText += `\n\n${att.content}`;
+        }
+      });
+    }
+
     setUserInput("");
+    clearAttachments();
     setIsLoading(true);
 
     try {
       let chatId = conversationId;
 
       if (!chatId) {
-        // Create new conversation with temporary title
         const newConv = await createConversation(
           "New Chat",
           "openai/gpt-oss-120b",
@@ -195,16 +302,16 @@ export default function ChatInterface({
         router.push(`/chat/${chatId}`);
       }
 
-      // Add user message
+      // Add user message with attachments
       await addMessage(chatId, {
         role: "user",
         content: messageText,
         model: "openai/gpt-oss-120b",
+        attachments: messageAttachments,
       });
 
       let accumulatedResponse = "";
 
-      // Stream the response
       await streamResponse(
         messageText,
         "openai/gpt-oss-120b",
@@ -216,14 +323,12 @@ export default function ChatInterface({
         50,
       );
 
-      // Add the complete assistant message
       await addMessage(chatId, {
         role: "assistant",
         content: accumulatedResponse,
         model: "openai/gpt-oss-120b",
       });
 
-      // Generate title from the AI response only for new Conversations
       if (!conversationId) {
         const title = await generateTitleFromResponse(
           messageText,
@@ -231,7 +336,6 @@ export default function ChatInterface({
           streamResponse,
         );
 
-        // Update conversation title in database
         await updateConversation(chatId, { title });
       }
     } catch (error) {
@@ -244,8 +348,6 @@ export default function ChatInterface({
     }
   };
 
-  const handleExtras = () => {};
-
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -254,13 +356,54 @@ export default function ChatInterface({
 
     if (e.key === "Escape") {
       setUserInput("");
+      clearAttachments();
+    }
+
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const textarea = e.target;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+
+      const newValue =
+        userInput.substring(0, start) + "  " + userInput.substring(end);
+
+      setUserInput(newValue);
+
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 2;
+      }, 0);
     }
   };
 
   return (
-    <div className={twMerge(defaultWrapperClasses, className)}>
+    <div
+      className={twMerge(
+        "pb-12 pt-2 w-full relative max-w-4xl mx-auto",
+        className,
+      )}
+    >
+      {/* Attachments - Show above input */}
+      <AnimatePresence>
+        {attachments.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2 absolute bottom-full h-max max-h-68 overflow-y-auto">
+            {attachments.map((attachment) => (
+              <AttachmentThumbnail
+                key={attachment.id}
+                attachment={attachment}
+                onRemove={() => removeAttachment(attachment.id)}
+                className="max-w-xs"
+              />
+            ))}
+          </div>
+        )}
+      </AnimatePresence>
+
       <motion.div
-        className={twMerge(defaultContainerClasses, containerClassName)}
+        className={twMerge(
+          "bg-neutral-900 flex flex-col justify-end relative",
+          containerClassName,
+        )}
         variants={containerVariant}
         initial="initial"
         animate={isExpanded ? "animate" : "initial"}
@@ -273,17 +416,25 @@ export default function ChatInterface({
           className="flex justify-between items-center"
           style={{ height: `${buttonContainerHeight}px` }}
         >
-          {/* Extras Button */}
+          {/* File Upload Button */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,.pdf,.doc,.docx,.txt,.md,.json,.js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.css,.html"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
           <PrimaryButton
             className={twMerge(
-              defaultButtonClass,
+              "h-15 w-15 border-none shadow-none rounded-none p-2 flex items-center justify-center hover:bg-transparent hover:border-transparent hover:text-neutral-950 group focus:border-transparent",
               buttonClassName,
               extrasButtonClassName,
             )}
-            onClick={handleExtras}
+            onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
             text={
-              <div className={defaultButtonContainerClass}>
+              <div className="rounded-full border p-2 border-neutral-800 group-hover:border-neutral-200 group-hover:bg-neutral-200 group-focus-within:scale-95 transition-all duration-300">
                 <Plus size={buttonIconSize} />
               </div>
             }
@@ -296,13 +447,14 @@ export default function ChatInterface({
             id="user-input"
             placeholder={placeholder}
             className={twMerge(
-              defaultTextareaClasses,
+              "resize-none w-full p-3 overflow-y-auto outline-none disabled:opacity-50 disabled:cursor-not-allowed",
               textareaClassName,
               isExpanded && textareaExpandedClassName,
             )}
             value={userInput}
             onChange={handleUserInputOnChange}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             variants={textAreaVariant}
             initial="initial"
             animate={isExpanded ? "animate" : "initial"}
@@ -314,7 +466,7 @@ export default function ChatInterface({
           {/* Send Button */}
           <PrimaryButton
             className={twMerge(
-              defaultButtonClass,
+              "h-15 w-15 border-none shadow-none rounded-none p-2 flex items-center justify-center hover:bg-transparent hover:border-transparent hover:text-neutral-950 group focus:border-transparent",
               buttonClassName,
               sendButtonClassName,
             )}
@@ -323,7 +475,7 @@ export default function ChatInterface({
             text={
               <div
                 className={clsx(
-                  defaultButtonContainerClass,
+                  "rounded-full border p-2 border-neutral-800 group-hover:border-neutral-200 group-hover:bg-neutral-200 group-focus-within:scale-95 transition-all duration-300",
                   hasInput && !isLoading
                     ? "bg-neutral-200 border-neutral-200 text-neutral-950"
                     : "",
@@ -339,18 +491,11 @@ export default function ChatInterface({
             }
           />
         </div>
-
-        {/* Character Counter */}
-        {userInput.length > 3500 && (
-          <div className={twMerge(defaultCounterClasses, counterClassName)}>
-            {userInput.length}/4000
-          </div>
-        )}
       </motion.div>
 
       {/* Status Display */}
       {isLoading && (
-        <div className={twMerge(defaultStatusClasses, statusClassName)}>
+        <div className="mt-2 text-center text-sm text-neutral-500 animate-pulse absolute w-full">
           Generating response...
         </div>
       )}

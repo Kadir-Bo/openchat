@@ -1,6 +1,11 @@
 "use client";
 
-import { AuthProvider, ChatProvider, DatabaseProvider } from "@/context";
+import {
+  AuthProvider,
+  ChatProvider,
+  DatabaseProvider,
+  DropdownProvider,
+} from "@/context";
 
 export default function Providers({ children }) {
   return (

@@ -4,3 +4,5 @@ export {
   useKeyboardHandler,
   useSendMessageHandler,
 } from "./useChatHandlers";
+
+export { useOnClickOutside } from "./useOnClickOutside";

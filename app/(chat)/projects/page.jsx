@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  DropDownMenu,
-  PrimaryButton,
-  ProjectCard,
-  Searchbar,
-} from "@/components";
+import { PrimaryButton, ProjectCard, Searchbar } from "@/components";
 import { useDatabase } from "@/context/DatabaseContext";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "react-feather";
@@ -102,7 +97,7 @@ export default function ProjectsPage() {
 
       <div className="w-full flex justify-end items-center gap-3 min-w-34">
         <span className="text-neutral-400 text-sm">Sort by:</span>
-        <DropDownMenu
+        {/* <DropDownMenu
           menuClassName="bottom-auto w-max min-w-34 mt-1"
           trigger={
             <PrimaryButton
@@ -123,7 +118,7 @@ export default function ProjectsPage() {
               </li>
             ))}
           </ul>
-        </DropDownMenu>
+        </DropDownMenu> */}
       </div>
 
       <Searchbar onSearch={handleSearchProjects} />

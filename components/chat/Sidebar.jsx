@@ -6,12 +6,16 @@ import Image from "next/image";
 import Link from "next/link";
 
 import {
-  DropDownMenu,
   PrimaryButton,
   UserProfileImage,
   ChatList,
+  DropdownTrigger,
+  DropdownContent,
+  DropdownItem,
+  DropdownSeparator,
 } from "@/components";
-import { useAuth, useDatabase } from "@/context";
+
+import { useAuth, useDatabase, Dropdown } from "@/context";
 import Logo from "@/assets/openchat_logo.webp";
 import { useRouter } from "next/navigation";
 
@@ -107,8 +111,8 @@ export default function Sidebar() {
   ];
 
   return (
-    <motion.div
-      className="bg-neutral-800/10 border-r border-r-neutral-500/10 overflow-hidden flex flex-col"
+    <motion.aside
+      className="bg-neutral-800 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 absolute z-50 min-h-dvh md:relative"
       variants={sidebarVariants}
       initial={false}
       animate={isOpen ? "open" : "closed"}
@@ -183,9 +187,8 @@ export default function Sidebar() {
                 defaultExpanded={true}
               />
             </div>
-
-            <DropDownMenu
-              trigger={
+            <Dropdown>
+              <DropdownTrigger>
                 <PrimaryButton
                   text={username}
                   icon={
@@ -193,28 +196,29 @@ export default function Sidebar() {
                   }
                   className="gap-2 text-sm"
                 />
-              }
-            >
-              <ul className="p-2 w-full overflow-hidden">
+              </DropdownTrigger>
+
+              <DropdownContent
+                side="top"
+                sideOffset={4}
+                className="-translate-x-1"
+              >
                 {dropDownMenuItems.map((button, id) => (
                   <React.Fragment key={button.id}>
                     {id === dropDownMenuItems.length - 1 && (
-                      <div className="border-t border-neutral-500/20 my-2"></div>
+                      <DropdownSeparator />
                     )}
-                    <PrimaryButton
-                      text={button.label}
-                      icon={<button.icon size={17} />}
-                      onClick={button?.action}
-                      href={button.href}
-                      className={`border-transparent shadow-none hover:border-transparent hover:bg-neutral-800/50 ${button.id === "sign-out" ? "text-red-400" : ""}`}
-                    />
+                    <DropdownItem onClick={button?.action} href={button.href}>
+                      <button.icon size={17} />
+                      {button.label}
+                    </DropdownItem>
                   </React.Fragment>
                 ))}
-              </ul>
-            </DropDownMenu>
+              </DropdownContent>
+            </Dropdown>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </motion.aside>
   );
 }

@@ -101,23 +101,23 @@ export default function MessageBubble({ message, isStreaming = false }) {
                     rehypePlugins={[rehypeHighlight, rehypeRaw]}
                     components={{
                       // Override paragraph to use div instead
-                      p: ({ children }) => (
-                        <div className="mb-4 last:mb-0">{children}</div>
-                      ),
+                      p: ({ children }) => <div>{children}</div>,
 
                       // Override pre to add copy button wrapper
                       pre: ({ children }) => (
-                        <div className="relative group/code my-4">
+                        <div className="relative group/code">
                           <button
                             onClick={() => {
                               const codeText = getCodeText(children);
                               navigator.clipboard.writeText(codeText);
                             }}
-                            className="absolute right-2 top-2 opacity-0 group-hover/code:opacity-100 transition-opacity p-1.5 rounded bg-neutral-700 hover:bg-neutral-600 z-10 cursor-pointer"
+                            className="absolute right-2 top-2 opacity-0 group-hover/code:opacity-100 transition-opacity p-1.5 rounded bg-neutral-900 hover:bg-neutral-700 z-10 cursor-pointer"
                           >
                             <Copy size={14} />
                           </button>
-                          <pre className="overflow-x-auto">{children}</pre>
+                          <pre className="overflow-x-auto mt-2 p-1 rounded-xl [&>code]:rounded-md">
+                            {children}
+                          </pre>
                         </div>
                       ),
                     }}

@@ -150,13 +150,12 @@
 
   /* Paragraphs */
   .markdown p {
-    @apply mb-4 last:mb-0;
+    @apply mb-3 last:mb-0;
   }
-
   /* Lists */
   .markdown ul,
   .markdown ol {
-    @apply mb-4 ml-5 space-y-2;
+    @apply ml-5 space-y-2;
   }
 
   .markdown ul {
@@ -189,7 +188,7 @@
   }
 
   .markdown pre {
-    @apply bg-neutral-900 p-4 rounded-lg overflow-x-auto mb-4 border border-neutral-800;
+    @apply bg-neutral-900 p-2 rounded-lg overflow-x-auto border border-neutral-800;
   }
 
   .markdown pre code {
@@ -226,7 +225,7 @@
 
   /* Tables */
   .markdown table {
-    @apply w-full border-collapse mb-4 text-sm;
+    @apply w-full border-collapse text-sm;
   }
 
   .markdown thead {

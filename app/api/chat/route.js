@@ -29,7 +29,7 @@ export async function POST(req) {
       );
     }
 
-    // Call NVIDIA NIM API
+    // Call NVIDIA NIM API with abort signal
     const response = await fetch(NVIDIA_API_URL, {
       method: "POST",
       headers: {
@@ -47,9 +47,10 @@ export async function POST(req) {
         temperature: 0.6,
         top_p: 0.7,
         max_tokens: 4096,
-        stream: true, // Enable streaming
+        stream: true,
         reasoning_effort: reasoning_effort,
       }),
+      signal: req.signal, // Pass the request's abort signal
     });
 
     if (!response.ok) {
@@ -67,16 +68,65 @@ export async function POST(req) {
 
     const stream = new ReadableStream({
       async start(controller) {
+        let isClosed = false;
+        let reader = null;
+
+        // Helper to safely enqueue data
+        const safeEnqueue = (data) => {
+          if (!isClosed) {
+            try {
+              controller.enqueue(data);
+            } catch (e) {
+              if (e.message?.includes("Controller is already closed")) {
+                isClosed = true;
+              } else {
+                throw e;
+              }
+            }
+          }
+        };
+
+        // Helper to safely close
+        const safeClose = () => {
+          if (!isClosed) {
+            try {
+              controller.close();
+              isClosed = true;
+            } catch (e) {
+              // Already closed
+              isClosed = true;
+            }
+          }
+        };
+
+        // Listen for client disconnect
+        req.signal?.addEventListener("abort", () => {
+          isClosed = true;
+          if (reader) {
+            reader.cancel().catch(() => {});
+          }
+          safeClose();
+        });
+
         try {
-          const reader = response.body.getReader();
+          reader = response.body.getReader();
 
           while (true) {
+            // Check if closed before reading
+            if (isClosed) {
+              break;
+            }
+
             const { done, value } = await reader.read();
 
             if (done) {
-              // Send done signal
-              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-              controller.close();
+              safeEnqueue(encoder.encode("data: [DONE]\n\n"));
+              safeClose();
+              break;
+            }
+
+            // Check again after async operation
+            if (isClosed) {
               break;
             }
 
@@ -87,11 +137,11 @@ export async function POST(req) {
               .filter((line) => line.trim() !== "");
 
             for (const line of lines) {
-              // NVIDIA API sends SSE format: "data: {...}"
-              if (line.startsWith("data: ")) {
-                const data = line.slice(6); // Remove "data: " prefix
+              if (isClosed) break;
 
-                // Skip [DONE] from NVIDIA
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6);
+
                 if (data === "[DONE]") {
                   continue;
                 }
@@ -101,19 +151,30 @@ export async function POST(req) {
                   const content = parsed.choices?.[0]?.delta?.content || "";
 
                   if (content) {
-                    // Send as our format
                     const formatted = `data: ${JSON.stringify({ content })}\n\n`;
-                    controller.enqueue(encoder.encode(formatted));
+                    safeEnqueue(encoder.encode(formatted));
                   }
                 } catch (parseError) {
-                  console.error("Parse error:", parseError);
+                  console.warn("Parse error:", parseError);
                 }
               }
             }
           }
         } catch (error) {
-          console.error("Stream error:", error);
-          controller.error(error);
+          if (error.name === "AbortError") {
+            console.log("Stream aborted by client");
+          } else {
+            console.error("Stream error:", error);
+            if (!isClosed) {
+              safeEnqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ error: error.message })}\n\n`,
+                ),
+              );
+            }
+          }
+        } finally {
+          safeClose();
         }
       },
     });

@@ -19,11 +19,12 @@ import {
 import { Dropdown, useDatabase } from "@/context";
 
 export default function ChatList({
-  label = "label",
+  label = "",
   list = [],
   button = null,
   listIcon = null,
   defaultExpanded = true,
+  listItemClasses = "",
 }) {
   const { deleteConversation, updateConversation, toggleArchiveConversation } =
     useDatabase();
@@ -37,7 +38,7 @@ export default function ChatList({
   }, []);
 
   const handleNavigateToChat = useCallback(
-    (type, id) => {
+    (type = "chat", id) => {
       router.push(`/${type}/${id}`);
     },
     [router],
@@ -136,25 +137,26 @@ export default function ChatList({
     [handleRenameChat, handleArchiveChat, handleDeleteChat],
   );
 
-  // Memoize empty state
   const hasItems = useMemo(() => list.length > 0, [list.length]);
 
   return (
     <div className="py-2.5 w-full">
-      <button
-        className="group min-w-max w-full pl-2.5 text-sm text-gray-300/90 flex items-center gap-px ml-1 cursor-pointer hover:text-gray-200/80 transition-all duration-75"
-        onClick={handleToggleChats}
-        aria-expanded={isOpen}
-        aria-label={`${isOpen ? "Minimieren" : "Erweitern"} ${label}`}
-      >
-        {label}
-        <ChevronDown
-          size={16}
-          className={`opacity-0 group-hover:opacity-100 transition-all duration-200 ${
-            isOpen ? "" : "-rotate-90"
-          }`}
-        />
-      </button>
+      {label && (
+        <button
+          className="group min-w-max w-full pl-2.5 text-sm text-gray-300/90 flex items-center gap-px ml-1 cursor-pointer hover:text-gray-200/80 transition-all duration-75"
+          onClick={handleToggleChats}
+          aria-expanded={isOpen}
+          aria-label={`${isOpen ? "Minimieren" : "Erweitern"} ${label}`}
+        >
+          {label}
+          <ChevronDown
+            size={16}
+            className={`opacity-0 group-hover:opacity-100 transition-all duration-200 ${
+              isOpen ? "" : "-rotate-90"
+            }`}
+          />
+        </button>
+      )}
 
       <AnimatePresence>
         {isOpen && (
@@ -186,6 +188,7 @@ export default function ChatList({
                 onNavigate={handleNavigateToChat}
                 getMenuItems={getDropDownMenuItems}
                 listIcon={listIcon}
+                listItemClasses
               />
             ))}
           </motion.ul>
@@ -195,7 +198,6 @@ export default function ChatList({
   );
 }
 
-// Separate Component für bessere Performance
 const ChatListItem = React.memo(
   ({
     item,
@@ -203,7 +205,6 @@ const ChatListItem = React.memo(
     editTitle,
     onTitleChange,
     onSave,
-    onCancel,
     onKeyDown,
     onNavigate,
     getMenuItems,
@@ -214,11 +215,9 @@ const ChatListItem = React.memo(
         className={`w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border ${
           isEditing
             ? "border-neutral-500 bg-neutral-900/50"
-            : "hover:bg-neutral-900/50 border-transparent"
+            : "hover:bg-neutral-800 border-transparent"
         }`}
       >
-        {listIcon && <span className="shrink-0">{listIcon}</span>}
-
         {isEditing ? (
           <input
             type="text"
@@ -236,8 +235,9 @@ const ChatListItem = React.memo(
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
               onClick={() => onNavigate(item.type, item.id)}
-              className="truncate py-2 pl-3 w-full text-left hover:text-gray-100 cursor-pointer"
+              className="truncate py-2 pl-3 w-full flex items-center gap-1 text-left hover:text-gray-100 cursor-pointer"
             >
+              {listIcon && listIcon}
               {item.title}
             </motion.button>
 

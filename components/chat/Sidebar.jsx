@@ -20,23 +20,16 @@ import Logo from "@/assets/openchat_logo.webp";
 import { useRouter } from "next/navigation";
 
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowLeft,
-  Folder,
-  LogOut,
-  Menu,
-  Plus,
-  Settings,
-  Sliders,
-} from "react-feather";
+import { ArrowLeft, Folder, LogOut, Menu, Plus, Settings } from "react-feather";
 
 export default function Sidebar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(true);
   const [conversations, setConversations] = useState([]);
+  const [projects, setProjects] = useState([]);
 
   const { user, logout } = useAuth();
-  const { subscribeToConversations } = useDatabase();
+  const { subscribeToConversations, subscribeToProjects } = useDatabase();
 
   const { displayName, email, photoURL: userImage } = user;
   const username = displayName || email;
@@ -56,15 +49,32 @@ export default function Sidebar() {
     return () => unsubscribe();
   }, [user, subscribeToConversations]);
 
-  // Konvertiere Conversations in das richtige Format für ChatList
-  const recentChats = conversations.map((conv) => ({
-    id: conv.id,
-    title: conv.title,
-    type: "chat",
-  }));
+  // Real-time Listener für Projects
+  useEffect(() => {
+    if (!user) return;
 
-  // Filtere nach Projects (wenn du später Projects hinzufügst)
-  const projects = []; // Später: Filter nach conv.isProject oder ähnlich
+    const unsubscribe = subscribeToProjects((newProjects) => {
+      setProjects(newProjects);
+    });
+
+    return () => unsubscribe();
+  }, [user, subscribeToProjects]);
+
+  // Filtere Conversations: Nur die ohne projectId
+  const recentChats = conversations
+    .filter((conv) => !conv.projectId)
+    .map((conv) => ({
+      id: conv.id,
+      title: conv.title,
+      type: "chat",
+    }));
+
+  // Konvertiere Projects für ChatList
+  const projectsList = projects.map((project) => ({
+    id: project.id,
+    title: project.title,
+    type: "project",
+  }));
 
   const sidebarVariants = {
     open: { width: "280px" },
@@ -75,6 +85,7 @@ export default function Sidebar() {
     animate: { x: 10, opacity: 1 },
     exit: { x: 20, opacity: 0 },
   };
+
   const listVariants = {
     animate: { x: 0, opacity: 1 },
     exit: { x: 10, opacity: 0 },
@@ -91,16 +102,10 @@ export default function Sidebar() {
   // Dropdown Menu Items
   const dropDownMenuItems = [
     {
-      id: "profile-settings",
-      label: "Profile Settings",
-      href: "/settings/profile-settings",
+      id: "settings",
+      label: "Settings",
+      href: "/settings/general",
       icon: Settings,
-    },
-    {
-      id: "preferences-settings",
-      label: "Preferences",
-      href: "/settings/preferences-settings",
-      icon: Sliders,
     },
     {
       id: "sign-out",
@@ -112,13 +117,13 @@ export default function Sidebar() {
 
   return (
     <motion.aside
-      className="bg-neutral-800 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 absolute z-50 min-h-dvh md:relative"
+      className="bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-50 min-h-dvh"
       variants={sidebarVariants}
       initial={false}
       animate={isOpen ? "open" : "closed"}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
-      <div className="flex items-center justify-between h-12 ">
+      <div className="flex items-center justify-between h-12">
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -143,21 +148,24 @@ export default function Sidebar() {
           <button
             className="p-3 outline-none cursor-pointer"
             onClick={handleToggleSidebar}
+            aria-label={isOpen ? "Sidebar schließen" : "Sidebar öffnen"}
           >
             {isOpen ? <ArrowLeft /> : <Menu />}
           </button>
         </AnimatePresence>
       </div>
+
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            key="recent-chat-list"
+          <motion.nav
+            key="sidebar-navigation"
             variants={listVariants}
             initial="exit"
             animate="animate"
             exit="exit"
             transition={{ duration: 0.2, delay: 0.1 }}
             className="p-1.5 flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-hidden"
+            aria-label="Hauptnavigation"
           >
             <PrimaryButton
               text="New Chat"
@@ -169,24 +177,28 @@ export default function Sidebar() {
               icon={<Folder size={19} />}
               href={"/projects"}
             />
+
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
               {/* Projects Section */}
-              {projects.length > 0 && (
+              {projectsList.length > 0 && (
                 <ChatList
-                  label={"Projects"}
-                  defaultExpanded={false}
-                  list={projects}
-                  listIcon={<Folder size={19} />}
+                  label="Projects"
+                  defaultExpanded={true}
+                  list={projectsList}
+                  listIcon={<Folder size={17} />}
                 />
               )}
 
-              {/* Recent Chats Section */}
-              <ChatList
-                label={"Recent Chats"}
-                list={recentChats}
-                defaultExpanded={true}
-              />
+              {/* Recent Chats Section - nur Chats ohne Projekt */}
+              {recentChats.length > 0 && (
+                <ChatList
+                  label="Recent Chats"
+                  list={recentChats}
+                  defaultExpanded={true}
+                />
+              )}
             </div>
+
             <Dropdown>
               <DropdownTrigger>
                 <PrimaryButton
@@ -216,7 +228,7 @@ export default function Sidebar() {
                 ))}
               </DropdownContent>
             </Dropdown>
-          </motion.div>
+          </motion.nav>
         )}
       </AnimatePresence>
     </motion.aside>

@@ -45,7 +45,9 @@ export default function PrimaryButton({
     ? "bg-neutral-200 text-neutral-950 border-neutral-200 hover:bg-neutral-100 border-transparent"
     : "";
 
-  const activeClasses = active ? "bg-neutral-800 border-neutral-500/60" : "";
+  const activeClasses = active
+    ? "bg-neutral-800 hover:bg-neutral-800 border-neutral-500/60"
+    : "";
 
   const tooltipPositionClasses = {
     top: "bottom-full left-1/2 -translate-x-1/2 mb-2",

@@ -1,9 +1,16 @@
 "use client";
 
-import { PrimaryButton, ProjectCard, Searchbar } from "@/components";
-import { useDatabase } from "@/context/DatabaseContext";
+import { useDatabase, Dropdown } from "@/context";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "react-feather";
+import {
+  PrimaryButton,
+  ProjectCard,
+  Searchbar,
+  DropdownContent,
+  DropdownItem,
+  DropdownTrigger,
+} from "@/components";
 
 const FILTER_OPTIONS = [
   { id: "recent", sort: "activity", label: "Recent activity" },
@@ -12,18 +19,19 @@ const FILTER_OPTIONS = [
 ];
 
 export default function ProjectsPage() {
-  const { getProjects, loading } = useDatabase();
+  const { getProjects } = useDatabase();
   const [projects, setProjects] = useState([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].sort);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Load projects on mount
   useEffect(() => {
     const loadProjects = async () => {
       const fetchedProjects = await getProjects(false);
       if (fetchedProjects) {
         setProjects(fetchedProjects);
       }
+      setIsInitialLoading(false);
     };
 
     loadProjects();
@@ -37,15 +45,13 @@ export default function ProjectsPage() {
     setSearchQuery(query);
   }, []);
 
-  // Filter and sort projects
   const filteredAndSortedProjects = useMemo(() => {
-    // First, filter by search query
     let filtered = projects;
 
     if (searchQuery.trim()) {
       const lowerQuery = searchQuery.toLowerCase();
       filtered = projects.filter((project) => {
-        const searchableText = [project.name, project.description]
+        const searchableText = [project.title, project.description]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -54,23 +60,20 @@ export default function ProjectsPage() {
       });
     }
 
-    // Then, sort the filtered results
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "name":
-          return a.name.localeCompare(b.name);
+          return (a.title || "").localeCompare(b.title || "");
 
         case "date":
-          // Convert Firestore Timestamps to dates
           const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
           const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
-          return dateB - dateA; // Most recent first
+          return dateB - dateA;
 
         case "activity":
-          // Use updatedAt for activity
           const activityA = a.updatedAt?.toDate?.() || new Date(a.updatedAt);
           const activityB = b.updatedAt?.toDate?.() || new Date(b.updatedAt);
-          return activityB - activityA; // Most recent first
+          return activityB - activityA;
 
         default:
           return 0;
@@ -97,33 +100,30 @@ export default function ProjectsPage() {
 
       <div className="w-full flex justify-end items-center gap-3 min-w-34">
         <span className="text-neutral-400 text-sm">Sort by:</span>
-        {/* <DropDownMenu
-          menuClassName="bottom-auto w-max min-w-34 mt-1"
-          trigger={
+        <Dropdown>
+          <DropdownTrigger>
             <PrimaryButton
               text={activeSort?.label || "Sort by"}
               className="text-sm justify-center items-center px-3 min-w-32"
             />
-          }
-        >
-          <ul className="p-2">
-            {FILTER_OPTIONS.map((item) => (
-              <li key={item.id}>
-                <PrimaryButton
-                  text={item.label}
-                  onClick={handleSortChange(item.sort)}
-                  active={item.sort === sortBy}
-                  className="border-transparent hover:border-transparent hover:bg-neutral-800/50 "
-                />
-              </li>
+          </DropdownTrigger>
+
+          <DropdownContent side="bottom">
+            {FILTER_OPTIONS.map((menuItem) => (
+              <DropdownItem
+                key={menuItem.id}
+                onClick={handleSortChange(menuItem.sort)}
+              >
+                {menuItem.label}
+              </DropdownItem>
             ))}
-          </ul>
-        </DropDownMenu> */}
+          </DropdownContent>
+        </Dropdown>
       </div>
 
       <Searchbar onSearch={handleSearchProjects} />
 
-      {loading ? (
+      {isInitialLoading ? (
         <div className="col-span-2 text-center py-12 text-neutral-400">
           Loading projects...
         </div>
@@ -137,7 +137,7 @@ export default function ProjectsPage() {
             <div className="col-span-2 text-center py-12 text-neutral-400">
               {searchQuery ? (
                 <>No projects found matching &quot;{searchQuery}&quot;</>
-              ) : projects.length === 0 ? (
+              ) : (
                 <div className="flex flex-col items-center gap-4">
                   <p>No projects yet</p>
                   <PrimaryButton
@@ -148,8 +148,6 @@ export default function ProjectsPage() {
                     filled
                   />
                 </div>
-              ) : (
-                <>No projects available</>
               )}
             </div>
           )}

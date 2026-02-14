@@ -2,7 +2,7 @@ import Image from "next/image";
 import React from "react";
 import { twMerge } from "tailwind-merge";
 
-export default function SettingsThemes({ themes, activeTheme, onClick }) {
+export default function ThemeSelect({ themes, activeTheme, onClick }) {
   return (
     <div>
       <span className="mb-1.5 text-neutral-300/80 text-sm ml-px flex gap-1 items-center justify-start">

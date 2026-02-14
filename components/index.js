@@ -23,11 +23,14 @@ export {
 } from "./dropdown/DropdownUtilities";
 export { default as DropdownContent } from "./dropdown/DropdownContent";
 export { default as DropdownTrigger } from "./dropdown/DropdownTrigger";
-// Input COMPONENTS
-export { default as SettingsInput } from "./input/SettingsInput";
-export { default as SettingsTextarea } from "./input/SettingsTextarea";
-export { default as SettingsSelect } from "./input/SettingsSelect";
-export { default as SettingsThemes } from "./input/SettingsThemes";
+// MODAl COMPONENTS
+export { default as ProjectsRenameModal } from "./modal/ProjectsRenameModal";
+export { default as ProjectsDeleteModal } from "./modal/ProjectsDeleteModal";
+// INPUT COMPONENTS
+export { default as Input } from "./input/Input";
+export { default as Textarea } from "./input/Textarea";
+export { default as Select } from "./input/Select";
+export { default as ThemeSelect } from "./input/ThemeSelect";
 
 // Animation Debug
 export { default as AnimationController } from "./animation/debug/AnimationController";

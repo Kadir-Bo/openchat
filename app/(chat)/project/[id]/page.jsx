@@ -43,7 +43,7 @@ export default function ProjectIDPage() {
 
   if (isInitialLoading) {
     return (
-      <div className="max-w-4xl mx-auto min-h-screen flex items-center justify-center">
+      <div className="max-w-5xl mx-auto min-h-screen flex items-center justify-center">
         <p className="text-neutral-400">Loading project...</p>
       </div>
     );
@@ -54,7 +54,7 @@ export default function ProjectIDPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto min-h-screen flex flex-col items-start justify-start gap-8 py-8">
+    <div className="max-w-5xl mx-auto min-h-screen flex flex-col items-start justify-start gap-8 py-8">
       <PrimaryButton
         text="All Projects"
         href={"/projects"}

@@ -1,15 +1,15 @@
 "use client";
 
-import { Message, PrimaryButton } from "@/components";
+import { PrimaryButton, Input, Textarea } from "@/components";
 import { useDatabase } from "@/context/DatabaseContext";
+import { useModal } from "@/context/ModalContext";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 export default function ProjectCreatePage() {
   const router = useRouter();
   const { createProject, loading } = useDatabase();
-  const [message, setMessage] = useState("");
-  const [messageVariant, setMessageVariant] = useState("error");
+  const { openMessage } = useModal();
 
   const [project, setProject] = useState({
     name: "",
@@ -24,15 +24,10 @@ export default function ProjectCreatePage() {
     }));
   };
 
-  const showMessage = (text, variant = "error") => {
-    setMessage(text);
-    setMessageVariant(variant);
-  };
-
   const handleCreateProject = async () => {
     // Validation
     if (!project.name.trim()) {
-      showMessage("Please enter a project name", "error");
+      openMessage("Please enter a project name", "error");
       return;
     }
 
@@ -43,17 +38,17 @@ export default function ProjectCreatePage() {
       });
 
       if (newProject) {
-        showMessage("Project created successfully!", "success");
+        openMessage("Project created successfully!", "success");
         // Navigate after a short delay to show success message
         setTimeout(() => {
           router.push(`/project/${newProject.id}`);
         }, 1000);
       } else {
-        showMessage("Failed to create project", "error");
+        openMessage("Failed to create project", "error");
       }
     } catch (error) {
       console.error("Error creating project:", error);
-      showMessage("An error occurred while creating the project", "error");
+      openMessage("An error occurred while creating the project", "error");
     }
   };
 
@@ -76,43 +71,30 @@ export default function ProjectCreatePage() {
         </p>
       </div>
       <div className="flex flex-col gap-4 w-full">
-        <div className="w-full">
-          <label
-            htmlFor="project-name"
-            className="text-sm text-neutral-400 pl-px"
-          >
-            What are you working on?
-          </label>
-          <input
-            type="text"
-            name="name"
-            id="project-name"
-            placeholder="Name your Project"
-            value={project.name}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            disabled={loading}
-            className="w-full border border-neutral-700 placeholder:text-neutral-500 px-2.5 py-2 mt-1.5 rounded-lg bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            autoFocus
-          />
-        </div>
-        <div className="w-full">
-          <label
-            htmlFor="project-description"
-            className="text-sm text-neutral-400 pl-px"
-          >
-            What are you trying to achieve?
-          </label>
-          <textarea
-            name="description"
-            id="project-description"
-            placeholder="Describe your project, idea, goals, etc."
-            value={project.description}
-            onChange={handleInputChange}
-            disabled={loading}
-            className="resize-none w-full border border-neutral-700 placeholder:text-neutral-500 px-2.5 py-2 mt-1.5 rounded-lg max-h-52 min-h-30 bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-          />
-        </div>
+        <Input
+          id="project-name"
+          name="name"
+          label="What are you working on?"
+          placeholder="Name your Project"
+          value={project.name}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          disabled={loading}
+          autoFocus
+        />
+
+        <Textarea
+          id="project-description"
+          name="description"
+          label="What are you trying to achieve?"
+          placeholder="Describe your project, idea, goals, etc."
+          value={project.description}
+          onChange={handleInputChange}
+          disabled={loading}
+          rows={6}
+          inputClassName="max-h-52 min-h-30"
+        />
+
         <div className="flex justify-end items-center gap-2 mt-4">
           <PrimaryButton
             text="Cancel"
@@ -128,12 +110,6 @@ export default function ProjectCreatePage() {
             filled
           />
         </div>
-        <Message
-          message={message}
-          variant={messageVariant}
-          autoHideDuration={5000}
-          onClose={() => setMessage("")}
-        />
       </div>
     </div>
   );

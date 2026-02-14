@@ -278,6 +278,29 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
+  /* Archiviert/Dearchiviert ein Projekt */
+  const toggleArchiveProject = useCallback(
+    async (projectId, isArchived) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        await updateDoc(projectRef, {
+          isArchived,
+          updatedAt: serverTimestamp(),
+        });
+        return true;
+      } catch (err) {
+        return handleError(err, "Fehler beim Archivieren des Projekts");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
   /* Löscht ein Projekt */
   const deleteProject = useCallback(
     async (projectId) => {
@@ -1072,6 +1095,7 @@ export default function DatabaseProvider({ children }) {
     getProjects,
     getProject,
     updateProject,
+    toggleArchiveProject,
     deleteProject,
     addConversationToProject,
     removeConversationFromProject,

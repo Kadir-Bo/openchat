@@ -4,14 +4,16 @@ import {
   AuthProvider,
   ChatProvider,
   DatabaseProvider,
-  DropdownProvider,
+  ModalProvider,
 } from "@/context";
 
 export default function Providers({ children }) {
   return (
     <AuthProvider>
       <DatabaseProvider>
-        <ChatProvider>{children}</ChatProvider>
+        <ChatProvider>
+          <ModalProvider>{children}</ModalProvider>
+        </ChatProvider>
       </DatabaseProvider>
     </AuthProvider>
   );

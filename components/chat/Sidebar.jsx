@@ -16,7 +16,6 @@ import {
 } from "@/components";
 
 import { useAuth, useDatabase, Dropdown } from "@/context";
-import Logo from "@/assets/openchat_logo.webp";
 import { useRouter } from "next/navigation";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -122,6 +121,7 @@ export default function Sidebar() {
       initial={false}
       animate={isOpen ? "open" : "closed"}
       transition={{ duration: 0.3, ease: "easeInOut" }}
+      id="sidebar"
     >
       <div className="flex items-center justify-between h-12">
         <AnimatePresence>
@@ -136,10 +136,10 @@ export default function Sidebar() {
             >
               <Link href={"/chat"}>
                 <Image
-                  src={Logo}
+                  src={"/assets/images/openchat_logo.webp"}
                   alt="openchat logo"
-                  width={"auto"}
-                  height={"auto"}
+                  width={160}
+                  height={32}
                   className="max-w-28"
                 />
               </Link>

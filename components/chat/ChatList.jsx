@@ -242,12 +242,8 @@ const ChatListItem = React.memo(
             </motion.button>
 
             <Dropdown>
-              <DropdownTrigger>
-                <PrimaryButton
-                  text={<MoreHorizontal size={17} />}
-                  className="gap-2 text-sm border-none shadow-none hover:bg-transparent shrink-0"
-                  aria-label="Chat Optionen"
-                />
+              <DropdownTrigger className="p-2">
+                <MoreHorizontal size={17} />
               </DropdownTrigger>
 
               <DropdownContent

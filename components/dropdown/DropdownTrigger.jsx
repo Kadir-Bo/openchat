@@ -2,6 +2,7 @@
 
 import { useDropdown } from "@/context";
 import { useRef } from "react";
+import { twMerge } from "tailwind-merge";
 
 export default function DropdownTrigger({
   children,
@@ -12,6 +13,7 @@ export default function DropdownTrigger({
   const triggerRef = useRef(null);
 
   const handleClick = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     setIsOpen(!isOpen);
   };
@@ -32,7 +34,7 @@ export default function DropdownTrigger({
       onClick={handleClick}
       aria-expanded={isOpen}
       aria-haspopup="true"
-      className={className}
+      className={twMerge("cursor-pointer", className)}
     >
       {children}
     </div>

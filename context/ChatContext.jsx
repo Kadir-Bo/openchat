@@ -44,7 +44,7 @@ export default function ChatProvider({ children }) {
     setAttachments([]);
   };
 
-  // ==================== MESSAGE SENDING ====================
+  // ==================== MESSAGE OPERATIONS ====================
   const sendMessage = async ({
     message,
     conversationId,
@@ -61,11 +61,9 @@ export default function ChatProvider({ children }) {
     if (!message?.trim() && attachments.length === 0) return;
     if (isLoading) return;
 
-    // Create new AbortController
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    // Prepare message with attachments
     let messageText = message.trim();
 
     // Store attachments for display
@@ -77,7 +75,6 @@ export default function ChatProvider({ children }) {
       preview: att.preview,
     }));
 
-    // Append attachment content to message for AI processing
     if (attachments.length > 0) {
       attachments.forEach((att) => {
         if (att.type === "code") {
@@ -88,7 +85,6 @@ export default function ChatProvider({ children }) {
       });
     }
 
-    // Clear attachments
     clearAttachments();
     setIsLoading(true);
 
@@ -106,7 +102,6 @@ export default function ChatProvider({ children }) {
         router?.push(`/chat/${chatId}`);
       }
 
-      // Add user message with attachments
       await addMessage(chatId, {
         role: "user",
         content: messageText,
@@ -160,7 +155,6 @@ export default function ChatProvider({ children }) {
     }
   };
 
-  // ==================== STOP GENERATION ====================
   const stopGeneration = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();

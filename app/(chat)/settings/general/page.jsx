@@ -4,32 +4,37 @@ import React, { useState } from "react";
 import { useAuth } from "@/context";
 import { MODELS, THEMES } from "@/lib";
 import {
-  SettingsInput,
-  SettingsSelect,
-  SettingsTextarea,
-  SettingsThemes,
+  Input,
+  PrimaryButton,
+  Select,
+  Textarea,
+  ThemeSelect,
 } from "@/components";
 
 function GeneralSettingsPage() {
   const { user } = useAuth();
   const [fullName, setFullName] = useState(user.displayName || "");
   const [modelPreferences, setModelPreferences] = useState("");
-  // Get from database
-  const [userDefaultModel, setUserDefaultModel] = useState(MODELS[0].select);
+  const [userDefaultModel, setUserDefaultModel] = useState(MODELS[0].id);
   const [activeTheme, setActiveTheme] = useState("auto");
 
-  const handleFullNameOnChange = (e) => {
-    setFullName(e.target.value);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "full-name") {
+      setFullName(value);
+    } else if (name === "preferences") {
+      setModelPreferences(value);
+    } else if (name === "default-model") {
+      setUserDefaultModel(value);
+    }
   };
-  const handlePreferencesOnChange = (e) => {
-    setModelPreferences(e.target.value);
-  };
-  const handleSelectModelOnChange = (model) => {
-    setUserDefaultModel(model);
-  };
+
   const handleChangeTheme = (theme) => {
     setActiveTheme(theme);
   };
+
+  const handleOnSave = () => {};
   const TextareaPlaceholderExamples = [
     "Ask clarifying questions before answering...",
     "Be concise and to the point...",
@@ -38,46 +43,55 @@ function GeneralSettingsPage() {
     "Focus on practical, actionable advice...",
   ];
 
+  // Find the current model label for display
+  const currentModelLabel =
+    MODELS.find((m) => m.id === userDefaultModel)?.label || userDefaultModel;
+
   return (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Profile</h4>
         <div className="flex items-start justify-between gap-6">
-          <SettingsInput
+          <Input
             label="What would you like to be called?"
             value={fullName}
-            onChange={handleFullNameOnChange}
+            onChange={handleInputChange}
             id="full-name"
+            name="full-name"
             placeholder="No Name yet..."
           />
-          <SettingsInput
+          <Input
             label="Email"
             value={user?.email || ""}
             onChange={() => {}}
-            id="username"
+            id="email"
+            name="email"
             placeholder="email@example.com"
             disabled
           />
         </div>
-        <SettingsTextarea
+        <Textarea
           label="What personal preferences should Claude consider in responses?"
           value={modelPreferences}
-          onChange={handlePreferencesOnChange}
+          onChange={handleInputChange}
           id="preferences"
-          placeholder={TextareaPlaceholderExamples}
-          InputClassName="min-h-32"
+          name="preferences"
+          placeholderArray={TextareaPlaceholderExamples}
+          inputClassName="min-h-32"
         />
       </div>
       <hr className="text-neutral-700" />
       <div className="flex flex-col gap-5">
         <h4 className="font-medium mb-4">Preferences</h4>
-        <SettingsSelect
+        <Select
+          id="default-model"
+          name="default-model"
           label="Default Model"
           list={MODELS}
-          onChange={handleSelectModelOnChange}
-          value={userDefaultModel}
+          onChange={handleInputChange}
+          value={currentModelLabel}
         />
-        <SettingsThemes
+        <ThemeSelect
           themes={THEMES}
           activeTheme={activeTheme}
           onClick={handleChangeTheme}

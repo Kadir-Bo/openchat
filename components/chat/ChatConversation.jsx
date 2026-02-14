@@ -88,7 +88,7 @@ export default function ChatConversation() {
 
   return (
     <div className="flex-1 w-full overflow-y-auto py-8 px-4">
-      <div className="space-y-3 max-w-4xl mx-auto">
+      <div className="space-y-3 max-w-5xl mx-auto">
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}

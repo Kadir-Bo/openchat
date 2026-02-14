@@ -19,23 +19,24 @@ const FILTER_OPTIONS = [
 ];
 
 export default function ProjectsPage() {
-  const { getProjects } = useDatabase();
+  const { subscribeToProjects } = useDatabase();
   const [projects, setProjects] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].sort);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const loadProjects = async () => {
-      const fetchedProjects = await getProjects(false);
-      if (fetchedProjects) {
-        setProjects(fetchedProjects);
-      }
+    // Real-time Listener für Projekte
+    const unsubscribe = subscribeToProjects((fetchedProjects) => {
+      setProjects(fetchedProjects);
       setIsInitialLoading(false);
-    };
+    }, false);
 
-    loadProjects();
-  }, [getProjects]);
+    // Cleanup beim Unmount
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [subscribeToProjects]);
 
   const handleSortChange = (sortValue) => () => {
     setSortBy(sortValue);
@@ -86,7 +87,7 @@ export default function ProjectsPage() {
   const activeSort = FILTER_OPTIONS.find((item) => item.sort === sortBy);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center max-w-4xl mx-auto py-8 gap-6">
+    <div className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto py-8 gap-6">
       <header className="flex items-center justify-between w-full">
         <h1 className="text-3xl font-light">Projects</h1>
         <PrimaryButton
@@ -128,13 +129,13 @@ export default function ProjectsPage() {
           Loading projects...
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-6 mt-6 w-full">
+        <div className="grid grid-cols-3 gap-4 mt-6 w-full">
           {filteredAndSortedProjects.length > 0 ? (
             filteredAndSortedProjects.map((project) => (
               <ProjectCard key={project.id} project={project} sort={sortBy} />
             ))
           ) : (
-            <div className="col-span-2 text-center py-12 text-neutral-400">
+            <div className="text-center py-12 text-neutral-400 col-span-3">
               {searchQuery ? (
                 <>No projects found matching &quot;{searchQuery}&quot;</>
               ) : (

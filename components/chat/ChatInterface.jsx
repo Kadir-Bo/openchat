@@ -113,7 +113,7 @@ export default function ChatInterface({
   return (
     <div
       className={twMerge(
-        "pb-8 pt-2 w-full relative max-w-4xl mx-auto",
+        "pb-8 pt-2 w-full relative max-w-5xl mx-auto",
         className,
       )}
     >

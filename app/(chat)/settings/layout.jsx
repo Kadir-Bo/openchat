@@ -14,7 +14,7 @@ export default function SettingsLayout({ children }) {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto pt-20 pb-8">
+    <div className="max-w-5xl mx-auto pt-20 pb-8">
       <h1 className="text-2xl mb-6">Settings</h1>
 
       <div className="flex gap-6 items-start">

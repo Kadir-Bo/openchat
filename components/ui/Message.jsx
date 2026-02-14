@@ -5,12 +5,10 @@ import { twMerge } from "tailwind-merge";
 export default function Message({
   message,
   className = "",
-  variant = null, // Auto-detect if not provided
+  variant = null,
   onClose = null,
   autoHideDuration = 3000,
 }) {
-  const [isVisible, setIsVisible] = React.useState(false);
-
   // Auto-detect variant based on message content
   const detectVariant = (msg) => {
     if (!msg) return "error";
@@ -36,16 +34,11 @@ export default function Message({
 
   React.useEffect(() => {
     if (message) {
-      setIsVisible(true);
-
       const timer = setTimeout(() => {
-        setIsVisible(false);
         onClose?.();
       }, autoHideDuration);
 
       return () => clearTimeout(timer);
-    } else {
-      setIsVisible(false);
     }
   }, [message, autoHideDuration, onClose]);
 
@@ -63,7 +56,6 @@ export default function Message({
     mx-auto
     min-w-xs
     p-3
-    mt-4
     text-center
     shadow
   `;
@@ -72,15 +64,15 @@ export default function Message({
 
   return (
     <AnimatePresence mode="wait">
-      {isVisible && message && (
+      {message && (
         <motion.div
           key={message}
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
+          exit={{ opacity: 0, y: 10 }}
           transition={{
-            duration: 0.2,
-            ease: "easeOut",
+            duration: 0.3,
+            ease: "easeInOut",
           }}
           className={twMerge(defaultClasses, variantClasses, className)}
         >

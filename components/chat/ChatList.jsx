@@ -16,7 +16,8 @@ import {
   DropdownTrigger,
   PrimaryButton,
 } from "@/components";
-import { Dropdown, useDatabase } from "@/context";
+import { Dropdown, useDatabase, useModal } from "@/context";
+import ChatDeleteModal from "../modal/ChatDeleteModal";
 
 export default function ChatList({
   label = "",
@@ -31,6 +32,7 @@ export default function ChatList({
   const [isOpen, setIsOpen] = useState(defaultExpanded);
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
+  const { openModal } = useModal();
   const router = useRouter();
 
   const handleToggleChats = useCallback(() => {
@@ -131,10 +133,11 @@ export default function ChatList({
         id: "delete-chat",
         label: "Löschen",
         icon: Trash,
-        action: () => handleDeleteChat(item.id),
+        action: () =>
+          openModal(<ChatDeleteModal title={item.title} id={item.id} />),
       },
     ],
-    [handleRenameChat, handleArchiveChat, handleDeleteChat],
+    [handleRenameChat, handleArchiveChat, openModal],
   );
 
   const hasItems = useMemo(() => list.length > 0, [list.length]);

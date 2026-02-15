@@ -26,6 +26,7 @@ export { default as DropdownTrigger } from "./dropdown/DropdownTrigger";
 // MODAl COMPONENTS
 export { default as ProjectsRenameModal } from "./modal/ProjectsRenameModal";
 export { default as ProjectsDeleteModal } from "./modal/ProjectsDeleteModal";
+export { default as ChatDeleteModal } from "./modal/ChatDeleteModal";
 // INPUT COMPONENTS
 export { default as Input } from "./input/Input";
 export { default as Textarea } from "./input/Textarea";

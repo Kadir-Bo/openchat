@@ -2,6 +2,16 @@
 
 import React, { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Dropdown, useDatabase, useModal } from "@/context";
+
+import {
+  DropdownContent,
+  DropdownItem,
+  DropdownTrigger,
+  ChatDeleteModal,
+} from "@/components";
+
 import {
   Archive,
   ChevronDown,
@@ -9,15 +19,7 @@ import {
   MoreHorizontal,
   Trash,
 } from "react-feather";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  DropdownContent,
-  DropdownItem,
-  DropdownTrigger,
-  PrimaryButton,
-} from "@/components";
-import { Dropdown, useDatabase, useModal } from "@/context";
-import ChatDeleteModal from "../modal/ChatDeleteModal";
+import { twMerge } from "tailwind-merge";
 
 export default function ChatList({
   label = "",
@@ -29,10 +31,10 @@ export default function ChatList({
 }) {
   const { deleteConversation, updateConversation, toggleArchiveConversation } =
     useDatabase();
+  const { openModal, openMessage } = useModal(); // ← NEU
   const [isOpen, setIsOpen] = useState(defaultExpanded);
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
-  const { openModal } = useModal();
   const router = useRouter();
 
   const handleToggleChats = useCallback(() => {
@@ -59,7 +61,6 @@ export default function ChatList({
         return;
       }
 
-      // Nur updaten wenn sich der Titel geändert hat
       if (editTitle.trim() === originalTitle) {
         setEditingId(null);
         setEditTitle("");
@@ -70,9 +71,10 @@ export default function ChatList({
       if (result) {
         setEditingId(null);
         setEditTitle("");
+        openMessage("Chat renamed successfully!", "success"); // ← Optional
       }
     },
-    [editTitle, updateConversation],
+    [editTitle, updateConversation, openMessage],
   );
 
   const handleCancelRename = useCallback(() => {
@@ -84,23 +86,20 @@ export default function ChatList({
     async (id) => {
       const result = await toggleArchiveConversation(id, true);
       if (result) {
-        console.log("Chat archiviert");
+        openMessage("Chat archived successfully!", "success"); // ← Optional
       }
     },
-    [toggleArchiveConversation],
+    [toggleArchiveConversation, openMessage],
   );
 
+  // ====== NEU: Modal statt confirm ======
   const handleDeleteChat = useCallback(
-    async (id) => {
-      if (confirm("Möchtest du diesen Chat wirklich löschen?")) {
-        const result = await deleteConversation(id);
-        if (result) {
-          console.log("Chat gelöscht");
-        }
-      }
+    (id, title) => {
+      openModal(<ChatDeleteModal title={title} id={id} />);
     },
-    [deleteConversation],
+    [openModal],
   );
+  // ====== ENDE NEU ======
 
   const handleKeyDown = useCallback(
     (e, id, originalTitle) => {
@@ -133,11 +132,10 @@ export default function ChatList({
         id: "delete-chat",
         label: "Löschen",
         icon: Trash,
-        action: () =>
-          openModal(<ChatDeleteModal title={item.title} id={item.id} />),
+        action: () => handleDeleteChat(item.id, item.title),
       },
     ],
-    [handleRenameChat, handleArchiveChat, openModal],
+    [handleRenameChat, handleArchiveChat, handleDeleteChat],
   );
 
   const hasItems = useMemo(() => list.length > 0, [list.length]);
@@ -191,7 +189,7 @@ export default function ChatList({
                 onNavigate={handleNavigateToChat}
                 getMenuItems={getDropDownMenuItems}
                 listIcon={listIcon}
-                listItemClasses
+                listItemClasses={listItemClasses}
               />
             ))}
           </motion.ul>
@@ -212,14 +210,18 @@ const ChatListItem = React.memo(
     onNavigate,
     getMenuItems,
     listIcon,
+    listItemClasses,
   }) => {
+    const isEditingClasses = isEditing
+      ? "border-neutral-500 bg-neutral-900/50"
+      : "hover:bg-neutral-800 border-transparent";
     return (
       <li
-        className={`w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border ${
-          isEditing
-            ? "border-neutral-500 bg-neutral-900/50"
-            : "hover:bg-neutral-800 border-transparent"
-        }`}
+        className={twMerge(
+          "w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border",
+          isEditingClasses,
+          listItemClasses,
+        )}
       >
         {isEditing ? (
           <input

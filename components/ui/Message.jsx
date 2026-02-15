@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { twMerge } from "tailwind-merge";
 
@@ -32,7 +34,7 @@ export default function Message({
 
   const currentVariant = variant || detectVariant(message);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (message) {
       const timer = setTimeout(() => {
         onClose?.();
@@ -43,21 +45,21 @@ export default function Message({
   }, [message, autoHideDuration, onClose]);
 
   const variants = {
-    error: "border-red-500/10 bg-red-950/20 text-red-400",
-    warning: "border-yellow-500/10 bg-yellow-950/20 text-yellow-400",
-    info: "border-blue-500/10 bg-blue-950/20 text-blue-400",
-    success: "border-green-500/10 bg-green-950/20 text-green-400",
+    error: "border-red-500/20 bg-neutral-950 text-white",
+    warning: "border-yellow-500/20 bg-neutral-950 text-white",
+    info: "border-blue-500/20 bg-neutral-950 text-white",
+    success: "border-green-500/20 bg-neutral-950 text-white",
   };
 
   const defaultClasses = `
-    border
-    rounded-lg
-    max-w-sm
-    mx-auto
-    min-w-xs
-    p-3
     text-center
     shadow
+    bg-black
+    rounded-xl
+    w-full
+    min-w-50
+    max-w-80
+    border
   `;
 
   const variantClasses = variants[currentVariant] || variants.error;
@@ -74,9 +76,9 @@ export default function Message({
             duration: 0.3,
             ease: "easeInOut",
           }}
-          className={twMerge(defaultClasses, variantClasses, className)}
+          className={twMerge(defaultClasses, className, variantClasses)}
         >
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 p-3">
             <p className="text-sm">{message}</p>
           </div>
         </motion.div>

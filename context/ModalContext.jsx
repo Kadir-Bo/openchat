@@ -23,7 +23,7 @@ export const useModal = () => {
 
 export default function ModalProvider({ children }) {
   const [modalContent, setModalContent] = useState(null);
-  const [messageContent, setMessageContent] = useState(null);
+  const [messageContent, setMessageContent] = useState();
   const modalContentRef = useRef();
   const [sidebarWidth, setSidebarWidth] = useState(0);
 
@@ -89,13 +89,13 @@ export default function ModalProvider({ children }) {
 
       {messageContent && (
         <div
-          className="fixed bottom-14 z-10000"
+          className="fixed top-7 z-10000"
           style={{
             left: `${sidebarWidth}px`,
             width: `calc(100vw - ${sidebarWidth}px)`,
           }}
         >
-          <div className="flex flex-col items-center justify-center max-w-5xl mx-auto">
+          <div className="flex flex-col items-end justify-start max-w-480 mx-auto pr-3">
             <Message
               message={messageContent.message}
               variant={messageContent.variant}

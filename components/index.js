@@ -2,6 +2,7 @@
 export { default as Sidebar } from "./chat/Sidebar";
 export { default as UserProfileImage } from "./chat/UserProfileImage";
 export { default as ChatList } from "./chat/ChatList";
+export { default as ChatCard } from "./chat/ChatCard";
 export { default as ChatInterface } from "./chat/ChatInterface";
 export { default as ChatConversation } from "./chat/ChatConversation";
 export { default as MessageBubble } from "./chat/MessageBubble";
@@ -27,6 +28,7 @@ export { default as DropdownTrigger } from "./dropdown/DropdownTrigger";
 export { default as ProjectsRenameModal } from "./modal/ProjectsRenameModal";
 export { default as ProjectsDeleteModal } from "./modal/ProjectsDeleteModal";
 export { default as ChatDeleteModal } from "./modal/ChatDeleteModal";
+export { default as ChatRenameModal } from "./modal/ChatRenameModal";
 // INPUT COMPONENTS
 export { default as Input } from "./input/Input";
 export { default as Textarea } from "./input/Textarea";

@@ -1,6 +1,6 @@
 import { useDatabase, useModal } from "@/context";
 import React from "react";
-import { PrimaryButton } from "..";
+import { PrimaryButton } from "@/components";
 
 export default function ProjectsDeleteModal({ title, id }) {
   const { loading, deleteProject } = useDatabase();

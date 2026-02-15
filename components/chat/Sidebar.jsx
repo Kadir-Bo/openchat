@@ -19,7 +19,15 @@ import { useAuth, useDatabase, Dropdown } from "@/context";
 import { useRouter } from "next/navigation";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Folder, LogOut, Menu, Plus, Settings } from "react-feather";
+import {
+  ArrowLeft,
+  Folder,
+  LogOut,
+  Menu,
+  MessageSquare,
+  Plus,
+  Settings,
+} from "react-feather";
 
 export default function Sidebar() {
   const router = useRouter();
@@ -169,13 +177,18 @@ export default function Sidebar() {
           >
             <PrimaryButton
               text="New Chat"
-              icon={<Plus size={19} />}
+              icon={<Plus size={17} />}
               href={"/chat"}
             />
             <PrimaryButton
               text="Projects"
-              icon={<Folder size={19} />}
+              icon={<Folder size={17} />}
               href={"/projects"}
+            />
+            <PrimaryButton
+              text="Chats"
+              icon={<MessageSquare size={17} />}
+              href={"/recent-chats"}
             />
 
             <div className="flex-1 overflow-y-auto overflow-x-hidden">

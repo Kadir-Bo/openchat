@@ -1,6 +1,6 @@
 import { useDatabase, useModal } from "@/context";
 import React from "react";
-import { PrimaryButton } from "..";
+import { PrimaryButton } from "@/components";
 
 export default function ChatDeleteModal({ title, id }) {
   const { loading, deleteConversation } = useDatabase();
@@ -43,7 +43,7 @@ export default function ChatDeleteModal({ title, id }) {
         />
         <PrimaryButton
           text={loading ? "Deleting..." : "Delete Chat"}
-          className="w-max px-3 min-w-34 justify-center border-none ring-none text-white bg-red-700/60 hover:bg-red-700/90 hover:text-white"
+          className="w-max px-3 min-w-34 justify-center border-none ring-none text-white bg-red-600/50 hover:bg-red-700/30 hover:text-white"
           onClick={handleDeleteChat}
           disabled={loading}
           filled

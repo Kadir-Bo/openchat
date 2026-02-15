@@ -4,30 +4,57 @@ export const runtime = "edge";
 
 export async function POST(req) {
   try {
+    const body = await req.json();
     const {
-      message,
+      messages,
       model = "openai/gpt-oss-120b",
       reasoning_effort = "medium",
-    } = await req.json();
+    } = body;
 
-    if (!message?.trim()) {
+    // ====== DEBUG LOGS ======
+    console.log("🔷 API Route received request");
+    console.log("📊 Body:", JSON.stringify(body, null, 2));
+    console.log("📨 Messages:", messages);
+    console.log("📝 Message count:", messages?.length);
+    console.log("🤖 Model:", model);
+    // ====== ENDE DEBUG ======
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      console.error("❌ Invalid messages array");
       return NextResponse.json(
-        { error: "Message is required" },
+        { error: "Messages array is required" },
         { status: 400 },
       );
     }
 
-    // NVIDIA NIM API Endpoint
     const NVIDIA_API_URL =
       "https://integrate.api.nvidia.com/v1/chat/completions";
     const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 
     if (!NVIDIA_API_KEY) {
+      console.error("❌ No NVIDIA API key");
       return NextResponse.json(
         { error: "NVIDIA API key not configured" },
         { status: 500 },
       );
     }
+
+    // ====== DEBUG: NVIDIA Request ======
+    const nvidiaPayload = {
+      model: model,
+      messages,
+      temperature: 0.6,
+      top_p: 0.7,
+      max_tokens: 4096,
+      stream: true,
+      reasoning_effort: reasoning_effort,
+    };
+
+    console.log(
+      "🚀 Sending to NVIDIA API:",
+      JSON.stringify(nvidiaPayload, null, 2),
+    );
+    // ====== ENDE DEBUG ======
 
     // Call NVIDIA NIM API with abort signal
     const response = await fetch(NVIDIA_API_URL, {
@@ -36,26 +63,15 @@ export async function POST(req) {
         Authorization: `Bearer ${NVIDIA_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-        temperature: 0.6,
-        top_p: 0.7,
-        max_tokens: 4096,
-        stream: true,
-        reasoning_effort: reasoning_effort,
-      }),
-      signal: req.signal, // Pass the request's abort signal
+      body: JSON.stringify(nvidiaPayload),
+      signal: req.signal,
     });
 
+    console.log("📥 NVIDIA Response status:", response.status);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("NVIDIA API Error:", errorData);
+      const errorData = await response.json().catch(() => ({}));
+      console.error("❌ NVIDIA API Error:", errorData);
       return NextResponse.json(
         { error: errorData.error?.message || "API request failed" },
         { status: response.status },

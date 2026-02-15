@@ -59,6 +59,7 @@ export default function ChatInterface({
     updateConversation,
     addMessage,
     addConversationToProject,
+    getMessages,
   } = useDatabase();
 
   // Calculate expansion state
@@ -87,6 +88,7 @@ export default function ChatInterface({
     createConversation,
     updateConversation,
     addMessage,
+    getMessages,
     addConversationToProject,
     project_id,
     router,

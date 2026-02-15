@@ -143,6 +143,7 @@ export const useSendMessageHandler = (
   createConversation,
   updateConversation,
   addMessage,
+  getMessages,
   addConversationToProject,
   project_id,
   router,
@@ -160,6 +161,7 @@ export const useSendMessageHandler = (
       updateConversation,
       addMessage,
       addConversationToProject,
+      getMessages,
       projectId: project_id,
       router,
       onSuccess: () => {
@@ -179,6 +181,7 @@ export const useSendMessageHandler = (
     project_id,
     router,
     textareaRef,
+    getMessages,
     setLocalUserInput,
   ]);
 };

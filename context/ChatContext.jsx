@@ -1,8 +1,12 @@
 "use client";
 
 import { createContext, useContext, useState, useRef } from "react";
-import { generateTitleFromResponse, streamResponse } from "@/lib";
-
+import {
+  generateTitleFromResponse,
+  streamResponse,
+  buildContextMessages,
+  trimMessagesToTokenLimit,
+} from "@/lib";
 export const ChatContext = createContext(null);
 
 export const useChat = () => {
@@ -54,6 +58,7 @@ export default function ChatProvider({ children }) {
     createConversation,
     updateConversation,
     addMessage,
+    getMessages,
     addConversationToProject,
     projectId,
     router,
@@ -102,6 +107,27 @@ export default function ChatProvider({ children }) {
         router?.push(`/chat/${chatId}`);
       }
 
+      // Hole Messages
+      let existingMessages = [];
+
+      if (conversationId) {
+        existingMessages = await getMessages(chatId, 20);
+        console.log("📚 Existing messages:", existingMessages.length);
+      }
+
+      const contextMessages = buildContextMessages(
+        existingMessages,
+        messageText,
+        10,
+      );
+
+      console.log("📨 Context messages built:", contextMessages); // ← DEBUG
+
+      const trimmedMessages = trimMessagesToTokenLimit(contextMessages, 100000);
+
+      console.log("✂️ Trimmed messages:", trimmedMessages); // ← DEBUG
+
+      // Speichere User-Message BEVOR wir die API aufrufen
       await addMessage(chatId, {
         role: "user",
         content: messageText,
@@ -111,8 +137,8 @@ export default function ChatProvider({ children }) {
 
       let accumulatedResponse = "";
 
-      await streamResponse(
-        messageText,
+      const finalResponse = await streamResponse(
+        trimmedMessages,
         model,
         (chunk, accumulated) => {
           accumulatedResponse = accumulated;
@@ -123,25 +149,54 @@ export default function ChatProvider({ children }) {
         abortController.signal,
       );
 
+      console.log("✅ Final response:", finalResponse?.substring(0, 100)); // ← DEBUG
+      console.log(
+        "📊 Accumulated from callback:",
+        accumulatedResponse?.substring(0, 100),
+      ); // ← DEBUG
+
       // Only save if not aborted
       if (!abortController.signal.aborted) {
+        const responseToSave = finalResponse || accumulatedResponse;
+
+        if (!responseToSave || !responseToSave.trim()) {
+          console.error("❌ Empty response! Not saving.");
+          throw new Error("Leere Antwort vom Model erhalten");
+        }
+
+        console.log(
+          "💾 Saving assistant message:",
+          responseToSave.length,
+          "chars",
+        );
+
         await addMessage(chatId, {
           role: "assistant",
-          content: accumulatedResponse,
+          content: responseToSave,
           model: model,
         });
 
         if (!conversationId) {
-          const title = await generateTitleFromResponse(
-            messageText,
-            accumulatedResponse,
-            streamResponse,
-          );
-
-          await updateConversation(chatId, { title });
+          try {
+            console.log("🏷️ Generating title...");
+            const title = await generateTitleFromResponse(
+              messageText,
+              responseToSave,
+              streamResponse,
+            );
+            console.log("✅ Title generated:", title);
+            await updateConversation(chatId, { title });
+          } catch (titleError) {
+            console.warn(
+              "⚠️ Title generation failed, using fallback:",
+              titleError.message,
+            );
+            const fallbackTitle = messageText.substring(0, 30) + "...";
+            await updateConversation(chatId, { title: fallbackTitle });
+          }
         }
 
-        onSuccess?.(chatId, accumulatedResponse);
+        onSuccess?.(chatId, responseToSave);
       }
     } catch (error) {
       if (error.name !== "AbortError") {

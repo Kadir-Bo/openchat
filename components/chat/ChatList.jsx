@@ -238,7 +238,7 @@ const ChatListItem = React.memo(
               className="truncate py-2 pl-3 w-full flex items-center gap-1 text-left hover:text-gray-100 cursor-pointer"
             >
               {listIcon && listIcon}
-              {item.title}
+              <span className="truncate"> {item.title}</span>
             </motion.button>
 
             <Dropdown>

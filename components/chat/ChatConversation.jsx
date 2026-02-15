@@ -17,7 +17,10 @@ export default function ChatConversation() {
   const [conversation, setConversation] = useState(null);
   const [loading, setLoading] = useState(!!conversationId);
   const messagesEndRef = useRef(null);
-  const { streamResponse } = useChat();
+
+  // ====== FIX: Richtiger Name ======
+  const { currentStreamResponse } = useChat(); // ← GEÄNDERT
+  // ====== ENDE FIX ======
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,7 +28,7 @@ export default function ChatConversation() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamResponse]);
+  }, [messages, currentStreamResponse]); // ← GEÄNDERT
 
   useEffect(() => {
     if (!conversationId) return;
@@ -61,7 +64,9 @@ export default function ChatConversation() {
   const lastMessage = messages[messages.length - 1];
   const isStreamingComplete = lastMessage?.role === "assistant";
   const shouldShowStream =
-    streamResponse && streamResponse.trim().length > 0 && !isStreamingComplete;
+    currentStreamResponse && // ← GEÄNDERT
+    currentStreamResponse.trim().length > 0 && // ← GEÄNDERT
+    !isStreamingComplete;
 
   if (loading) {
     return (
@@ -97,7 +102,7 @@ export default function ChatConversation() {
             message={{
               id: "streaming",
               role: "assistant",
-              content: streamResponse,
+              content: currentStreamResponse, // ← GEÄNDERT
             }}
           />
         )}

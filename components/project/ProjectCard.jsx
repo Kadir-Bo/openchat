@@ -22,10 +22,10 @@ export default function ProjectCard({ project, sort }) {
   const { openModal, openMessage } = useModal();
   const router = useRouter();
 
-  const handleNavigateToProject = () => {
-    if (!isDeleting) {
-      router.push(id);
-    }
+  const handleRenameProject = () => {
+    return openModal(
+      <ProjectsRenameModal title={title} description={description} id={id} />,
+    );
   };
 
   const handleArchiveProject = async () => {
@@ -35,19 +35,20 @@ export default function ProjectCard({ project, sort }) {
     }
   };
 
+  const handleDeleteProject = () => {
+    return openModal(<ProjectsDeleteModal title={title} id={id} />);
+  };
+
+  const handleNavigateToProject = () => {
+    router.push(`project/${id}`);
+  };
+
   const ProjectDropDownMenu = [
     {
       id: "rename-project",
       label: "Umbenennen",
       icon: Edit2,
-      action: () =>
-        openModal(
-          <ProjectsRenameModal
-            title={title}
-            description={description}
-            id={id}
-          />,
-        ),
+      action: () => handleRenameProject(),
     },
     {
       id: "archive-project",
@@ -59,7 +60,7 @@ export default function ProjectCard({ project, sort }) {
       id: "delete-project",
       label: "Löschen",
       icon: Trash,
-      action: () => openModal(<ProjectsDeleteModal title={title} id={id} />),
+      action: () => handleDeleteProject(),
     },
   ];
 

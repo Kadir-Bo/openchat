@@ -31,7 +31,7 @@ export default function Searchbar({
     border
     flex
     items-center
-    rounded-lg
+    rounded-full
     overflow-hidden
     transition-colors
     duration-150

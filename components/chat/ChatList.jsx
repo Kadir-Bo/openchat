@@ -176,7 +176,7 @@ export default function ChatList({
               </li>
             )}
 
-            {list.map((item) => (
+            {list.slice(0, 10).map((item) => (
               <ChatListItem
                 key={item.id}
                 item={item}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChatInterface, ChatList, PrimaryButton } from "@/components";
+import { ChatCard, ChatInterface, PrimaryButton } from "@/components";
 import { useDatabase } from "@/context/DatabaseContext";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -91,7 +91,11 @@ export default function ProjectIDPage() {
             project_id={currentProject.id}
           />
 
-          <ChatList list={conversations} defaultExpanded={true} />
+          <div className="flex flex-col gap-2">
+            {conversations.map((conversation) => (
+              <ChatCard key={conversation.id} conversation={conversation} />
+            ))}
+          </div>
         </div>
 
         <div className="max-w-sm border border-neutral-700 rounded-2xl">

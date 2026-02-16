@@ -1,17 +1,25 @@
-import { Copy, RefreshCcw, RotateCcw, Loader } from "react-feather";
+"use client";
+
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
-import { PrimaryButton, AttachmentThumbnail } from "@/components";
 import "highlight.js/styles/github-dark.css";
+import { PrimaryButton, AttachmentThumbnail } from "@/components";
+import { Copy, RefreshCcw, RotateCcw, Loader, Check } from "react-feather";
 
 export default function MessageBubble({ message, isStreaming = false }) {
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
+  const [copied, setCopied] = useState(false);
 
   const handleCopyMessage = () => {
     navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 3000);
   };
 
   const regenerateResponse = () => {};
@@ -36,7 +44,7 @@ export default function MessageBubble({ message, isStreaming = false }) {
   const userBubbleActions = [
     {
       id: "copy",
-      icon: Copy,
+      icon: copied ? Check : Copy,
       onClick: handleCopyMessage,
     },
     {
@@ -49,7 +57,7 @@ export default function MessageBubble({ message, isStreaming = false }) {
   const assistantBubbleActions = [
     {
       id: "copy",
-      icon: Copy,
+      icon: copied ? Check : Copy,
       onClick: handleCopyMessage,
     },
     {
@@ -65,7 +73,7 @@ export default function MessageBubble({ message, isStreaming = false }) {
         className={`flex flex-col ${isUser ? "items-end" : "items-start"} w-full`}
       >
         <div
-          className={`group flex flex-col relative mb-10 w-full ${isUser ? "items-end" : "items-start"}`}
+          className={`group flex flex-col relative w-full ${isUser ? "items-end" : "items-start"}`}
         >
           {/* Attachments - Show above user message */}
           {isUser && message.attachments && message.attachments.length > 0 && (
@@ -113,7 +121,7 @@ export default function MessageBubble({ message, isStreaming = false }) {
                             }}
                             className="absolute right-2 top-2 opacity-0 group-hover/code:opacity-100 transition-opacity p-1.5 rounded bg-neutral-900 hover:bg-neutral-700 z-10 cursor-pointer"
                           >
-                            <Copy size={14} />
+                            {copied ? <Check size={14} /> : <Copy size={14} />}
                           </button>
                           <pre className="overflow-x-auto mt-2 p-1 rounded-xl [&>code]:rounded-md">
                             {children}
@@ -137,27 +145,27 @@ export default function MessageBubble({ message, isStreaming = false }) {
           {/* Controls  */}
           {message.id !== "streaming" && (
             <div
-              className={`flex text-xs mt-1.5 transition-all duration-150 px-2 absolute top-full ${
+              className={`flex text-xs mt-2 gap-1 transition-all duration-150 ${
                 isUser
-                  ? "justify-end opacity-0 group-hover:opacity-100"
-                  : "justify-start"
+                  ? "justify-end opacity-0 group-hover:opacity-100 mr-2"
+                  : "justify-start ml-2"
               }`}
             >
               {isUser
                 ? userBubbleActions.map((action) => (
                     <PrimaryButton
                       key={action.id}
-                      className="outline-none border-none shadow-none cursor-pointer p-2.5 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded"
+                      className="outline-none border-none shadow-none cursor-pointer p-2 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded-md"
                       onClick={action.onClick}
-                      text={<action.icon size={16} />}
+                      text={<action.icon size={14} />}
                     />
                   ))
                 : assistantBubbleActions.map((action) => (
                     <PrimaryButton
                       key={action.id}
-                      className="outline-none border-none shadow-none cursor-pointer p-2.5 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded"
+                      className="outline-none border-none shadow-none cursor-pointer p-2 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded-md"
                       onClick={action.onClick}
-                      text={<action.icon size={16} />}
+                      text={<action.icon size={14} />}
                     />
                   ))}
             </div>

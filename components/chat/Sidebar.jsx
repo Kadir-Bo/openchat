@@ -21,7 +21,10 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
+  ChevronRight,
   Folder,
+  FolderPlus,
+  List,
   LogOut,
   Menu,
   MessageSquare,
@@ -75,13 +78,6 @@ export default function Sidebar() {
       title: conv.title,
       type: "chat",
     }));
-
-  // Konvertiere Projects für ChatList
-  const projectsList = projects.map((project) => ({
-    id: project.id,
-    title: project.title,
-    type: "project",
-  }));
 
   const sidebarVariants = {
     open: { width: "280px" },
@@ -177,31 +173,23 @@ export default function Sidebar() {
           >
             <PrimaryButton
               text="New Chat"
-              icon={<Plus size={17} />}
+              icon={<Plus size={16} />}
               href={"/chat"}
             />
             <PrimaryButton
               text="Projects"
-              icon={<Folder size={17} />}
+              icon={<FolderPlus size={16} />}
               href={"/projects"}
+              className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800"
             />
             <PrimaryButton
               text="Chats"
-              icon={<MessageSquare size={17} />}
+              icon={<List size={16} />}
               href={"/recent-chats"}
+              className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800"
             />
 
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
-              {/* Projects Section */}
-              {projectsList.length > 0 && (
-                <ChatList
-                  label="Projects"
-                  defaultExpanded={true}
-                  list={projectsList}
-                  listIcon={<Folder size={17} />}
-                />
-              )}
-
               {/* Recent Chats Section - nur Chats ohne Projekt */}
               {recentChats.length > 0 && (
                 <ChatList

@@ -18,6 +18,59 @@ const FILTER_OPTIONS = [
   { id: "date", sort: "date", label: "Date created" },
 ];
 
+// Fuzzy match algorithm
+const fuzzyMatch = (str, pattern) => {
+  if (!pattern) return { match: true, score: 0 };
+  if (!str) return { match: false, score: 0 };
+
+  const lowerStr = str.toLowerCase();
+  const lowerPattern = pattern.toLowerCase();
+
+  // Exact substring match gets highest priority
+  if (lowerStr.includes(lowerPattern)) {
+    return { match: true, score: 1000 };
+  }
+
+  let patternIdx = 0;
+  let strIdx = 0;
+  let score = 0;
+  let consecutiveMatches = 0;
+
+  while (strIdx < lowerStr.length && patternIdx < lowerPattern.length) {
+    if (lowerStr[strIdx] === lowerPattern[patternIdx]) {
+      // Award points for matches
+      score += 1;
+
+      // Bonus for consecutive matches
+      consecutiveMatches++;
+      if (consecutiveMatches > 1) {
+        score += consecutiveMatches * 2;
+      }
+
+      // Bonus for match at word boundary
+      if (strIdx === 0 || lowerStr[strIdx - 1] === " ") {
+        score += 5;
+      }
+
+      patternIdx++;
+    } else {
+      consecutiveMatches = 0;
+    }
+    strIdx++;
+  }
+
+  // All pattern characters must be found in order
+  const match = patternIdx === lowerPattern.length;
+
+  // Penalize based on distance between matches
+  if (match) {
+    const density = score / lowerStr.length;
+    score = score * (1 + density);
+  }
+
+  return { match, score: match ? score : 0 };
+};
+
 export default function ChatsPage() {
   const { subscribeToConversations } = useDatabase();
   const [conversations, setConversations] = useState([]);
@@ -49,34 +102,43 @@ export default function ChatsPage() {
   const filteredAndSortedConversations = useMemo(() => {
     let filtered = conversations;
 
-    // Suche
+    // Fuzzy search
     if (searchQuery.trim()) {
-      const lowerQuery = searchQuery.toLowerCase();
-      filtered = conversations.filter((conversation) => {
-        return conversation.title?.toLowerCase().includes(lowerQuery);
+      filtered = conversations
+        .map((conversation) => {
+          const { match, score } = fuzzyMatch(
+            conversation.title || "",
+            searchQuery,
+          );
+          return { conversation, match, score };
+        })
+        .filter(({ match }) => match)
+        .sort((a, b) => b.score - a.score)
+        .map(({ conversation }) => conversation);
+    }
+
+    // Sortierung (only if no search query, otherwise fuzzy score determines order)
+    if (!searchQuery.trim()) {
+      filtered = [...filtered].sort((a, b) => {
+        switch (sortBy) {
+          case "name":
+            return (a.title || "").localeCompare(b.title || "");
+
+          case "date":
+            const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+            const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+            return dateB - dateA;
+
+          case "activity":
+          default:
+            const activityA = a.updatedAt?.toDate?.() || new Date(a.updatedAt);
+            const activityB = b.updatedAt?.toDate?.() || new Date(b.updatedAt);
+            return activityB - activityA;
+        }
       });
     }
 
-    // Sortierung
-    const sorted = [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case "name":
-          return (a.title || "").localeCompare(b.title || "");
-
-        case "date":
-          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
-          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
-          return dateB - dateA;
-
-        case "activity":
-        default:
-          const activityA = a.updatedAt?.toDate?.() || new Date(a.updatedAt);
-          const activityB = b.updatedAt?.toDate?.() || new Date(b.updatedAt);
-          return activityB - activityA;
-      }
-    });
-
-    return sorted;
+    return filtered;
   }, [conversations, searchQuery, sortBy]);
 
   const activeSort = FILTER_OPTIONS.find((item) => item.sort === sortBy);
@@ -124,7 +186,7 @@ export default function ChatsPage() {
           Loading chats...
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-4 mt-6 w-full">
+        <div className="flex flex-col gap-2 mt-6 w-full">
           {filteredAndSortedConversations.length > 0 ? (
             filteredAndSortedConversations.map((conversation) => (
               <ChatCard

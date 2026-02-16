@@ -7,7 +7,7 @@ import { twMerge } from "tailwind-merge";
 
 import { PrimaryButton, AttachmentThumbnail } from "@/components";
 import { useChat, useDatabase } from "@/context";
-import { ArrowUp, Plus, Square } from "react-feather";
+import { ArrowUp, Folder, Plus, Square } from "react-feather";
 
 import {
   usePasteHandler,
@@ -48,7 +48,6 @@ export default function ChatInterface({
     attachments,
     addAttachment,
     removeAttachment,
-    clearAttachments,
     isLoading,
     sendMessage,
     stopGeneration,
@@ -111,7 +110,6 @@ export default function ChatInterface({
     () => getTextAreaVariant(buttonContainerHeight),
     [buttonContainerHeight],
   );
-
   return (
     <div
       className={twMerge(
@@ -166,12 +164,13 @@ export default function ChatInterface({
           {/* Attachment Button */}
           <PrimaryButton
             className={twMerge(
-              "h-15 w-15 border-none shadow-none rounded-none p-2 flex items-center justify-center hover:bg-transparent hover:border-transparent hover:text-neutral-950 group focus:border-transparent",
+              "w-max  border-none shadow-none rounded-none p-2 flex items-center justify-center hover:bg-transparent hover:border-transparent hover:text-neutral-950 group focus:border-transparent",
               buttonClassName,
               extrasButtonClassName,
             )}
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
+            tooltip={"Add files"}
             text={
               <div className="rounded-full border p-2 border-neutral-800 group-hover:border-neutral-200 group-hover:bg-neutral-200 group-focus-within:scale-95 transition-all duration-300">
                 <Plus size={buttonIconSize} />
@@ -206,12 +205,12 @@ export default function ChatInterface({
           {isLoading ? (
             <PrimaryButton
               className={twMerge(
-                "h-12 w-12 mr-1.5 shadow-none rounded-full p-2 justify-center hover:bg-transparent hover:text-neutral-950 bg-transparent border-neutral-100 text-neutral-100 hover:border-white/50",
+                "w-max mr-1.5 shadow-none rounded-full p-2 justify-center hover:bg-transparent hover:text-neutral-950 bg-transparent border-neutral-100 text-neutral-100 hover:border-white/50",
                 buttonClassName,
                 sendButtonClassName,
               )}
               text={
-                <Square size={buttonIconSize - 3} fill="white" stroke="none" />
+                <Square size={buttonIconSize - 5} fill="white" stroke="none" />
               }
               tooltip="Stop"
               filled
@@ -220,7 +219,7 @@ export default function ChatInterface({
           ) : (
             <PrimaryButton
               className={twMerge(
-                "h-12 w-12 mr-1.5 shadow-none rounded-full p-2 justify-center hover:text-neutral-950 hover:bg-white",
+                "w-max mr-1.5 shadow-none rounded-full p-2 justify-center hover:text-neutral-950 hover:bg-white",
                 buttonClassName,
                 sendButtonClassName,
               )}

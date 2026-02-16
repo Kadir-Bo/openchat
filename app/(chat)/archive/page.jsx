@@ -1,21 +1,14 @@
 "use client";
 
-import { useDatabase, Dropdown } from "@/context";
+import { useDatabase } from "@/context";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus } from "react-feather";
-import {
-  PrimaryButton,
-  ChatCard,
-  Searchbar,
-  DropdownContent,
-  DropdownItem,
-  DropdownTrigger,
-} from "@/components";
+import { Archive } from "react-feather";
+import { PrimaryButton, ChatCard, Searchbar, Select } from "@/components";
 
 const FILTER_OPTIONS = [
-  { id: "recent", sort: "activity", label: "Recent activity" },
-  { id: "name", sort: "name", label: "Name" },
-  { id: "date", sort: "date", label: "Date created" },
+  { id: "recent", value: "activity", label: "Recent activity" },
+  { id: "name", value: "name", label: "Name" },
+  { id: "date", value: "date", label: "Date created" },
 ];
 
 // Fuzzy match algorithm
@@ -26,7 +19,6 @@ const fuzzyMatch = (str, pattern) => {
   const lowerStr = str.toLowerCase();
   const lowerPattern = pattern.toLowerCase();
 
-  // Exact substring match gets highest priority
   if (lowerStr.includes(lowerPattern)) {
     return { match: true, score: 1000 };
   }
@@ -38,20 +30,14 @@ const fuzzyMatch = (str, pattern) => {
 
   while (strIdx < lowerStr.length && patternIdx < lowerPattern.length) {
     if (lowerStr[strIdx] === lowerPattern[patternIdx]) {
-      // Award points for matches
       score += 1;
-
-      // Bonus for consecutive matches
       consecutiveMatches++;
       if (consecutiveMatches > 1) {
         score += consecutiveMatches * 2;
       }
-
-      // Bonus for match at word boundary
       if (strIdx === 0 || lowerStr[strIdx - 1] === " ") {
         score += 5;
       }
-
       patternIdx++;
     } else {
       consecutiveMatches = 0;
@@ -59,10 +45,8 @@ const fuzzyMatch = (str, pattern) => {
     strIdx++;
   }
 
-  // All pattern characters must be found in order
   const match = patternIdx === lowerPattern.length;
 
-  // Penalize based on distance between matches
   if (match) {
     const density = score / lowerStr.length;
     score = score * (1 + density);
@@ -71,28 +55,29 @@ const fuzzyMatch = (str, pattern) => {
   return { match, score: match ? score : 0 };
 };
 
-export default function ChatsPage() {
-  const { subscribeToConversations } = useDatabase();
+export default function ArchivePage() {
+  const { subscribeToArchivedConversations } = useDatabase(); // ← Geändert
   const [conversations, setConversations] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].sort);
+  const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].value);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    // Real-time Listener für Conversations
-    const unsubscribe = subscribeToConversations((fetchedConversations) => {
-      setConversations(fetchedConversations);
-      setIsInitialLoading(false);
-    }, false); // nicht archivierte
+    // Real-time Listener nur für archivierte Conversations
+    const unsubscribe = subscribeToArchivedConversations(
+      (fetchedConversations) => {
+        setConversations(fetchedConversations);
+        setIsInitialLoading(false);
+      },
+    );
 
-    // Cleanup beim Unmount
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [subscribeToConversations]);
+  }, [subscribeToArchivedConversations]);
 
-  const handleSortChange = (sortValue) => () => {
-    setSortBy(sortValue);
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
   };
 
   const handleSearchChats = useCallback((query) => {
@@ -117,7 +102,7 @@ export default function ChatsPage() {
         .map(({ conversation }) => conversation);
     }
 
-    // Sortierung (only if no search query, otherwise fuzzy score determines order)
+    // Sortierung
     if (!searchQuery.trim()) {
       filtered = [...filtered].sort((a, b) => {
         switch (sortBy) {
@@ -141,15 +126,15 @@ export default function ChatsPage() {
     return filtered;
   }, [conversations, searchQuery, sortBy]);
 
-  const activeSort = FILTER_OPTIONS.find((item) => item.sort === sortBy);
+  const activeSort = FILTER_OPTIONS.find((item) => item.value === sortBy);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto py-8 gap-6">
       <header className="flex items-center justify-between w-full">
-        <h1 className="text-3xl font-light">Chats</h1>
+        <h1 className="text-3xl font-light">Archive</h1>
         <PrimaryButton
           text="New Chat"
-          icon={<Plus size={17} />}
+          icon={<Archive size={17} />}
           className="w-max justify-center text-sm min-w-32"
           href="/chat"
           filled
@@ -158,32 +143,24 @@ export default function ChatsPage() {
 
       <div className="w-full flex justify-end items-center gap-3 min-w-34">
         <span className="text-neutral-400 text-sm">Sort by:</span>
-        <Dropdown>
-          <DropdownTrigger>
-            <PrimaryButton
-              text={activeSort?.label || "Sort by"}
-              className="text-sm justify-center items-center px-3 min-w-32"
-            />
-          </DropdownTrigger>
-
-          <DropdownContent side="bottom">
-            {FILTER_OPTIONS.map((menuItem) => (
-              <DropdownItem
-                key={menuItem.id}
-                onClick={handleSortChange(menuItem.sort)}
-              >
-                {menuItem.label}
-              </DropdownItem>
-            ))}
-          </DropdownContent>
-        </Dropdown>
+        <Select
+          id="archive-sort"
+          name="sort"
+          label=""
+          value={activeSort?.label || "Sort by"}
+          list={FILTER_OPTIONS}
+          onChange={handleSortChange}
+          containerClassName="w-auto min-w-40"
+          labelClassName="hidden"
+          buttonClassName="text-sm px-3 min-w-32"
+        />
       </div>
 
-      <Searchbar onSearch={handleSearchChats} />
+      <Searchbar onSearch={handleSearchChats} placeholder="Search Archive" />
 
       {isInitialLoading ? (
         <div className="col-span-2 text-center py-12 text-neutral-400">
-          Loading chats...
+          Loading archived chats...
         </div>
       ) : (
         <div className="flex flex-col gap-2 mt-6 w-full">
@@ -198,16 +175,14 @@ export default function ChatsPage() {
           ) : (
             <div className="text-center py-12 text-neutral-400 col-span-3">
               {searchQuery ? (
-                <>No chats found matching &quot;{searchQuery}&quot;</>
+                <>No archived chats found matching &quot;{searchQuery}&quot;</>
               ) : (
                 <div className="flex flex-col items-center gap-4">
-                  <p>No chats yet</p>
+                  <p>No archived chats</p>
                   <PrimaryButton
-                    text="Start your first chat"
-                    icon={<Plus size={17} />}
+                    text="Go to Chats"
                     className="w-max justify-center text-sm"
-                    href="/chat"
-                    filled
+                    href="/chats"
                   />
                 </div>
               )}

@@ -5,7 +5,7 @@ import { Search, X } from "react-feather";
 import { twMerge } from "tailwind-merge";
 
 export default function Searchbar({
-  placeholder = "Search projects",
+  placeholder = "Search",
   onSearch,
   className = "",
   ...props

@@ -1,12 +1,6 @@
 import { Lock } from "react-feather";
 import { twMerge } from "tailwind-merge";
-import {
-  DropdownContent,
-  DropdownItem,
-  DropdownTrigger,
-  PrimaryButton,
-} from "@/components";
-import { Dropdown } from "@/context";
+import { PrimaryButton, DropdownMenu } from "@/components";
 
 export default function Select({
   id = "",
@@ -25,12 +19,12 @@ export default function Select({
 }) {
   const lockedClasses = locked && "opacity-50 cursor-not-allowed";
 
-  const handleSelect = (selectedValue) => {
+  const handleSelect = (e, menuItem) => {
     // Create synthetic event to match input onChange signature
     const syntheticEvent = {
       target: {
         name: name || id,
-        value: selectedValue,
+        value: menuItem.value || menuItem.id,
       },
     };
     onChange(syntheticEvent);
@@ -56,34 +50,26 @@ export default function Select({
         {locked && <Lock className="text-neutral-500" size={13} />}
       </label>
       {list && list.length > 0 && (
-        <Dropdown>
-          <DropdownTrigger className="w-full">
-            <PrimaryButton
-              text={value || "Select an option"}
-              className={twMerge(
-                "border w-full px-3 py-2 rounded-lg border-neutral-700 outline-none focus:ring-1 focus:ring-blue-500/30 justify-between text-left bg-transparent",
-                !value && "text-neutral-500",
-                buttonClassName,
-                lockedClasses,
-              )}
-              disabled={locked || disabled}
-              aria-label={label}
-              onBlur={onBlur}
-              onFocus={onFocus}
-            />
-          </DropdownTrigger>
-
-          <DropdownContent side="bottom">
-            {list.map((menuItem) => (
-              <DropdownItem
-                key={menuItem.id}
-                onClick={() => handleSelect(menuItem.value || menuItem.id)}
-              >
-                {menuItem.label || menuItem.id}
-              </DropdownItem>
-            ))}
-          </DropdownContent>
-        </Dropdown>
+        <DropdownMenu
+          dropdownList={list}
+          onClick={handleSelect}
+          triggerClassName="w-full"
+          contentSide="bottom"
+        >
+          <PrimaryButton
+            text={value || "Select an option"}
+            className={twMerge(
+              "border w-full px-3 py-2 rounded-lg border-neutral-700 outline-none focus:ring-1 focus:ring-blue-500/30 justify-between text-left bg-transparent",
+              !value && "text-neutral-500",
+              buttonClassName,
+              lockedClasses,
+            )}
+            disabled={locked || disabled}
+            aria-label={label}
+            onBlur={onBlur}
+            onFocus={onFocus}
+          />
+        </DropdownMenu>
       )}
     </div>
   );

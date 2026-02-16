@@ -3,14 +3,9 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dropdown, useDatabase, useModal } from "@/context";
+import { useDatabase, useModal } from "@/context";
 
-import {
-  DropdownContent,
-  DropdownItem,
-  DropdownTrigger,
-  ChatDeleteModal,
-} from "@/components";
+import { ChatDeleteModal, DropdownMenu } from "@/components";
 
 import {
   Archive,
@@ -231,7 +226,7 @@ const ChatListItem = React.memo(
             onKeyDown={onKeyDown}
             onBlur={onSave}
             autoFocus
-            className="w-full bg-transparent text-gray-200 px-3 py-2 border-none outline-none"
+            className="w-full bg-transparent text-gray-200 px-3 py-2 border-transparent outline-none"
           />
         ) : (
           <>
@@ -246,30 +241,17 @@ const ChatListItem = React.memo(
               <span className="truncate"> {item.title}</span>
             </motion.button>
 
-            <Dropdown>
-              <DropdownTrigger className="p-2">
-                <MoreHorizontal size={17} />
-              </DropdownTrigger>
-
-              <DropdownContent
-                side="right"
-                sideOffset={0}
-                className="-translate-x-1 translate-y-2"
-              >
-                {getMenuItems(item).map((menuItem) => (
-                  <DropdownItem
-                    key={menuItem.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      menuItem.action();
-                    }}
-                  >
-                    <menuItem.icon size={15} strokeWidth={1.5} />
-                    {menuItem.label}
-                  </DropdownItem>
-                ))}
-              </DropdownContent>
-            </Dropdown>
+            <DropdownMenu
+              dropdownList={getMenuItems(item)}
+              triggerClassName="p-4"
+              contentSide="right"
+              contentClassName="-translate-x-2 translate-y-1"
+              contentSideOffset={0}
+              onClick={(e, menuItem) => {
+                e.stopPropagation();
+                menuItem.action();
+              }}
+            />
           </>
         )}
       </li>

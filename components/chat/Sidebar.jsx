@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Archive,
   ArrowLeft,
   ChevronRight,
   Folder,
@@ -168,7 +169,7 @@ export default function Sidebar() {
             animate="animate"
             exit="exit"
             transition={{ duration: 0.2, delay: 0.1 }}
-            className="p-1.5 flex flex-col gap-2 flex-1 overflow-y-auto overflow-x-hidden"
+            className="p-1.5 flex flex-col gap-4 flex-1 overflow-y-auto overflow-x-hidden"
             aria-label="Hauptnavigation"
           >
             <PrimaryButton
@@ -176,27 +177,39 @@ export default function Sidebar() {
               icon={<Plus size={16} />}
               href={"/chat"}
             />
-            <PrimaryButton
-              text="Projects"
-              icon={<FolderPlus size={16} />}
-              href={"/projects"}
-              className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800"
-            />
-            <PrimaryButton
-              text="Chats"
-              icon={<List size={16} />}
-              href={"/recent-chats"}
-              className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800"
-            />
-
+            <div className="flex flex-col">
+              <PrimaryButton
+                text="Projects"
+                icon={<FolderPlus size={16} />}
+                href={"/projects"}
+                className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
+              />
+              <PrimaryButton
+                text="Chats"
+                icon={<List size={16} />}
+                href={"/chats"}
+                className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
+              />
+              <PrimaryButton
+                text="Archive"
+                icon={<Archive size={16} />}
+                href={"/archive"}
+                className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
+              />
+            </div>
+            <hr className="text-neutral-800" />
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
-              {/* Recent Chats Section - nur Chats ohne Projekt */}
-              {recentChats.length > 0 && (
+              {/* Recent Chats Section*/}
+              {recentChats.length > 0 ? (
                 <ChatList
                   label="Recent Chats"
                   list={recentChats}
                   defaultExpanded={true}
                 />
+              ) : (
+                <span className="text-neutral-400 text-sm flex justify-center">
+                  No Recent Chats
+                </span>
               )}
             </div>
 

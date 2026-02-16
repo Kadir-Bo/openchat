@@ -826,13 +826,25 @@ export default function DatabaseProvider({ children }) {
 
   /* Archiviert/Dearchiviert eine Conversation */
   const toggleArchiveConversation = useCallback(
-    async (conversationId, isArchived) => {
+    async (conversationId, isArchived = null) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
 
       try {
         const conversationRef = doc(db, "conversations", conversationId);
+
+        // Wenn isArchived nicht übergeben wird, lade den aktuellen Status und toggle ihn
+        if (isArchived === null) {
+          const conversationDoc = await getDoc(conversationRef);
+          if (conversationDoc.exists()) {
+            const currentStatus = conversationDoc.data().isArchived || false;
+            isArchived = !currentStatus;
+          } else {
+            throw new Error("Conversation nicht gefunden");
+          }
+        }
+
         await updateDoc(conversationRef, {
           isArchived,
           updatedAt: serverTimestamp(),
@@ -965,6 +977,46 @@ export default function DatabaseProvider({ children }) {
   );
 
   /* Real-time Listener für Conversations */
+  const subscribeToArchivedConversations = useCallback(
+    (callback) => {
+      if (!user || !db) return () => {};
+
+      try {
+        const q = query(
+          collection(db, "conversations"),
+          where("userId", "==", user.uid),
+          where("isArchived", "==", true),
+          orderBy("updatedAt", "desc"),
+        );
+
+        const unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            const conversations = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            callback(conversations);
+          },
+          (err) => {
+            handleError(
+              err,
+              "Fehler beim Real-time Update der archivierten Conversations",
+            );
+          },
+        );
+
+        return unsubscribe;
+      } catch (err) {
+        handleError(
+          err,
+          "Fehler beim Erstellen des Archived-Conversation-Listeners",
+        );
+        return () => {};
+      }
+    },
+    [user, db, handleError],
+  );
   const subscribeToConversations = useCallback(
     (callback, includeArchived = false) => {
       if (!user || !db) return () => {};
@@ -1104,7 +1156,6 @@ export default function DatabaseProvider({ children }) {
     removeDocumentFromProject,
     getProjectConversations,
     searchProjects,
-    subscribeToProjects,
 
     // Conversation Operations
     createConversation,
@@ -1123,6 +1174,8 @@ export default function DatabaseProvider({ children }) {
     // Real-time Subscriptions
     subscribeToMessages,
     subscribeToConversations,
+    subscribeToProjects,
+    subscribeToArchivedConversations,
   };
 
   return (

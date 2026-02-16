@@ -3,26 +3,19 @@
 import { useDatabase, Dropdown } from "@/context";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "react-feather";
-import {
-  PrimaryButton,
-  ProjectCard,
-  Searchbar,
-  DropdownContent,
-  DropdownItem,
-  DropdownTrigger,
-} from "@/components";
+import { PrimaryButton, ProjectCard, Searchbar, Select } from "@/components";
 
 const FILTER_OPTIONS = [
-  { id: "recent", sort: "activity", label: "Recent activity" },
-  { id: "name", sort: "name", label: "Name" },
-  { id: "date", sort: "date", label: "Date created" },
+  { id: "recent", value: "activity", label: "Recent activity" },
+  { id: "name", value: "name", label: "Name" },
+  { id: "date", value: "date", label: "Date created" },
 ];
 
 export default function ProjectsPage() {
   const { subscribeToProjects } = useDatabase();
   const [projects, setProjects] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].sort);
+  const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].value);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -38,8 +31,8 @@ export default function ProjectsPage() {
     };
   }, [subscribeToProjects]);
 
-  const handleSortChange = (sortValue) => () => {
-    setSortBy(sortValue);
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
   };
 
   const handleSearchProjects = useCallback((query) => {
@@ -84,7 +77,7 @@ export default function ProjectsPage() {
     return sorted;
   }, [projects, searchQuery, sortBy]);
 
-  const activeSort = FILTER_OPTIONS.find((item) => item.sort === sortBy);
+  const activeSort = FILTER_OPTIONS.find((item) => item.value === sortBy);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto py-8 gap-6">
@@ -101,25 +94,17 @@ export default function ProjectsPage() {
 
       <div className="w-full flex justify-end items-center gap-3 min-w-34">
         <span className="text-neutral-400 text-sm">Sort by:</span>
-        <Dropdown>
-          <DropdownTrigger>
-            <PrimaryButton
-              text={activeSort?.label || "Sort by"}
-              className="text-sm justify-center items-center px-3 min-w-32"
-            />
-          </DropdownTrigger>
-
-          <DropdownContent side="bottom">
-            {FILTER_OPTIONS.map((menuItem) => (
-              <DropdownItem
-                key={menuItem.id}
-                onClick={handleSortChange(menuItem.sort)}
-              >
-                {menuItem.label}
-              </DropdownItem>
-            ))}
-          </DropdownContent>
-        </Dropdown>
+        <Select
+          id="chat-sort"
+          name="sort"
+          label=""
+          value={activeSort?.label || "Sort by"}
+          list={FILTER_OPTIONS}
+          onChange={handleSortChange}
+          containerClassName="w-auto min-w-40"
+          labelClassName="hidden"
+          buttonClassName="text-sm px-3 min-w-32"
+        />
       </div>
 
       <Searchbar onSearch={handleSearchProjects} />

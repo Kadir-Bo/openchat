@@ -1,5 +1,6 @@
 // CHAT COMPONENTS
 export { default as Sidebar } from "./chat/Sidebar";
+export { default as ChatHeader } from "./chat/ChatHeader";
 export { default as UserProfileImage } from "./chat/UserProfileImage";
 export { default as ChatList } from "./chat/ChatList";
 export { default as ChatCard } from "./chat/ChatCard";
@@ -24,6 +25,7 @@ export {
 } from "./dropdown/DropdownUtilities";
 export { default as DropdownContent } from "./dropdown/DropdownContent";
 export { default as DropdownTrigger } from "./dropdown/DropdownTrigger";
+export { default as DropdownMenu } from "./dropdown/DropdownMenu";
 // MODAl COMPONENTS
 export { default as ProjectsRenameModal } from "./modal/ProjectsRenameModal";
 export { default as ProjectsDeleteModal } from "./modal/ProjectsDeleteModal";

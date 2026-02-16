@@ -7,28 +7,27 @@ import { Loader } from "react-feather";
 import { MessageBubble } from "@/components";
 import { formatUsername } from "@/lib";
 
-export default function ChatConversation() {
+export default function ChatConversation({ onConversationLoad = null }) {
   const params = useParams();
   const conversationId = params?.chatId;
   const router = useRouter();
-  const { subscribeToMessages, getConversation } = useDatabase();
+  const { subscribeToMessages, getConversation, getProject } = useDatabase();
   const { username } = useAuth();
   const [messages, setMessages] = useState([]);
   const [conversation, setConversation] = useState(null);
+  const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(!!conversationId);
   const messagesEndRef = useRef(null);
 
-  // ====== FIX: Richtiger Name ======
-  const { currentStreamResponse } = useChat(); // ← GEÄNDERT
-  // ====== ENDE FIX ======
+  const { currentStreamResponse } = useChat();
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, currentStreamResponse]); // ← GEÄNDERT
+  }, [messages, currentStreamResponse]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -38,8 +37,24 @@ export default function ChatConversation() {
       try {
         const conv = await getConversation(conversationId);
         setConversation(conv);
+
         if (!conv) {
           router.push("/chat");
+          return;
+        }
+
+        if (conv.projectId) {
+          const proj = await getProject(conv.projectId);
+          setProject(proj);
+
+          if (onConversationLoad) {
+            onConversationLoad({ conversation: conv, project: proj });
+          }
+        } else {
+          setProject(null);
+          if (onConversationLoad) {
+            onConversationLoad({ conversation: conv, project: null });
+          }
         }
       } catch (error) {
         console.error("Error loading conversation:", error);
@@ -49,7 +64,7 @@ export default function ChatConversation() {
     };
 
     loadConversation();
-  }, [conversationId, getConversation, router]);
+  }, [conversationId, getConversation, getProject, router]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -64,8 +79,8 @@ export default function ChatConversation() {
   const lastMessage = messages[messages.length - 1];
   const isStreamingComplete = lastMessage?.role === "assistant";
   const shouldShowStream =
-    currentStreamResponse && // ← GEÄNDERT
-    currentStreamResponse.trim().length > 0 && // ← GEÄNDERT
+    currentStreamResponse &&
+    currentStreamResponse.trim().length > 0 &&
     !isStreamingComplete;
 
   if (loading) {
@@ -102,7 +117,7 @@ export default function ChatConversation() {
             message={{
               id: "streaming",
               role: "assistant",
-              content: currentStreamResponse, // ← GEÄNDERT
+              content: currentStreamResponse,
             }}
           />
         )}

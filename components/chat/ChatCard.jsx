@@ -1,17 +1,11 @@
 "use client";
 
 import React from "react";
-import { Dropdown, useDatabase, useModal } from "@/context";
+import { useDatabase, useModal } from "@/context";
 
-import {
-  DropdownContent,
-  DropdownItem,
-  DropdownTrigger,
-  ChatDeleteModal,
-  ChatRenameModal,
-} from "@/components";
+import { ChatDeleteModal, ChatRenameModal, DropdownMenu } from "@/components";
 
-import { Archive, Edit2, MoreHorizontal, Trash } from "react-feather";
+import { Archive, Edit2, Trash } from "react-feather";
 import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 
@@ -21,12 +15,12 @@ export default function ChatCard({ conversation, sort, className = "" }) {
   const { openModal, openMessage } = useModal();
   const router = useRouter();
 
-  const handleNavigateToChat = () => {
+  const handleNavigateToChat = (id) => {
     router.push(`/chat/${id}`);
   };
 
-  const handleArchiveChat = async () => {
-    const result = await toggleArchiveConversation(id, true);
+  const handleArchiveChat = async (id) => {
+    const result = await toggleArchiveConversation(id);
     if (result) {
       openMessage("Chat archived", "success");
     }
@@ -37,20 +31,29 @@ export default function ChatCard({ conversation, sort, className = "" }) {
       id: "rename-chat",
       label: "Umbenennen",
       icon: Edit2,
-      action: () => openModal(<ChatRenameModal title={title} id={id} />),
+      action: () =>
+        openModal(
+          <ChatRenameModal title={conversation.title} id={conversation.id} />,
+        ),
     },
     {
       id: "archive-chat",
       label: "Archivieren",
       icon: Archive,
-      action: () => handleArchiveChat(),
+      action: () => handleArchiveChat(conversation.id),
     },
     {
       id: "delete-chat",
       label: "Löschen",
       icon: Trash,
       action: () =>
-        openModal(<ChatDeleteModal title={title} id={id} type="chat" />),
+        openModal(
+          <ChatDeleteModal
+            title={conversation.title}
+            id={conversation.id}
+            type="chat"
+          />,
+        ),
     },
   ];
 
@@ -78,33 +81,20 @@ export default function ChatCard({ conversation, sort, className = "" }) {
   return (
     <div
       className={twMerge(defaultClasses, className)}
-      onClick={handleNavigateToChat}
+      onClick={() => handleNavigateToChat(conversation.id)}
     >
       <h4 className="font-medium p-4">{title || "Untitled Chat"}</h4>
-      <Dropdown>
-        <DropdownTrigger className="p-4">
-          <MoreHorizontal size={17} />
-        </DropdownTrigger>
-
-        <DropdownContent
-          side="right"
-          className="-translate-x-2 translate-y-1"
-          sideOffset={0}
-        >
-          {ChatDropDownMenu.map((menuItem) => (
-            <DropdownItem
-              key={menuItem.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                menuItem.action();
-              }}
-            >
-              <menuItem.icon size={15} strokeWidth={1.5} />
-              {menuItem.label}
-            </DropdownItem>
-          ))}
-        </DropdownContent>
-      </Dropdown>
+      <DropdownMenu
+        dropdownList={ChatDropDownMenu}
+        triggerClassName="p-4"
+        contentSide="right"
+        contentClassName="-translate-x-2 translate-y-1"
+        contentSideOffset={0}
+        onClick={(e, menuItem) => {
+          e.stopPropagation();
+          menuItem.action();
+        }}
+      />
     </div>
   );
 }

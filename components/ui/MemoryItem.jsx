@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import { Check, Edit2, Trash2, X } from "react-feather";
+
 export default function MemoryItem({ memory, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(memory.text);

@@ -2,6 +2,7 @@
 
 import { Message } from "@/components";
 import { useOnClickOutside } from "@/hooks";
+import { AnimatePresence } from "framer-motion";
 import React, {
   createContext,
   useContext,
@@ -30,25 +31,30 @@ export default function ModalProvider({ children }) {
   useOnClickOutside(modalContentRef, () => setModalContent(null));
 
   useEffect(() => {
-    const sidebar = document.getElementById("sidebar");
-    if (!sidebar) return;
+    let resizeObserver;
 
-    const updateWidth = () => {
+    const observe = () => {
+      const sidebar = document.getElementById("sidebar");
+      if (!sidebar) return false;
+
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          setSidebarWidth(entry.contentRect.width);
+        }
+      });
+
+      resizeObserver.observe(sidebar);
       setSidebarWidth(sidebar.offsetWidth);
+      return true;
     };
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setSidebarWidth(entry.contentRect.width);
-      }
-    });
+    if (!observe()) {
+      // Sidebar not in DOM yet, wait for next frame
+      const raf = requestAnimationFrame(() => observe());
+      return () => cancelAnimationFrame(raf);
+    }
 
-    resizeObserver.observe(sidebar);
-    updateWidth();
-
-    return () => {
-      resizeObserver.disconnect();
-    };
+    return () => resizeObserver?.disconnect();
   }, []);
 
   const openModal = useCallback((component) => {
@@ -87,23 +93,25 @@ export default function ModalProvider({ children }) {
         </div>
       )}
 
-      {messageContent && (
-        <div
-          className="fixed top-7 z-10000"
-          style={{
-            left: `${sidebarWidth}px`,
-            width: `calc(100vw - ${sidebarWidth}px)`,
-          }}
-        >
-          <div className="flex flex-col items-end justify-start max-w-480 mx-auto pr-3">
-            <Message
-              message={messageContent.message}
-              variant={messageContent.variant}
-              onClose={closeMessage}
-            />
+      <AnimatePresence>
+        {messageContent && (
+          <div
+            className="fixed top-7 z-10000"
+            style={{
+              left: `${sidebarWidth}px`,
+              width: `calc(100vw - ${sidebarWidth}px)`,
+            }}
+          >
+            <div className="flex flex-col items-end justify-start max-w-480 mx-auto pr-3">
+              <Message
+                message={messageContent.message}
+                variant={messageContent.variant}
+                onClose={closeMessage}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {children}
     </ModalContext.Provider>

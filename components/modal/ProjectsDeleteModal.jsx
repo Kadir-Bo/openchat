@@ -23,8 +23,15 @@ export default function ProjectsDeleteModal({ title, id }) {
   const handleCancel = () => {
     closeModal();
   };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleDeleteProject();
+    }
+  };
   return (
-    <div>
+    <div onKeyDown={handleKeyDown}>
       <h2 className="text-xl font-semibold text-white mb-1">Delete Project</h2>
       <p className="text-neutral-300">
         Are you sure you want to delete{" "}

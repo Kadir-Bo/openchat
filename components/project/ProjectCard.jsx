@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { formatDate } from "@/lib";
-import { motion, AnimatePresence } from "framer-motion";
 import { useDatabase, useModal } from "@/context";
 
 import {
@@ -11,7 +10,7 @@ import {
   ProjectsRenameModal,
 } from "@/components";
 
-import { Archive, Edit2, MoreHorizontal, Trash } from "react-feather";
+import { Archive, Edit2, Trash } from "react-feather";
 import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 
@@ -73,40 +72,32 @@ export default function ProjectCard({ project, sort }) {
   );
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        className={cardClasses}
-        onClick={() => handleNavigateToProject(id)}
-        exit={{ opacity: 0, y: 10 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        layout
-      >
-        <div>
-          <span className="font-medium">{title}</span>
-          <p className="max-h-24 overflow-hidden mt-2 text-neutral-400">
-            {description}
-          </p>
-        </div>
-        <div className="flex justify-between items-center text-sm text-neutral-500">
-          {sort === "date" ? (
-            <span>Created: {formatDate(createdAt)}</span>
-          ) : (
-            <span>Updated: {formatDate(updatedAt)}</span>
-          )}
-        </div>
-        <DropdownMenu
-          dropdownList={ProjectDropDownMenu}
-          triggerClassName="p-4 absolute top-0 right-0"
-          contentSide="right"
-          contentClassName="-translate-x-2 translate-y-1"
-          contentSideOffset={0}
-          onOpenChange={setIsDropdownOpen}
-          onClick={(e, menuItem) => {
-            e.stopPropagation();
-            menuItem.action();
-          }}
-        />
-      </motion.div>
-    </AnimatePresence>
+    <div className={cardClasses} onClick={() => handleNavigateToProject(id)}>
+      <div>
+        <span className="font-medium">{title}</span>
+        <p className="max-h-24 overflow-hidden mt-2 text-neutral-400">
+          {description}
+        </p>
+      </div>
+      <div className="flex justify-between items-center text-sm text-neutral-500">
+        {sort === "date" ? (
+          <span>Created: {formatDate(createdAt)}</span>
+        ) : (
+          <span>Updated: {formatDate(updatedAt)}</span>
+        )}
+      </div>
+      <DropdownMenu
+        dropdownList={ProjectDropDownMenu}
+        triggerClassName="p-4 absolute top-0 right-0"
+        contentSide="right"
+        contentClassName="-translate-x-2 translate-y-1"
+        contentSideOffset={0}
+        onOpenChange={setIsDropdownOpen}
+        onClick={(e, menuItem) => {
+          e.stopPropagation();
+          menuItem.action();
+        }}
+      />
+    </div>
   );
 }

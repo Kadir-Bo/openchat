@@ -38,6 +38,12 @@ export default function ChatRenameModal({ title, id }) {
   const handleCancel = () => {
     closeModal();
   };
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleRenameChat();
+    }
+  };
 
   return (
     <div>
@@ -50,6 +56,7 @@ export default function ChatRenameModal({ title, id }) {
           type="text"
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
+          onKeyDown={handleKeyDown}
           className="w-full bg-neutral-900 text-white px-3 py-2 rounded-lg border border-neutral-700 focus:border-neutral-500 outline-none"
           placeholder="Enter chat title"
           autoFocus

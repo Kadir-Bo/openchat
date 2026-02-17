@@ -54,13 +54,14 @@ export default function ProjectsRenameModal({ title, description, id }) {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && e.metaKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
       handleUpdateProject();
     }
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" onKeyDown={handleKeyDown}>
       <h3 className="text-xl font-medium mb-2">Rename Project</h3>
 
       <Input

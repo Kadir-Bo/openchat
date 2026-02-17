@@ -10,7 +10,7 @@ export default function ProjectIDPage() {
   const params = useParams();
   const projectId = params?.id;
   const router = useRouter();
-  const { getProject, getProjectConversations } = useDatabase();
+  const { getProject, subscribeToConversations } = useDatabase();
 
   const [currentProject, setCurrentProject] = useState(null);
   const [conversations, setConversations] = useState([]);
@@ -28,18 +28,26 @@ export default function ProjectIDPage() {
           router.push("/projects");
           return;
         }
-
-        const projectConversations = await getProjectConversations(projectId);
-        if (projectConversations) {
-          setConversations(projectConversations);
-        }
       } finally {
         setIsInitialLoading(false);
       }
     };
 
     loadProject();
-  }, [projectId, getProject, getProjectConversations, router]);
+  }, [projectId, getProject, router]);
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    const unsubscribe = subscribeToConversations((allConversations) => {
+      const projectConversations = allConversations.filter(
+        (conv) => conv.projectId === projectId,
+      );
+      setConversations(projectConversations);
+    });
+
+    return () => unsubscribe();
+  }, [projectId, subscribeToConversations]);
 
   if (isInitialLoading) {
     return (

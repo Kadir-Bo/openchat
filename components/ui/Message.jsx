@@ -45,10 +45,10 @@ export default function Message({
   }, [message, autoHideDuration, onClose]);
 
   const variants = {
-    error: "border-red-500/20 bg-neutral-950 text-white",
-    warning: "border-yellow-500/20 bg-neutral-950 text-white",
-    info: "border-blue-500/20 bg-neutral-950 text-white",
-    success: "border-green-500/20 bg-neutral-950 text-white",
+    error: "border-red-500/20",
+    warning: "border-yellow-500/20",
+    info: "border-blue-500/20",
+    success: "border-green-500/20",
   };
 
   const defaultClasses = `
@@ -60,29 +60,27 @@ export default function Message({
     min-w-50
     max-w-80
     border
+    bg-neutral-900
+    text-white
   `;
 
   const variantClasses = variants[currentVariant] || variants.error;
 
   return (
-    <AnimatePresence mode="wait">
-      {message && (
-        <motion.div
-          key={message}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          transition={{
-            duration: 0.3,
-            ease: "easeInOut",
-          }}
-          className={twMerge(defaultClasses, className, variantClasses)}
-        >
-          <div className="flex items-center justify-center gap-2 p-3">
-            <p className="text-sm">{message}</p>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <motion.div
+      key={message}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      transition={{
+        duration: 0.2,
+        ease: "easeInOut",
+      }}
+      className={twMerge(defaultClasses, className, variantClasses)}
+    >
+      <div className="flex items-center justify-center gap-2 p-3">
+        <p className="text-sm">{message}</p>
+      </div>
+    </motion.div>
   );
 }

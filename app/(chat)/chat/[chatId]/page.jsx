@@ -6,9 +6,11 @@ import { useState, useCallback } from "react";
 
 export default function ChatIDPage() {
   const [conversation, setConversation] = useState(null);
+  const [project, setProject] = useState(null);
 
   const handleConversationLoad = useCallback(({ conversation, project }) => {
     setConversation(conversation);
+    setProject(project ?? null);
   }, []);
 
   return (
@@ -19,7 +21,7 @@ export default function ChatIDPage() {
     >
       <ChatHeader conversation={conversation} />
       <ChatConversation onConversationLoad={handleConversationLoad} />
-      <ChatInterface />
+      <ChatInterface project_id={project?.id ?? null} project={project} />
     </motion.div>
   );
 }

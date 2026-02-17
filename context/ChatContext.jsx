@@ -8,6 +8,7 @@ import {
   buildSystemPromptWithMemories,
   trimMessagesToTokenLimit,
   buildMemoryExtractionPrompt,
+  buildSummaryPrompt,
 } from "@/lib";
 
 export const ChatContext = createContext(null);
@@ -44,11 +45,76 @@ const extractMemoryFromConversation = async (
       50,
       null,
     );
-
     const cleaned = result.replace(/```json|```/g, "").trim();
     return JSON.parse(cleaned);
   } catch {
     return { action: "none" };
+  }
+};
+
+/**
+ * Fire-and-forget: generates a summary of the conversation so far and
+ * persists it on the conversation document. Sibling chats in the same
+ * project will pick it up on their next message.
+ */
+const generateAndSaveConversationSummary = async (
+  chatId,
+  messages, // existing messages already in DB (before this turn)
+  userMessage,
+  assistantResponse,
+  updateConversation,
+  streamResponseFn,
+) => {
+  try {
+    // Build a compact transcript for the summarizer
+    const transcript = [
+      ...messages.map(
+        (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`,
+      ),
+      `User: ${userMessage}`,
+      `Assistant: ${assistantResponse}`,
+    ]
+      .join("\n\n")
+      .substring(0, 8000); // keep well within token budget
+
+    const summary = await streamResponseFn(
+      [
+        { role: "system", content: buildSummaryPrompt() },
+        { role: "user", content: transcript },
+      ],
+      "openai/gpt-oss-120b",
+      null,
+      false,
+      50,
+      null,
+    );
+
+    await updateConversation(chatId, {
+      summary: summary.trim(),
+      summaryUpdatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    // Non-critical — silently swallow so it never blocks the main flow
+    console.warn("Summary generation failed:", err);
+  }
+};
+
+/**
+ * Fetches summaries from all OTHER conversations in the same project
+ * and returns them as an array of { title, summary } objects.
+ */
+const fetchSiblingConversationSummaries = async (
+  projectId,
+  currentChatId,
+  getProjectConversations,
+) => {
+  try {
+    const siblings = await getProjectConversations(projectId);
+    return siblings
+      .filter((c) => c.id !== currentChatId && c.summary?.trim())
+      .map((c) => ({ title: c.title || "Untitled Chat", summary: c.summary }));
+  } catch {
+    return [];
   }
 };
 
@@ -62,19 +128,13 @@ export default function ChatProvider({ children }) {
 
   const abortControllerRef = useRef(null);
 
-  // ==================== RESPONSE ====================
-
   const updateStreamResponse = (chunk) => setCurrentStreamResponse(chunk || "");
   const setLoadingState = (loading) => setIsLoading(loading);
 
-  // ==================== ANHÄNGE ====================
-
   const addAttachment = (newAttachment) =>
     setAttachments((prev) => [...prev, newAttachment]);
-
   const removeAttachment = (id) =>
     setAttachments((prev) => prev.filter((att) => att.id !== id));
-
   const clearAttachments = () => setAttachments([]);
 
   // ==================== NACHRICHT SENDEN ====================
@@ -91,10 +151,11 @@ export default function ChatProvider({ children }) {
     addMessage,
     getMessages,
     addConversationToProject,
+    getProjectConversations, // ← new
     updateUserProfile,
     userProfile,
     projectId,
-    project = null, // Vollständiges Projekt-Objekt (instructions + documents)
+    project = null,
     router,
   }) => {
     if (!message?.trim() && attachments.length === 0) return;
@@ -115,17 +176,34 @@ export default function ChatProvider({ children }) {
 
     if (attachments.length > 0) {
       attachments.forEach((att) => {
-        if (att.type === "code") {
+        if (att.type === "code")
           messageText += `\n\n\`\`\`\n${att.content}\n\`\`\``;
-        } else if (att.type === "text") {
-          messageText += `\n\n${att.content}`;
-        }
+        else if (att.type === "text") messageText += `\n\n${att.content}`;
       });
+    }
+
+    // Fetch sibling summaries BEFORE setIsLoading so the Firestore call
+    // doesn't trigger DatabaseContext re-renders mid-send.
+    // Guard: skip entirely for non-project chats or single-chat projects.
+    let projectWithSummaries = project;
+    if (
+      projectId &&
+      getProjectConversations &&
+      conversationId &&
+      project?.conversationIds?.length > 1
+    ) {
+      const conversationSummaries = await fetchSiblingConversationSummaries(
+        projectId,
+        conversationId,
+        getProjectConversations,
+      );
+      if (conversationSummaries.length > 0) {
+        projectWithSummaries = { ...project, conversationSummaries };
+      }
     }
 
     clearAttachments();
     setIsLoading(true);
-
     if (reasoning) setProcessingMessage("Einen Moment – ich denke nach …");
 
     try {
@@ -134,11 +212,9 @@ export default function ChatProvider({ children }) {
       if (!chatId) {
         const newConv = await createConversation("New Chat", model);
         chatId = newConv.id;
-
         if (projectId && typeof projectId === "string") {
           await addConversationToProject(projectId, chatId);
         }
-
         router?.push(`/chat/${chatId}`);
       }
 
@@ -147,11 +223,10 @@ export default function ChatProvider({ children }) {
         existingMessages = await getMessages(chatId, 20);
       }
 
-      // System Prompt: Erinnerungen + Präferenzen + Projekt-Kontext
       const systemPrompt = buildSystemPromptWithMemories(
         userProfile?.memories || [],
         userProfile?.preferences?.modelPreferences || "",
-        project,
+        projectWithSummaries,
       );
 
       const contextMessages = buildContextMessages(
@@ -160,7 +235,6 @@ export default function ChatProvider({ children }) {
         10,
         systemPrompt,
       );
-
       const trimmedMessages = trimMessagesToTokenLimit(contextMessages, 100000);
 
       await addMessage(chatId, {
@@ -188,9 +262,8 @@ export default function ChatProvider({ children }) {
       if (!abortController.signal.aborted) {
         const responseToSave = finalResponse || accumulatedResponse;
 
-        if (!responseToSave?.trim()) {
+        if (!responseToSave?.trim())
           throw new Error("Leere Antwort vom Model erhalten");
-        }
 
         await addMessage(chatId, {
           role: "assistant",
@@ -213,58 +286,67 @@ export default function ChatProvider({ children }) {
           }
         }
 
-        // Erinnerungs-Extraktion
+        // ── User sees the response now — nothing below should make them wait ──
+        onSuccess?.(chatId, responseToSave);
+
+        // ── Background: summary ──
+        if (projectId) {
+          setTimeout(() => {
+            generateAndSaveConversationSummary(
+              chatId,
+              existingMessages,
+              messageText,
+              responseToSave,
+              updateConversation,
+              streamResponse,
+            );
+          }, 0);
+        }
+
+        // ── Background: memory extraction ──
         if (updateUserProfile) {
-          try {
-            const currentMemories = userProfile?.memories || [];
-            const memoryResult = await extractMemoryFromConversation(
+          const currentMemories = userProfile?.memories || [];
+          setTimeout(() => {
+            extractMemoryFromConversation(
               messageText,
               responseToSave,
               currentMemories,
               streamResponse,
-            );
-
-            if (memoryResult.action === "add" && memoryResult.memory) {
-              setProcessingMessage("Erinnerung wird gespeichert …");
-              const newMemory = {
-                id: crypto.randomUUID(),
-                text: memoryResult.memory,
-                createdAt: new Date().toISOString(),
-                source: "auto",
-              };
-              await updateUserProfile({
-                memories: [...currentMemories, newMemory],
-              });
-              setProcessingMessage("✓ Erinnerung gespeichert");
-              await new Promise((r) => setTimeout(r, 1500));
-            } else if (
-              memoryResult.action === "update" &&
-              memoryResult.id &&
-              memoryResult.memory
-            ) {
-              setProcessingMessage("Erinnerung wird aktualisiert …");
-              const updatedMemories = currentMemories.map((m) =>
-                m.id === memoryResult.id
-                  ? {
-                      ...m,
-                      text: memoryResult.memory,
-                      updatedAt: new Date().toISOString(),
-                    }
-                  : m,
-              );
-              await updateUserProfile({ memories: updatedMemories });
-              setProcessingMessage("✓ Erinnerung aktualisiert");
-              await new Promise((r) => setTimeout(r, 1500));
-            }
-          } catch (memoryError) {
-            console.warn(
-              "Speichern der Erinnerung fehlgeschlagen:",
-              memoryError,
-            );
-          }
+            )
+              .then(async (memoryResult) => {
+                if (memoryResult.action === "add" && memoryResult.memory) {
+                  await updateUserProfile({
+                    memories: [
+                      ...currentMemories,
+                      {
+                        id: crypto.randomUUID(),
+                        text: memoryResult.memory,
+                        createdAt: new Date().toISOString(),
+                        source: "auto",
+                      },
+                    ],
+                  });
+                } else if (
+                  memoryResult.action === "update" &&
+                  memoryResult.id &&
+                  memoryResult.memory
+                ) {
+                  await updateUserProfile({
+                    memories: currentMemories.map((m) =>
+                      m.id === memoryResult.id
+                        ? {
+                            ...m,
+                            text: memoryResult.memory,
+                            updatedAt: new Date().toISOString(),
+                          }
+                        : m,
+                    ),
+                  });
+                }
+              })
+              .catch((err) => console.warn("Memory extraction failed:", err));
+          }, 0);
         }
-
-        onSuccess?.(chatId, responseToSave);
       }
     } catch (error) {
       if (error.name !== "AbortError") {

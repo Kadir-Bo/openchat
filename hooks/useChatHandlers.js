@@ -6,9 +6,6 @@ import {
   insertTextAtCursor,
 } from "@/lib";
 
-/**
- * Hook for handling paste events in the chat interface
- */
 export const usePasteHandler = (
   textareaRef,
   localUserInput,
@@ -20,12 +17,10 @@ export const usePasteHandler = (
       const items = e.clipboardData.items;
 
       for (let item of items) {
-        // Handle pasted images
         if (item.type.indexOf("image") !== -1) {
           e.preventDefault();
           const file = item.getAsFile();
           const reader = new FileReader();
-
           reader.onload = (event) => {
             const attachment = createPastedAttachment(
               "image",
@@ -36,24 +31,18 @@ export const usePasteHandler = (
             attachment.file = file;
             addAttachment(attachment);
           };
-
           reader.readAsDataURL(file);
           return;
         }
 
-        // Handle pasted text
         if (item.type === "text/plain") {
           e.preventDefault();
           item.getAsString((text) => {
             const type = detectAttachmentType(text);
-
             if (type === "code") {
-              const attachment = createPastedAttachment(
-                "code",
-                "Pasted Code",
-                text,
+              addAttachment(
+                createPastedAttachment("code", "Pasted Code", text),
               );
-              addAttachment(attachment);
             } else {
               insertTextAtCursor(
                 localUserInput,
@@ -70,44 +59,31 @@ export const usePasteHandler = (
   );
 };
 
-/**
- * Hook for handling file selection
- */
 export const useFileSelectHandler = (addAttachment) => {
   return useCallback(
     (e) => {
       const files = Array.from(e.target.files);
-
       files.forEach((file) => {
         const reader = new FileReader();
         const type = detectAttachmentType("", file.name);
-
         reader.onload = (event) => {
-          const attachment = createAttachment(
-            file,
-            type,
-            type === "image" ? null : event.target.result,
-            type === "image" ? event.target.result : null,
+          addAttachment(
+            createAttachment(
+              file,
+              type,
+              type === "image" ? null : event.target.result,
+              type === "image" ? event.target.result : null,
+            ),
           );
-          addAttachment(attachment);
         };
-
-        if (type === "image") {
-          reader.readAsDataURL(file);
-        } else {
-          reader.readAsText(file);
-        }
+        type === "image" ? reader.readAsDataURL(file) : reader.readAsText(file);
       });
-
       e.target.value = "";
     },
     [addAttachment],
   );
 };
 
-/**
- * Hook for handling keyboard shortcuts
- */
 export const useKeyboardHandler = (
   handleSendMessage,
   localUserInput,
@@ -115,26 +91,20 @@ export const useKeyboardHandler = (
 ) => {
   return useCallback(
     (e) => {
-      // Enter to send (Shift+Enter for new line)
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSendMessage();
         return;
       }
-      // Tab for indentation
       if (e.key === "Tab") {
         e.preventDefault();
-        const textarea = e.target;
-        insertTextAtCursor(localUserInput, "  ", textarea, setLocalUserInput);
+        insertTextAtCursor(localUserInput, "  ", e.target, setLocalUserInput);
       }
     },
     [handleSendMessage, localUserInput, setLocalUserInput],
   );
 };
 
-/**
- * Hook for handling message sending
- */
 export const useSendMessageHandler = (
   sendMessage,
   localUserInput,
@@ -145,6 +115,7 @@ export const useSendMessageHandler = (
   addMessage,
   getMessages,
   addConversationToProject,
+  getProjectConversations, // ← new
   updateUserProfile,
   userProfile,
   project_id,
@@ -165,8 +136,7 @@ export const useSendMessageHandler = (
       addMessage,
       addConversationToProject,
       getMessages,
-      // Pass through profile so ChatContext can inject memories into system
-      // prompt and run memory extraction after each response
+      getProjectConversations, // ← forwarded to ChatContext
       updateUserProfile,
       userProfile,
       projectId: typeof project_id === "string" ? project_id : project_id?.id,
@@ -186,6 +156,7 @@ export const useSendMessageHandler = (
     updateConversation,
     addMessage,
     addConversationToProject,
+    getProjectConversations,
     updateUserProfile,
     userProfile,
     project_id,

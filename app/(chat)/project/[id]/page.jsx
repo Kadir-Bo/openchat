@@ -10,20 +10,7 @@ import InstructionsPanel from "@/components/chat/InstructionsPanel";
 import { useDatabase } from "@/context/DatabaseContext";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState, useRef } from "react";
-import {
-  ArrowLeft,
-  MoreVertical,
-  Plus,
-  Star,
-  Check,
-  X,
-  FileText,
-  Trash2,
-  Edit3,
-  Upload,
-} from "react-feather";
-
-// ── Main page ─────────────────────────────────────────────────────────────────
+import { ArrowLeft, MoreVertical, Star } from "react-feather";
 
 export default function ProjectIDPage() {
   const params = useParams();
@@ -95,6 +82,10 @@ export default function ProjectIDPage() {
     }));
   };
 
+  const handleNavigateToProject = (documentId) => {
+    router.push(`/chat/${documentId}`);
+  };
+
   // ── render ──
 
   if (isInitialLoading) {
@@ -150,7 +141,11 @@ export default function ProjectIDPage() {
 
           <div className="flex flex-col gap-2">
             {conversations.map((conversation) => (
-              <ChatCard key={conversation.id} conversation={conversation} />
+              <ChatCard
+                key={conversation.id}
+                conversation={conversation}
+                onCardClick={() => handleNavigateToProject(conversation.id)}
+              />
             ))}
           </div>
         </div>

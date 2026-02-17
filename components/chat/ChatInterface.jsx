@@ -23,7 +23,7 @@ import {
 
 export default function ChatInterface({
   project_id,
-  project = null, // full project object (instructions + documents)
+  project = null,
   className = "",
   containerClassName = "",
   textareaClassName = "",
@@ -61,11 +61,11 @@ export default function ChatInterface({
     addMessage,
     addConversationToProject,
     getMessages,
+    getProjectConversations, // ← pulled from DatabaseContext
     updateUserProfile,
     userProfile,
   } = useDatabase();
 
-  // Calculate expansion state
   const hasContent = localUserInput.trim() !== "" || attachments.length > 0;
   const hasNewlines = localUserInput.includes("\n");
   const hasAttachments = attachments.length > 0;
@@ -73,14 +73,12 @@ export default function ChatInterface({
   const isExpanded =
     hasContent && (hasAttachments || hasNewlines || estimatedWrap);
 
-  // Event handlers
   const handlePaste = usePasteHandler(
     textareaRef,
     localUserInput,
     setLocalUserInput,
     addAttachment,
   );
-
   const handleFileSelect = useFileSelectHandler(addAttachment);
 
   const handleSendMessage = useSendMessageHandler(
@@ -93,6 +91,7 @@ export default function ChatInterface({
     addMessage,
     getMessages,
     addConversationToProject,
+    getProjectConversations, // ← new position in arg list
     updateUserProfile,
     userProfile,
     project_id,
@@ -107,12 +106,10 @@ export default function ChatInterface({
     setLocalUserInput,
   );
 
-  // Animation variants
   const containerVariant = useMemo(
     () => getContainerVariant(textAreaGrowHeight),
     [textAreaGrowHeight],
   );
-
   const textAreaVariant = useMemo(
     () => getTextAreaVariant(buttonContainerHeight),
     [buttonContainerHeight],
@@ -125,7 +122,6 @@ export default function ChatInterface({
         className,
       )}
     >
-      {/* Attachments Preview */}
       <AnimatePresence>
         {attachments.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2 absolute bottom-full h-max max-h-68 overflow-y-auto">
@@ -141,7 +137,6 @@ export default function ChatInterface({
         )}
       </AnimatePresence>
 
-      {/* Main Input Container */}
       <motion.div
         className={twMerge(
           "bg-neutral-900 flex flex-col justify-end relative",
@@ -150,16 +145,12 @@ export default function ChatInterface({
         variants={containerVariant}
         initial="initial"
         animate={isExpanded ? "animate" : "initial"}
-        transition={{
-          duration: 0.2,
-          ease: "easeOut",
-        }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
       >
         <div
           className="flex justify-between items-center"
           style={{ height: `${buttonContainerHeight}px` }}
         >
-          {/* Hidden File Input */}
           <input
             ref={fileInputRef}
             type="file"
@@ -170,7 +161,6 @@ export default function ChatInterface({
             autoFocus={autofocus}
           />
 
-          {/* Attachment Button */}
           <PrimaryButton
             className={twMerge(
               "w-max border-none shadow-none rounded-none p-2 flex items-center justify-center hover:bg-transparent hover:border-transparent hover:text-neutral-950 group focus:border-transparent",
@@ -179,7 +169,7 @@ export default function ChatInterface({
             )}
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            tooltip={"Add files"}
+            tooltip="Add files"
             text={
               <div className="rounded-full border p-2 border-neutral-800 group-hover:border-neutral-200 group-hover:bg-neutral-200 group-focus-within:scale-95 transition-all duration-300">
                 <Plus size={buttonIconSize} />
@@ -187,7 +177,6 @@ export default function ChatInterface({
             }
           />
 
-          {/* Text Input */}
           <motion.textarea
             ref={textareaRef}
             name="user-input"
@@ -211,7 +200,6 @@ export default function ChatInterface({
             autoFocus={autofocus}
           />
 
-          {/* Send/Stop Button */}
           {isLoading ? (
             <PrimaryButton
               className={twMerge(
@@ -241,7 +229,6 @@ export default function ChatInterface({
         </div>
       </motion.div>
 
-      {/* Loading Indicator */}
       {isLoading && (
         <div className="mt-2 text-center text-sm text-neutral-500 animate-pulse absolute w-full">
           Generating response...

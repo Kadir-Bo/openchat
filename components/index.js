@@ -31,6 +31,7 @@ export { default as ProjectsRenameModal } from "./modal/ProjectsRenameModal";
 export { default as ProjectsDeleteModal } from "./modal/ProjectsDeleteModal";
 export { default as ChatDeleteModal } from "./modal/ChatDeleteModal";
 export { default as ChatRenameModal } from "./modal/ChatRenameModal";
+export { default as DeleteAccountModal } from "./modal/DeleteAccountModal";
 // INPUT COMPONENTS
 export { default as Input } from "./input/Input";
 export { default as Textarea } from "./input/Textarea";

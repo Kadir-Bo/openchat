@@ -22,13 +22,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive,
   ArrowLeft,
-  ChevronRight,
-  Folder,
   FolderPlus,
   List,
   LogOut,
   Menu,
-  MessageSquare,
   Plus,
   Settings,
 } from "react-feather";
@@ -49,29 +46,28 @@ export default function Sidebar() {
     setIsOpen((prev) => !prev);
   };
 
-  // Real-time Listener für Conversations
+  // Real-time listener for conversations.
   useEffect(() => {
     if (!user) return;
 
     const unsubscribe = subscribeToConversations((newConversations) => {
-      setConversations(newConversations);
-    });
+      setConversations(newConversations.filter((c) => !c.isArchived));
+    }, true);
 
-    return () => unsubscribe();
+    return () => unsubscribe?.();
   }, [user, subscribeToConversations]);
 
-  // Real-time Listener für Projects
+  // Real-time listener for projects.
   useEffect(() => {
     if (!user) return;
 
     const unsubscribe = subscribeToProjects((newProjects) => {
-      setProjects(newProjects);
-    });
+      setProjects(newProjects.filter((p) => !p.isArchived));
+    }, true);
 
-    return () => unsubscribe();
+    return () => unsubscribe?.();
   }, [user, subscribeToProjects]);
 
-  // Filtere Conversations: Nur die ohne projectId
   const recentChats = conversations
     .filter((conv) => !conv.projectId)
     .map((conv) => ({
@@ -95,15 +91,13 @@ export default function Sidebar() {
     exit: { x: 10, opacity: 0 },
   };
 
-  // Drop Down Menu Actions
   const signOut = async () => {
-    const signOut = await logout();
-    if (signOut) {
+    const result = await logout();
+    if (result) {
       router.push("/");
     }
   };
 
-  // Dropdown Menu Items
   const dropDownMenuItems = [
     {
       id: "settings",
@@ -199,7 +193,6 @@ export default function Sidebar() {
             </div>
             <hr className="text-neutral-800" />
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
-              {/* Recent Chats Section*/}
               {recentChats.length > 0 ? (
                 <ChatList
                   label="Recent Chats"

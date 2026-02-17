@@ -1,9 +1,16 @@
 "use client";
 
-import { useDatabase, Dropdown } from "@/context";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus } from "react-feather";
+import { useDatabase } from "@/context";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Plus, Trash2 } from "react-feather";
 import { PrimaryButton, ProjectCard, Searchbar, Select } from "@/components";
+import { useRouter } from "next/navigation";
 
 const FILTER_OPTIONS = [
   { id: "recent", value: "activity", label: "Recent activity" },
@@ -12,76 +19,134 @@ const FILTER_OPTIONS = [
 ];
 
 export default function ProjectsPage() {
-  const { subscribeToProjects } = useDatabase();
+  const { subscribeToProjects, deleteProject, toggleArchiveProject } =
+    useDatabase();
+  const router = useRouter();
+
   const [projects, setProjects] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].value);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  const selectedIdsRef = useRef(selectedIds);
+  const lastClickedIndexRef = useRef(null);
+  const filteredListRef = useRef([]);
 
   useEffect(() => {
-    // Real-time Listener für Projekte
-    const unsubscribe = subscribeToProjects((fetchedProjects) => {
-      setProjects(fetchedProjects);
+    selectedIdsRef.current = selectedIds;
+  }, [selectedIds]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToProjects((data) => {
+      setProjects(data);
       setIsInitialLoading(false);
     }, false);
-
-    // Cleanup beim Unmount
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
+    return () => unsubscribe?.();
   }, [subscribeToProjects]);
 
-  const handleSortChange = (e) => {
-    setSortBy(e.target.value);
-  };
-
-  const handleSearchProjects = useCallback((query) => {
-    setSearchQuery(query);
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setSelectedIds(new Set());
+        lastClickedIndexRef.current = null;
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
   const filteredAndSortedProjects = useMemo(() => {
-    let filtered = projects;
+    const filtered = searchQuery.trim()
+      ? projects.filter((p) =>
+          [p.title, p.description]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()),
+        )
+      : projects;
 
-    if (searchQuery.trim()) {
-      const lowerQuery = searchQuery.toLowerCase();
-      filtered = projects.filter((project) => {
-        const searchableText = [project.title, project.description]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        return searchableText.includes(lowerQuery);
-      });
-    }
-
-    const sorted = [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case "name":
-          return (a.title || "").localeCompare(b.title || "");
-
-        case "date":
-          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
-          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
-          return dateB - dateA;
-
-        case "activity":
-          const activityA = a.updatedAt?.toDate?.() || new Date(a.updatedAt);
-          const activityB = b.updatedAt?.toDate?.() || new Date(b.updatedAt);
-          return activityB - activityA;
-
-        default:
-          return 0;
-      }
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "name")
+        return (a.title || "").localeCompare(b.title || "");
+      const key = sortBy === "date" ? "createdAt" : "updatedAt";
+      const toDate = (v) => v?.toDate?.() ?? new Date(v);
+      return toDate(b[key]) - toDate(a[key]);
     });
-
-    return sorted;
   }, [projects, searchQuery, sortBy]);
 
-  const activeSort = FILTER_OPTIONS.find((item) => item.value === sortBy);
+  useEffect(() => {
+    filteredListRef.current = filteredAndSortedProjects;
+  }, [filteredAndSortedProjects]);
+
+  const handleCardClick = useCallback(
+    (e, id) => {
+      const list = filteredListRef.current;
+      const index = list.findIndex((p) => p.id === id);
+      const selected = selectedIdsRef.current;
+
+      if (
+        e.shiftKey &&
+        lastClickedIndexRef.current !== null &&
+        selected.size > 0
+      ) {
+        const start = Math.min(lastClickedIndexRef.current, index);
+        const end = Math.max(lastClickedIndexRef.current, index);
+        const range = list.slice(start, end + 1).map((p) => p.id);
+        setSelectedIds((prev) => new Set([...prev, ...range]));
+        lastClickedIndexRef.current = index;
+        return;
+      }
+
+      if (e.metaKey || e.ctrlKey || selected.size > 0) {
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          next.has(id) ? next.delete(id) : next.add(id);
+          return next;
+        });
+        lastClickedIndexRef.current = index;
+        return;
+      }
+
+      router.push(`/project/${id}`);
+    },
+    [router],
+  );
+
+  const handleArchiveSelected = useCallback(async () => {
+    await Promise.all(
+      [...selectedIdsRef.current].map((id) => toggleArchiveProject(id, true)),
+    );
+    setSelectedIds(new Set());
+    lastClickedIndexRef.current = null;
+  }, [toggleArchiveProject]);
+
+  const handleDeleteSelected = useCallback(async () => {
+    await Promise.all(
+      [...selectedIdsRef.current].map((id) => deleteProject(id)),
+    );
+    setSelectedIds(new Set());
+    lastClickedIndexRef.current = null;
+  }, [deleteProject]);
+
+  const handleDeleteAll = useCallback(async () => {
+    await Promise.all(projects.map((p) => deleteProject(p.id)));
+  }, [projects, deleteProject]);
+
+  const selectedCount = selectedIds.size;
+  const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
+  const hasProjects = projects.length > 0;
+
+  if (isInitialLoading) {
+    return (
+      <p className="text-center py-12 text-neutral-400">Loading projects...</p>
+    );
+  }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto py-8 gap-6">
-      <header className="flex items-center justify-between w-full">
+    <div className="flex-1 flex flex-col max-w-5xl mx-auto py-8 gap-6 w-full">
+      <header className="flex items-center justify-between">
         <h1 className="text-3xl font-light">Projects</h1>
         <PrimaryButton
           text="New Project"
@@ -92,51 +157,87 @@ export default function ProjectsPage() {
         />
       </header>
 
-      <div className="w-full flex justify-end items-center gap-3 min-w-34">
+      <div className="flex justify-end items-center gap-3">
         <span className="text-neutral-400 text-sm">Sort by:</span>
         <Select
-          id="chat-sort"
+          id="project-sort"
           name="sort"
           label=""
           value={activeSort?.label || "Sort by"}
           list={FILTER_OPTIONS}
-          onChange={handleSortChange}
+          onChange={(e) => setSortBy(e.target.value)}
           containerClassName="w-auto min-w-40"
           labelClassName="hidden"
-          buttonClassName="text-sm px-3 min-w-32"
+          buttonClassName="text-sm px-3 min-w-32 justify-center"
         />
       </div>
 
-      <Searchbar onSearch={handleSearchProjects} className="mb-6" />
+      <Searchbar
+        onSearch={(q) => setSearchQuery(q)}
+        placeholder="Search Projects"
+      />
 
-      <div className="flex gap-2 w-full"></div>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-neutral-600">
+          {selectedCount > 0
+            ? `${selectedCount} ${selectedCount === 1 ? "project" : "projects"} selected — Esc to cancel`
+            : hasProjects
+              ? "⌘ / Ctrl + click to select"
+              : ""}
+        </span>
 
-      {isInitialLoading ? (
-        <div className="col-span-2 text-center py-12 text-neutral-400">
-          Loading projects...
+        {selectedCount > 0 && (
+          <div className="flex items-center gap-2">
+            <PrimaryButton
+              text={`Archive ${selectedCount}`}
+              className="w-max text-sm px-4"
+              onClick={handleArchiveSelected}
+            />
+            <PrimaryButton
+              text={`Delete ${selectedCount} ${selectedCount === 1 ? "project" : "projects"}`}
+              icon={<Trash2 size={14} />}
+              className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
+              onClick={handleDeleteSelected}
+            />
+          </div>
+        )}
+
+        {selectedCount === 0 && hasProjects && (
+          <PrimaryButton
+            text="Delete all projects"
+            icon={<Trash2 size={14} />}
+            className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
+            onClick={handleDeleteAll}
+          />
+        )}
+      </div>
+
+      {filteredAndSortedProjects.length > 0 ? (
+        <div className="grid grid-cols-3 gap-4">
+          {filteredAndSortedProjects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              sort={sortBy}
+              isSelected={selectedIds.has(project.id)}
+              onCardClick={handleCardClick}
+            />
+          ))}
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-4 w-full">
-          {filteredAndSortedProjects.length > 0 ? (
-            filteredAndSortedProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} sort={sortBy} />
-            ))
+        <div className="text-center py-12 text-neutral-400 col-span-3">
+          {searchQuery ? (
+            <>No projects found matching &quot;{searchQuery}&quot;</>
           ) : (
-            <div className="text-center py-12 text-neutral-400 col-span-3">
-              {searchQuery ? (
-                <>No projects found matching &quot;{searchQuery}&quot;</>
-              ) : (
-                <div className="flex flex-col items-center gap-4">
-                  <p>No projects yet</p>
-                  <PrimaryButton
-                    text="Create your first project"
-                    icon={<Plus size={17} />}
-                    className="w-max justify-center text-sm"
-                    href="/projects/create"
-                    filled
-                  />
-                </div>
-              )}
+            <div className="flex flex-col items-center gap-4">
+              <p>No projects yet</p>
+              <PrimaryButton
+                text="Create your first project"
+                icon={<Plus size={17} />}
+                className="w-max justify-center text-sm"
+                href="/projects/create"
+                filled
+              />
             </div>
           )}
         </div>

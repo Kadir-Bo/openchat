@@ -22,7 +22,6 @@ import {
   where,
   orderBy,
   limit,
-  startAfter,
   onSnapshot,
   writeBatch,
   serverTimestamp,
@@ -46,7 +45,7 @@ export default function DatabaseProvider({ children }) {
   const [error, setError] = useState(null);
   const db = getFirebaseDB();
 
-  // ==================== HELPER FUNCTIONS ====================
+  // ==================== HILFSFUNKTIONEN ====================
 
   const handleError = useCallback((error, customMessage) => {
     console.error(customMessage, error);
@@ -54,13 +53,18 @@ export default function DatabaseProvider({ children }) {
     return null;
   }, []);
 
-  const resetError = useCallback(() => {
-    setError(null);
-  }, []);
+  const resetError = useCallback(() => setError(null), []);
 
-  // ==================== USER OPERATIONS ====================
+  // Sortiert Dokumente nach updatedAt absteigend
+  const sortByUpdatedAt = (arr) =>
+    [...arr].sort((a, b) => {
+      const toMs = (v) => v?.toDate?.().getTime() ?? new Date(v).getTime();
+      return toMs(b.updatedAt) - toMs(a.updatedAt);
+    });
 
-  /* Auto-create User Profile wenn User sich einloggt */
+  // ==================== USER OPERATIONEN ====================
+
+  // Erstellt das User-Profil beim ersten Login automatisch
   useEffect(() => {
     if (!user || !db) return;
 
@@ -68,8 +72,6 @@ export default function DatabaseProvider({ children }) {
       try {
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
-
-        let profile;
 
         if (!userDoc.exists()) {
           const newProfile = {
@@ -82,7 +84,7 @@ export default function DatabaseProvider({ children }) {
               language: "de",
               modelPreferences: "",
             },
-            memories: [], // ← NEU
+            memories: [],
             usage: {
               totalMessages: 0,
               lastReset: serverTimestamp(),
@@ -90,15 +92,12 @@ export default function DatabaseProvider({ children }) {
             createdAt: serverTimestamp(),
             lastActive: serverTimestamp(),
           };
-
           await setDoc(userRef, newProfile);
-          profile = { id: user.uid, ...newProfile };
+          setUserProfile({ id: user.uid, ...newProfile });
         } else {
           await updateDoc(userRef, { lastActive: serverTimestamp() });
-          profile = { id: userDoc.id, ...userDoc.data() };
+          setUserProfile({ id: userDoc.id, ...userDoc.data() });
         }
-
-        setUserProfile(profile);
       } catch (err) {
         console.error("Fehler beim Initialisieren des User-Profils:", err);
       }
@@ -107,16 +106,13 @@ export default function DatabaseProvider({ children }) {
     initUserProfile();
   }, [user, db]);
 
-  /* aktualisiert ein User-Profil */
   const updateUserProfile = useCallback(
     async (userData) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const userRef = doc(db, "users", user.uid);
-
         const updates = {
           ...(userData.displayName !== undefined && {
             displayName: userData.displayName,
@@ -124,21 +120,15 @@ export default function DatabaseProvider({ children }) {
           ...(userData.photoURL !== undefined && {
             photoURL: userData.photoURL,
           }),
-          ...(userData.preferences && {
-            preferences: userData.preferences,
-          }),
+          ...(userData.preferences && { preferences: userData.preferences }),
           ...(userData.memories !== undefined && {
-            // ← NEU
             memories: userData.memories,
           }),
           lastActive: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
-
         await updateDoc(userRef, updates);
-
         setUserProfile((prev) => ({ ...prev, ...updates }));
-
         return { id: user.uid, ...updates };
       } catch (err) {
         return handleError(err, "Fehler beim Aktualisieren des User-Profils");
@@ -148,20 +138,15 @@ export default function DatabaseProvider({ children }) {
     },
     [user, db, handleError, resetError],
   );
-  /* Lädt User-Profil */
+
   const getUserProfile = useCallback(async () => {
     if (!user || !db) return null;
     setLoading(true);
     resetError();
-
     try {
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
-
-      if (userDoc.exists()) {
-        return { id: userDoc.id, ...userDoc.data() };
-      }
-      return null;
+      return userDoc.exists() ? { id: userDoc.id, ...userDoc.data() } : null;
     } catch (err) {
       return handleError(err, "Fehler beim Laden des User-Profils");
     } finally {
@@ -169,13 +154,11 @@ export default function DatabaseProvider({ children }) {
     }
   }, [user, db, handleError, resetError]);
 
-  /* Aktualisiert User-Präferenzen */
   const updateUserPreferences = useCallback(
     async (preferences) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, {
@@ -184,7 +167,7 @@ export default function DatabaseProvider({ children }) {
         });
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Aktualisieren der Präferenzen");
+        return handleError(err, "Fehler beim Aktualisieren der Praeferenzen");
       } finally {
         setLoading(false);
       }
@@ -192,15 +175,13 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  // ==================== PROJECT OPERATIONS ====================
+  // ==================== PROJEKT OPERATIONEN ====================
 
-  /* Erstellt ein neues Projekt */
   const createProject = useCallback(
     async (projectData) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const project = {
           userId: user.uid,
@@ -212,11 +193,7 @@ export default function DatabaseProvider({ children }) {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
-
         const projectRef = await addDoc(collection(db, "projects"), project);
-
-        console.log(" Projekt erstellt mit ID:", projectRef.id);
-
         return { id: projectRef.id, ...project };
       } catch (err) {
         return handleError(err, "Fehler beim Erstellen des Projekts");
@@ -227,36 +204,22 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Lädt alle Projekte eines Users */
   const getProjects = useCallback(
     async (includeArchived = false) => {
       if (!user || !db) return [];
       setLoading(true);
       resetError();
-
       try {
-        let q = query(
+        const q = query(
           collection(db, "projects"),
           where("userId", "==", user.uid),
-          orderBy("updatedAt", "desc"),
         );
-
-        if (!includeArchived) {
-          q = query(
-            collection(db, "projects"),
-            where("userId", "==", user.uid),
-            where("isArchived", "==", false),
-            orderBy("updatedAt", "desc"),
-          );
-        }
-
         const snapshot = await getDocs(q);
-        const projects = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        return projects;
+        const projects = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const filtered = includeArchived
+          ? projects
+          : projects.filter((p) => !p.isArchived);
+        return sortByUpdatedAt(filtered);
       } catch (err) {
         return handleError(err, "Fehler beim Laden der Projekte");
       } finally {
@@ -266,23 +229,17 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Lädt ein einzelnes Projekt */
   const getProject = useCallback(
     async (projectId) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-
         if (projectDoc.exists()) {
           const data = projectDoc.data();
-          // Security check
-          if (data.userId !== user.uid) {
-            throw new Error("Unauthorized access");
-          }
+          if (data.userId !== user.uid) throw new Error("Kein Zugriff");
           return { id: projectDoc.id, ...data };
         }
         return null;
@@ -295,13 +252,11 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Aktualisiert ein Projekt */
   const updateProject = useCallback(
     async (projectId, updates) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const projectRef = doc(db, "projects", projectId);
         await updateDoc(projectRef, {
@@ -318,17 +273,16 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Archiviert/Dearchiviert ein Projekt */
+  // Archiviert oder dearchiviert ein Projekt
   const toggleArchiveProject = useCallback(
     async (projectId, isArchived) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const projectRef = doc(db, "projects", projectId);
         await updateDoc(projectRef, {
-          isArchived,
+          isArchived: Boolean(isArchived),
           updatedAt: serverTimestamp(),
         });
         return true;
@@ -341,19 +295,37 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Löscht ein Projekt */
+  // Loescht ein Projekt samt aller zugehoerigen Chats und deren Nachrichten
   const deleteProject = useCallback(
     async (projectId) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
+        const batch = writeBatch(db);
         const projectRef = doc(db, "projects", projectId);
-        await deleteDoc(projectRef);
+        const projectDoc = await getDoc(projectRef);
+        const conversationIds = projectDoc.exists()
+          ? projectDoc.data().conversationIds || []
+          : [];
+
+        await Promise.all(
+          conversationIds.map(async (convId) => {
+            const messagesRef = collection(
+              db,
+              `conversations/${convId}/messages`,
+            );
+            const messagesSnapshot = await getDocs(messagesRef);
+            messagesSnapshot.forEach((msgDoc) => batch.delete(msgDoc.ref));
+            batch.delete(doc(db, "conversations", convId));
+          }),
+        );
+
+        batch.delete(projectRef);
+        await batch.commit();
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Löschen des Projekts");
+        return handleError(err, "Fehler beim Loeschen des Projekts");
       } finally {
         setLoading(false);
       }
@@ -361,42 +333,34 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Fügt eine Conversation zu einem Projekt hinzu */
   const addConversationToProject = useCallback(
     async (projectId, conversationId) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-
         if (projectDoc.exists()) {
-          const currentConversations = projectDoc.data().conversationIds || [];
-
-          // Prüfe ob Conversation bereits im Projekt ist
-          if (!currentConversations.includes(conversationId)) {
+          const currentIds = projectDoc.data().conversationIds || [];
+          if (!currentIds.includes(conversationId)) {
             await updateDoc(projectRef, {
-              conversationIds: [...currentConversations, conversationId],
+              conversationIds: [...currentIds, conversationId],
               updatedAt: serverTimestamp(),
             });
           }
-
-          // Update auch die Conversation mit der Projekt-Referenz
           const conversationRef = doc(db, "conversations", conversationId);
           await updateDoc(conversationRef, {
-            projectId: projectId,
+            projectId,
             updatedAt: serverTimestamp(),
           });
-
           return true;
         }
         return null;
       } catch (err) {
         return handleError(
           err,
-          "Fehler beim Hinzufügen der Conversation zum Projekt",
+          "Fehler beim Hinzufuegen der Conversation zum Projekt",
         );
       } finally {
         setLoading(false);
@@ -405,35 +369,27 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Entfernt eine Conversation aus einem Projekt */
   const removeConversationFromProject = useCallback(
     async (projectId, conversationId) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-
         if (projectDoc.exists()) {
-          const currentConversations = projectDoc.data().conversationIds || [];
-          const updatedConversations = currentConversations.filter(
+          const updatedIds = (projectDoc.data().conversationIds || []).filter(
             (id) => id !== conversationId,
           );
-
           await updateDoc(projectRef, {
-            conversationIds: updatedConversations,
+            conversationIds: updatedIds,
             updatedAt: serverTimestamp(),
           });
-
-          // Entferne auch die Projekt-Referenz von der Conversation
           const conversationRef = doc(db, "conversations", conversationId);
           await updateDoc(conversationRef, {
             projectId: null,
             updatedAt: serverTimestamp(),
           });
-
           return true;
         }
         return null;
@@ -449,41 +405,34 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Fügt ein Dokument zu einem Projekt hinzu */
   const addDocumentToProject = useCallback(
     async (projectId, document) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-
         if (projectDoc.exists()) {
-          const currentDocuments = projectDoc.data().documents || [];
-
           const newDocument = {
-            id: doc(collection(db, "temp")).id, // Generiere eine ID
+            id: doc(collection(db, "temp")).id,
             title: document.title,
-            type: document.type, // z.B. 'text', 'markdown', 'code'
+            type: document.type,
             content: document.content,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
           };
-
           await updateDoc(projectRef, {
-            documents: [...currentDocuments, newDocument],
+            documents: [...(projectDoc.data().documents || []), newDocument],
             updatedAt: serverTimestamp(),
           });
-
           return newDocument;
         }
         return null;
       } catch (err) {
         return handleError(
           err,
-          "Fehler beim Hinzufügen des Dokuments zum Projekt",
+          "Fehler beim Hinzufuegen des Dokuments zum Projekt",
         );
       } finally {
         setLoading(false);
@@ -492,34 +441,25 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Aktualisiert ein Dokument in einem Projekt */
   const updateDocumentInProject = useCallback(
     async (projectId, documentId, updates) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-
         if (projectDoc.exists()) {
-          const currentDocuments = projectDoc.data().documents || [];
-          const updatedDocuments = currentDocuments.map((doc) =>
-            doc.id === documentId
-              ? {
-                  ...doc,
-                  ...updates,
-                  updatedAt: Timestamp.now(),
-                }
-              : doc,
+          const updatedDocuments = (projectDoc.data().documents || []).map(
+            (d) =>
+              d.id === documentId
+                ? { ...d, ...updates, updatedAt: Timestamp.now() }
+                : d,
           );
-
           await updateDoc(projectRef, {
             documents: updatedDocuments,
             updatedAt: serverTimestamp(),
           });
-
           return true;
         }
         return null;
@@ -532,28 +472,22 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Entfernt ein Dokument aus einem Projekt */
   const removeDocumentFromProject = useCallback(
     async (projectId, documentId) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-
         if (projectDoc.exists()) {
-          const currentDocuments = projectDoc.data().documents || [];
-          const updatedDocuments = currentDocuments.filter(
-            (doc) => doc.id !== documentId,
+          const updatedDocuments = (projectDoc.data().documents || []).filter(
+            (d) => d.id !== documentId,
           );
-
           await updateDoc(projectRef, {
             documents: updatedDocuments,
             updatedAt: serverTimestamp(),
           });
-
           return true;
         }
         return null;
@@ -566,34 +500,26 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Lädt alle Conversations eines Projekts */
   const getProjectConversations = useCallback(
     async (projectId) => {
       if (!user || !db) return [];
       setLoading(true);
       resetError();
-
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-
         if (projectDoc.exists()) {
           const conversationIds = projectDoc.data().conversationIds || [];
-
           if (conversationIds.length === 0) return [];
-
-          // Lade alle Conversations
           const conversations = await Promise.all(
             conversationIds.map(async (convId) => {
-              const convRef = doc(db, "conversations", convId);
-              const convDoc = await getDoc(convRef);
+              const convDoc = await getDoc(doc(db, "conversations", convId));
               return convDoc.exists()
                 ? { id: convDoc.id, ...convDoc.data() }
                 : null;
             }),
           );
-
-          return conversations.filter((conv) => conv !== null);
+          return conversations.filter(Boolean);
         }
         return [];
       } catch (err) {
@@ -605,35 +531,24 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Sucht Projekte nach Name */
   const searchProjects = useCallback(
     async (searchTerm) => {
       if (!user || !db || !searchTerm) return [];
       setLoading(true);
       resetError();
-
       try {
         const q = query(
           collection(db, "projects"),
           where("userId", "==", user.uid),
-          orderBy("updatedAt", "desc"),
         );
-
         const snapshot = await getDocs(q);
-        const projects = snapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
+        return snapshot.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
           .filter(
-            (project) =>
-              project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              project.description
-                ?.toLowerCase()
-                .includes(searchTerm.toLowerCase()),
+            (p) =>
+              p.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              p.description?.toLowerCase().includes(searchTerm.toLowerCase()),
           );
-
-        return projects;
       } catch (err) {
         return handleError(err, "Fehler beim Suchen der Projekte");
       } finally {
@@ -643,66 +558,13 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Real-time Listener für Projekte */
-  const subscribeToProjects = useCallback(
-    (callback, includeArchived = false) => {
-      if (!user || !db) return () => {};
+  // ==================== CONVERSATION OPERATIONEN ====================
 
-      try {
-        let q = query(
-          collection(db, "projects"),
-          where("userId", "==", user.uid),
-          orderBy("updatedAt", "desc"),
-        );
-
-        if (!includeArchived) {
-          q = query(
-            collection(db, "projects"),
-            where("userId", "==", user.uid),
-            where("isArchived", "==", false),
-            orderBy("updatedAt", "desc"),
-          );
-        }
-
-        const unsubscribe = onSnapshot(
-          q,
-          (snapshot) => {
-            const projects = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-            callback(projects);
-          },
-          (err) => {
-            handleError(err, "Fehler beim Real-time Update der Projekte");
-          },
-        );
-
-        return unsubscribe;
-      } catch (err) {
-        handleError(err, "Fehler beim Erstellen des Projekt-Listeners");
-        return () => {};
-      }
-    },
-    [user, db, handleError],
-  );
-
-  // ==================== CONVERSATION OPERATIONS ====================
-
-  /* Erstellt eine neue Conversation */
   const createConversation = useCallback(
     async (title = "New Chat", model = "gpt-oss") => {
-      if (!user || !db) {
-        console.error("User oder DB nicht verfügbar:", {
-          user: !!user,
-          db: !!db,
-        });
-        return null;
-      }
-
+      if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const conversationData = {
           userId: user.uid,
@@ -713,17 +575,12 @@ export default function DatabaseProvider({ children }) {
           messageCount: 0,
           isArchived: false,
         };
-
         const conversationRef = await addDoc(
           collection(db, "conversations"),
           conversationData,
         );
-
-        console.log("Conversation erstellt mit ID:", conversationRef.id);
-
         return { id: conversationRef.id, ...conversationData };
       } catch (err) {
-        console.error("Fehler beim Erstellen:", err);
         return handleError(err, "Fehler beim Erstellen der Conversation");
       } finally {
         setLoading(false);
@@ -732,42 +589,22 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Lädt alle Conversations eines Users */
   const getConversations = useCallback(
-    async (includeArchived = false, limitCount = 20, lastDoc = null) => {
+    async (includeArchived = false, limitCount = 20) => {
       if (!user || !db) return [];
       setLoading(true);
       resetError();
-
       try {
-        let q = query(
+        const q = query(
           collection(db, "conversations"),
           where("userId", "==", user.uid),
-          orderBy("updatedAt", "desc"),
-          limit(limitCount),
         );
-
-        if (!includeArchived) {
-          q = query(
-            collection(db, "conversations"),
-            where("userId", "==", user.uid),
-            where("isArchived", "==", false),
-            orderBy("updatedAt", "desc"),
-            limit(limitCount),
-          );
-        }
-
-        if (lastDoc) {
-          q = query(q, startAfter(lastDoc));
-        }
-
         const snapshot = await getDocs(q);
-        const conversations = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        return conversations;
+        const all = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const filtered = includeArchived
+          ? all
+          : all.filter((c) => !c.isArchived);
+        return sortByUpdatedAt(filtered).slice(0, limitCount);
       } catch (err) {
         return handleError(err, "Fehler beim Laden der Conversations");
       } finally {
@@ -777,23 +614,17 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Lädt eine einzelne Conversation */
   const getConversation = useCallback(
     async (conversationId) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const conversationRef = doc(db, "conversations", conversationId);
         const conversationDoc = await getDoc(conversationRef);
-
         if (conversationDoc.exists()) {
           const data = conversationDoc.data();
-          // Security check
-          if (data.userId !== user.uid) {
-            throw new Error("Unauthorized access");
-          }
+          if (data.userId !== user.uid) throw new Error("Kein Zugriff");
           return { id: conversationDoc.id, ...data };
         }
         return null;
@@ -806,13 +637,11 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Aktualisiert eine Conversation */
   const updateConversation = useCallback(
     async (conversationId, updates) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const conversationRef = doc(db, "conversations", conversationId);
         await updateDoc(conversationRef, {
@@ -829,34 +658,25 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Löscht eine Conversation und alle zugehörigen Messages */
+  // Loescht eine Conversation samt aller Nachrichten
   const deleteConversation = useCallback(
     async (conversationId) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const batch = writeBatch(db);
-
-        // Lösche alle Messages
         const messagesRef = collection(
           db,
           `conversations/${conversationId}/messages`,
         );
         const messagesSnapshot = await getDocs(messagesRef);
-        messagesSnapshot.forEach((doc) => {
-          batch.delete(doc.ref);
-        });
-
-        // Lösche Conversation
-        const conversationRef = doc(db, "conversations", conversationId);
-        batch.delete(conversationRef);
-
+        messagesSnapshot.forEach((d) => batch.delete(d.ref));
+        batch.delete(doc(db, "conversations", conversationId));
         await batch.commit();
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Löschen der Conversation");
+        return handleError(err, "Fehler beim Loeschen der Conversation");
       } finally {
         setLoading(false);
       }
@@ -864,27 +684,20 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Archiviert/Dearchiviert eine Conversation */
+  // Archiviert oder dearchiviert eine Conversation
   const toggleArchiveConversation = useCallback(
     async (conversationId, isArchived = null) => {
       if (!user || !db) return null;
       setLoading(true);
       resetError();
-
       try {
         const conversationRef = doc(db, "conversations", conversationId);
-
-        // Wenn isArchived nicht übergeben wird, lade den aktuellen Status und toggle ihn
         if (isArchived === null) {
           const conversationDoc = await getDoc(conversationRef);
-          if (conversationDoc.exists()) {
-            const currentStatus = conversationDoc.data().isArchived || false;
-            isArchived = !currentStatus;
-          } else {
+          if (!conversationDoc.exists())
             throw new Error("Conversation nicht gefunden");
-          }
+          isArchived = !conversationDoc.data().isArchived;
         }
-
         await updateDoc(conversationRef, {
           isArchived,
           updatedAt: serverTimestamp(),
@@ -899,47 +712,24 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  // ==================== MESSAGE OPERATIONS ====================
-
-  /* Fügt eine Message zu einer Conversation hinzu */
-  const addMessage = useCallback(
-    async (conversationId, messageData) => {
-      if (!user || !db) return null;
+  const searchConversations = useCallback(
+    async (searchTerm) => {
+      if (!user || !db || !searchTerm) return [];
       setLoading(true);
       resetError();
-
       try {
-        const batch = writeBatch(db);
-
-        // Füge Message hinzu
-        const messagesRef = collection(
-          db,
-          `conversations/${conversationId}/messages`,
+        const q = query(
+          collection(db, "conversations"),
+          where("userId", "==", user.uid),
         );
-        const messageRef = doc(messagesRef);
-
-        const message = {
-          role: messageData.role,
-          content: messageData.content,
-          model: messageData.model || "gpt-oss",
-          timestamp: serverTimestamp(),
-          metadata: messageData.metadata || {},
-        };
-
-        batch.set(messageRef, message);
-
-        // Update Conversation
-        const conversationRef = doc(db, "conversations", conversationId);
-        batch.update(conversationRef, {
-          updatedAt: serverTimestamp(),
-          messageCount: (messageData.currentCount || 0) + 1,
-        });
-
-        await batch.commit();
-
-        return { id: messageRef.id, ...message };
+        const snapshot = await getDocs(q);
+        return snapshot.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((c) =>
+            c.title?.toLowerCase().includes(searchTerm.toLowerCase()),
+          );
       } catch (err) {
-        return handleError(err, "Fehler beim Hinzufügen der Message");
+        return handleError(err, "Fehler beim Suchen der Conversations");
       } finally {
         setLoading(false);
       }
@@ -947,13 +737,48 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Lädt alle Messages einer Conversation */
+  // ==================== NACHRICHTEN OPERATIONEN ====================
+
+  const addMessage = useCallback(
+    async (conversationId, messageData) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
+      try {
+        const batch = writeBatch(db);
+        const messagesRef = collection(
+          db,
+          `conversations/${conversationId}/messages`,
+        );
+        const messageRef = doc(messagesRef);
+        const message = {
+          role: messageData.role,
+          content: messageData.content,
+          model: messageData.model || "gpt-oss",
+          timestamp: serverTimestamp(),
+          metadata: messageData.metadata || {},
+        };
+        batch.set(messageRef, message);
+        batch.update(doc(db, "conversations", conversationId), {
+          updatedAt: serverTimestamp(),
+          messageCount: (messageData.currentCount || 0) + 1,
+        });
+        await batch.commit();
+        return { id: messageRef.id, ...message };
+      } catch (err) {
+        return handleError(err, "Fehler beim Hinzufuegen der Nachricht");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, db, handleError, resetError],
+  );
+
   const getMessages = useCallback(
     async (conversationId, limitCount = 50) => {
       if (!user || !db) return [];
       setLoading(true);
       resetError();
-
       try {
         const messagesRef = collection(
           db,
@@ -964,16 +789,10 @@ export default function DatabaseProvider({ children }) {
           orderBy("timestamp", "asc"),
           limit(limitCount),
         );
-
         const snapshot = await getDocs(q);
-        const messages = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        return messages;
+        return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       } catch (err) {
-        return handleError(err, "Fehler beim Laden der Messages");
+        return handleError(err, "Fehler beim Laden der Nachrichten");
       } finally {
         setLoading(false);
       }
@@ -981,117 +800,59 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
-  /* Real-time Listener für Messages */
-  const subscribeToMessages = useCallback(
-    (conversationId, callback) => {
-      if (!user || !db) return () => {};
-
+  const deleteMessage = useCallback(
+    async (conversationId, messageId) => {
+      if (!user || !db) return null;
+      setLoading(true);
+      resetError();
       try {
-        const messagesRef = collection(
+        const messageRef = doc(
           db,
           `conversations/${conversationId}/messages`,
+          messageId,
         );
-        const q = query(messagesRef, orderBy("timestamp", "asc"));
-
-        const unsubscribe = onSnapshot(
-          q,
-          (snapshot) => {
-            const messages = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-            callback(messages);
-          },
-          (err) => {
-            handleError(err, "Fehler beim Real-time Update der Messages");
-          },
-        );
-
-        return unsubscribe;
+        await deleteDoc(messageRef);
+        const conversationRef = doc(db, "conversations", conversationId);
+        const conversationDoc = await getDoc(conversationRef);
+        const currentCount = conversationDoc.data()?.messageCount || 0;
+        await updateDoc(conversationRef, {
+          messageCount: Math.max(0, currentCount - 1),
+          updatedAt: serverTimestamp(),
+        });
+        return true;
       } catch (err) {
-        handleError(err, "Fehler beim Erstellen des Message-Listeners");
-        return () => {};
+        return handleError(err, "Fehler beim Loeschen der Nachricht");
+      } finally {
+        setLoading(false);
       }
     },
-    [user, db, handleError],
+    [user, db, handleError, resetError],
   );
 
-  /* Real-time Listener für Conversations */
-  const subscribeToArchivedConversations = useCallback(
-    (callback) => {
-      if (!user || !db) return () => {};
+  // ==================== ECHTZEIT-LISTENER ====================
 
+  // Alle Conversations des Users — Filterung und Sortierung client-seitig,
+  // kein zusammengesetzter Firestore-Index erforderlich
+  const subscribeToConversations = useCallback(
+    (callback, includeArchived = false) => {
+      if (!user || !db) return () => {};
       try {
         const q = query(
           collection(db, "conversations"),
           where("userId", "==", user.uid),
-          where("isArchived", "==", true),
-          orderBy("updatedAt", "desc"),
         );
-
-        const unsubscribe = onSnapshot(
+        return onSnapshot(
           q,
           (snapshot) => {
-            const conversations = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-            callback(conversations);
+            const all = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            const filtered = includeArchived
+              ? all
+              : all.filter((c) => !c.isArchived);
+            callback(sortByUpdatedAt(filtered));
           },
-          (err) => {
-            handleError(
-              err,
-              "Fehler beim Real-time Update der archivierten Conversations",
-            );
-          },
+          (err) =>
+            handleError(err, "Fehler beim Echtzeit-Update der Conversations"),
         );
-
-        return unsubscribe;
-      } catch (err) {
-        handleError(
-          err,
-          "Fehler beim Erstellen des Archived-Conversation-Listeners",
-        );
-        return () => {};
-      }
-    },
-    [user, db, handleError],
-  );
-  const subscribeToConversations = useCallback(
-    (callback, includeArchived = false) => {
-      if (!user || !db) return () => {};
-
-      try {
-        let q = query(
-          collection(db, "conversations"),
-          where("userId", "==", user.uid),
-          orderBy("updatedAt", "desc"),
-        );
-
-        if (!includeArchived) {
-          q = query(
-            collection(db, "conversations"),
-            where("userId", "==", user.uid),
-            where("isArchived", "==", false),
-            orderBy("updatedAt", "desc"),
-          );
-        }
-
-        const unsubscribe = onSnapshot(
-          q,
-          (snapshot) => {
-            const conversations = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-            callback(conversations);
-          },
-          (err) => {
-            handleError(err, "Fehler beim Real-time Update der Conversations");
-          },
-        );
-
-        return unsubscribe;
       } catch (err) {
         handleError(err, "Fehler beim Erstellen des Conversation-Listeners");
         return () => {};
@@ -1100,75 +861,89 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError],
   );
 
-  /* Löscht eine einzelne Message */
-  const deleteMessage = useCallback(
-    async (conversationId, messageId) => {
-      if (!user || !db) return null;
-      setLoading(true);
-      resetError();
-
-      try {
-        const messageRef = doc(
-          db,
-          `conversations/${conversationId}/messages`,
-          messageId,
-        );
-        await deleteDoc(messageRef);
-
-        // Update messageCount
-        const conversationRef = doc(db, "conversations", conversationId);
-        const conversationDoc = await getDoc(conversationRef);
-        const currentCount = conversationDoc.data()?.messageCount || 0;
-
-        await updateDoc(conversationRef, {
-          messageCount: Math.max(0, currentCount - 1),
-          updatedAt: serverTimestamp(),
-        });
-
-        return true;
-      } catch (err) {
-        return handleError(err, "Fehler beim Löschen der Message");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [user, db, handleError, resetError],
-  );
-
-  // ==================== SEARCH & FILTER ====================
-
-  /* Sucht Conversations nach Titel */
-  const searchConversations = useCallback(
-    async (searchTerm) => {
-      if (!user || !db || !searchTerm) return [];
-      setLoading(true);
-      resetError();
-
+  // Nur archivierte Conversations
+  const subscribeToArchivedConversations = useCallback(
+    (callback) => {
+      if (!user || !db) return () => {};
       try {
         const q = query(
           collection(db, "conversations"),
           where("userId", "==", user.uid),
-          orderBy("updatedAt", "desc"),
         );
-
-        const snapshot = await getDocs(q);
-        const conversations = snapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          .filter((conv) =>
-            conv.title.toLowerCase().includes(searchTerm.toLowerCase()),
-          );
-
-        return conversations;
+        return onSnapshot(
+          q,
+          (snapshot) => {
+            const archived = snapshot.docs
+              .map((d) => ({ id: d.id, ...d.data() }))
+              .filter((c) => c.isArchived === true);
+            callback(sortByUpdatedAt(archived));
+          },
+          (err) =>
+            handleError(
+              err,
+              "Fehler beim Echtzeit-Update der archivierten Conversations",
+            ),
+        );
       } catch (err) {
-        return handleError(err, "Fehler beim Suchen der Conversations");
-      } finally {
-        setLoading(false);
+        handleError(err, "Fehler beim Erstellen des Archiv-Listeners");
+        return () => {};
       }
     },
-    [user, db, handleError, resetError],
+    [user, db, handleError],
+  );
+
+  // Alle Projekte des Users — Filterung und Sortierung client-seitig
+  const subscribeToProjects = useCallback(
+    (callback, includeArchived = false) => {
+      if (!user || !db) return () => {};
+      try {
+        const q = query(
+          collection(db, "projects"),
+          where("userId", "==", user.uid),
+        );
+        return onSnapshot(
+          q,
+          (snapshot) => {
+            const all = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            const filtered = includeArchived
+              ? all
+              : all.filter((p) => !p.isArchived);
+            callback(sortByUpdatedAt(filtered));
+          },
+          (err) => handleError(err, "Fehler beim Echtzeit-Update der Projekte"),
+        );
+      } catch (err) {
+        handleError(err, "Fehler beim Erstellen des Projekt-Listeners");
+        return () => {};
+      }
+    },
+    [user, db, handleError],
+  );
+
+  // Nachrichten einer Conversation in Echtzeit
+  const subscribeToMessages = useCallback(
+    (conversationId, callback) => {
+      if (!user || !db) return () => {};
+      try {
+        const messagesRef = collection(
+          db,
+          `conversations/${conversationId}/messages`,
+        );
+        const q = query(messagesRef, orderBy("timestamp", "asc"));
+        return onSnapshot(
+          q,
+          (snapshot) => {
+            callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+          },
+          (err) =>
+            handleError(err, "Fehler beim Echtzeit-Update der Nachrichten"),
+        );
+      } catch (err) {
+        handleError(err, "Fehler beim Erstellen des Nachrichten-Listeners");
+        return () => {};
+      }
+    },
+    [user, db, handleError],
   );
 
   const values = {
@@ -1178,12 +953,12 @@ export default function DatabaseProvider({ children }) {
     resetError,
     userProfile,
 
-    // User Operations
+    // User
     updateUserProfile,
     getUserProfile,
     updateUserPreferences,
 
-    // Project Operations
+    // Projekte
     createProject,
     getProjects,
     getProject,
@@ -1198,7 +973,7 @@ export default function DatabaseProvider({ children }) {
     getProjectConversations,
     searchProjects,
 
-    // Conversation Operations
+    // Chats
     createConversation,
     getConversations,
     getConversation,
@@ -1207,16 +982,16 @@ export default function DatabaseProvider({ children }) {
     toggleArchiveConversation,
     searchConversations,
 
-    // Message Operations
+    // Nachrichten
     addMessage,
     getMessages,
     deleteMessage,
 
-    // Real-time Subscriptions
+    // Echtzeit-Listener
     subscribeToMessages,
     subscribeToConversations,
-    subscribeToProjects,
     subscribeToArchivedConversations,
+    subscribeToProjects,
   };
 
   return (

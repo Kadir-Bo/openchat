@@ -1,16 +1,17 @@
 "use client";
 
 import { useDatabase } from "@/context";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2 } from "react-feather";
-import { PrimaryButton, ChatCard, Searchbar, Select } from "@/components";
+import {
+  PrimaryButton,
+  ChatCard,
+  ProjectCard,
+  Searchbar,
+  Select,
+} from "@/components";
 import { useRouter } from "next/navigation";
+import { useSelectionHandlers } from "@/hooks";
 
 const FILTER_OPTIONS = [
   { id: "recent", value: "activity", label: "Recent activity" },
@@ -52,122 +53,131 @@ const fuzzyMatch = (str, pattern) => {
 };
 
 export default function ChatsPage() {
-  const { subscribeToConversations, deleteConversation } = useDatabase();
+  const {
+    subscribeToConversations,
+    subscribeToProjects,
+    deleteConversation,
+    deleteProject,
+  } = useDatabase();
   const router = useRouter();
 
-  const [conversations, setConversations] = useState([]);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("chats");
   const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].value);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState(new Set());
 
-  const selectedIdsRef = useRef(selectedIds);
-  const lastClickedIndexRef = useRef(null);
-  const filteredListRef = useRef([]);
+  // Chats state
+  const [conversations, setConversations] = useState([]);
+  const [chatsLoading, setChatsLoading] = useState(true);
 
-  useEffect(() => {
-    selectedIdsRef.current = selectedIds;
-  }, [selectedIds]);
+  // Projects state
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
 
+  const chatListRef = useRef([]);
+  const projectListRef = useRef([]);
+
+  // Aktive Chats abonnieren
   useEffect(() => {
     const unsubscribe = subscribeToConversations((data) => {
       setConversations(data);
-      setIsInitialLoading(false);
+      setChatsLoading(false);
     }, false);
     return () => unsubscribe?.();
   }, [subscribeToConversations]);
 
+  // Aktive Projekte abonnieren — client-seitig gefiltert
+  useEffect(() => {
+    const unsubscribe = subscribeToProjects((data) => {
+      setProjects(data.filter((p) => !p.isArchived));
+      setProjectsLoading(false);
+    }, true);
+    return () => unsubscribe?.();
+  }, [subscribeToProjects]);
+
+  // Lookup-Map für O(1) Projektzugriff (für Chat-Badges)
+  const projectsById = useMemo(
+    () => Object.fromEntries(projects.map((p) => [p.id, p])),
+    [projects],
+  );
+
+  // Suche beim Tab-Wechsel zurücksetzen
+  useEffect(() => {
+    setSearchQuery("");
+  }, [activeTab]);
+
+  // Escape leert die Auswahl in beiden Tabs
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key === "Escape") {
-        setSelectedIds(new Set());
-        lastClickedIndexRef.current = null;
+        chatHandlers.clearSelection();
+        projectHandlers.clearSelection();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredAndSortedConversations = useMemo(() => {
-    if (searchQuery.trim()) {
-      return conversations
-        .map((c) => ({ c, ...fuzzyMatch(c.title || "", searchQuery) }))
-        .filter(({ match }) => match)
-        .sort((a, b) => b.score - a.score)
-        .map(({ c }) => c);
-    }
-
-    return [...conversations].sort((a, b) => {
-      if (sortBy === "name")
-        return (a.title || "").localeCompare(b.title || "");
-      const key = sortBy === "date" ? "createdAt" : "updatedAt";
-      const toDate = (v) => v?.toDate?.() ?? new Date(v);
-      return toDate(b[key]) - toDate(a[key]);
-    });
+  // Gefilterte & sortierte Chats
+  const filteredChats = useMemo(() => {
+    const list = searchQuery.trim()
+      ? conversations
+          .map((c) => ({ c, ...fuzzyMatch(c.title || "", searchQuery) }))
+          .filter(({ match }) => match)
+          .sort((a, b) => b.score - a.score)
+          .map(({ c }) => c)
+      : [...conversations].sort((a, b) => {
+          if (sortBy === "name")
+            return (a.title || "").localeCompare(b.title || "");
+          const key = sortBy === "date" ? "createdAt" : "updatedAt";
+          const toDate = (v) => v?.toDate?.() ?? new Date(v);
+          return toDate(b[key]) - toDate(a[key]);
+        });
+    chatListRef.current = list;
+    return list;
   }, [conversations, searchQuery, sortBy]);
 
-  // Ref nach dem Render synchron halten — muss nach dem useMemo stehen
-  useEffect(() => {
-    filteredListRef.current = filteredAndSortedConversations;
-  }, [filteredAndSortedConversations]);
-
-  const handleCardClick = useCallback(
-    (e, id) => {
-      const list = filteredListRef.current;
-      const index = list.findIndex((c) => c.id === id);
-      const selected = selectedIdsRef.current;
-
-      if (
-        e.shiftKey &&
-        lastClickedIndexRef.current !== null &&
-        selected.size > 0
-      ) {
-        const start = Math.min(lastClickedIndexRef.current, index);
-        const end = Math.max(lastClickedIndexRef.current, index);
-        const range = list.slice(start, end + 1).map((c) => c.id);
-        setSelectedIds((prev) => new Set([...prev, ...range]));
-        lastClickedIndexRef.current = index;
-        return;
-      }
-
-      if (e.metaKey || e.ctrlKey || selected.size > 0) {
-        setSelectedIds((prev) => {
-          const next = new Set(prev);
-          next.has(id) ? next.delete(id) : next.add(id);
-          return next;
+  // Gefilterte & sortierte Projekte
+  const filteredProjects = useMemo(() => {
+    const list = searchQuery.trim()
+      ? projects.filter((p) =>
+          [p.title, p.description]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()),
+        )
+      : [...projects].sort((a, b) => {
+          if (sortBy === "name")
+            return (a.title || "").localeCompare(b.title || "");
+          const key = sortBy === "date" ? "createdAt" : "updatedAt";
+          const toDate = (v) => v?.toDate?.() ?? new Date(v);
+          return toDate(b[key]) - toDate(a[key]);
         });
-        lastClickedIndexRef.current = index;
-        return;
-      }
+    projectListRef.current = list;
+    return list;
+  }, [projects, searchQuery, sortBy]);
 
-      router.push(`/chat/${id}`);
-    },
-    [router],
-  );
+  const chatHandlers = useSelectionHandlers({
+    listRef: chatListRef,
+    onNavigate: (id) => router.push(`/chat/${id}`),
+    deleteOne: deleteConversation,
+  });
 
-  const handleDeleteSelected = useCallback(async () => {
-    await Promise.all(
-      [...selectedIdsRef.current].map((id) => deleteConversation(id)),
-    );
-    setSelectedIds(new Set());
-    lastClickedIndexRef.current = null;
-  }, [deleteConversation]);
+  const projectHandlers = useSelectionHandlers({
+    listRef: projectListRef,
+    onNavigate: (id) => router.push(`/project/${id}`),
+    deleteOne: deleteProject,
+  });
 
-  const handleDeleteAll = useCallback(async () => {
-    await Promise.all(conversations.map((c) => deleteConversation(c.id)));
-    setSelectedIds(new Set());
-    lastClickedIndexRef.current = null;
-  }, [conversations, deleteConversation]);
-
-  const selectedCount = selectedIds.size;
+  const isChats = activeTab === "chats";
   const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
-  const hasConversations = conversations.length > 0;
-
-  if (isInitialLoading) {
-    return (
-      <p className="text-center py-12 text-neutral-400">Loading chats...</p>
-    );
-  }
+  const selectedCount = isChats
+    ? chatHandlers.selectedIds.size
+    : projectHandlers.selectedIds.size;
+  const isLoading = isChats ? chatsLoading : projectsLoading;
+  const currentList = isChats ? filteredChats : filteredProjects;
+  const hasItems = isChats ? conversations.length > 0 : projects.length > 0;
 
   return (
     <div className="flex-1 flex flex-col max-w-5xl mx-auto py-8 gap-6 w-full">
@@ -182,6 +192,26 @@ export default function ChatsPage() {
         />
       </header>
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-neutral-800">
+        {["chats", "projects"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm capitalize transition-colors duration-150 border-b-2 -mb-px ${
+              activeTab === tab
+                ? "border-neutral-300 text-neutral-100"
+                : "border-transparent text-neutral-500 hover:text-neutral-300"
+            }`}
+          >
+            {tab}
+            <span className="ml-2 text-xs text-neutral-600">
+              {tab === "chats" ? conversations.length : projects.length}
+            </span>
+          </button>
+        ))}
+      </div>
+
       <div className="flex justify-end items-center gap-3">
         <span className="text-neutral-400 text-sm">Sort by:</span>
         <Select
@@ -193,66 +223,120 @@ export default function ChatsPage() {
           onChange={(e) => setSortBy(e.target.value)}
           containerClassName="w-auto min-w-40"
           labelClassName="hidden"
-          buttonClassName="text-sm px-3 min-w-32"
+          buttonClassName="text-sm px-3 min-w-32 justify-center"
         />
       </div>
 
       <Searchbar
         onSearch={(q) => setSearchQuery(q)}
-        placeholder="Search Chats"
+        placeholder={`Search ${isChats ? "chats" : "projects"}`}
       />
 
+      {/* Aktionsleiste */}
       <div className="flex items-center justify-between">
         <span className="text-xs text-neutral-600">
           {selectedCount > 0
-            ? `${selectedCount} ${selectedCount === 1 ? "chat" : "chats"} selected — Esc to cancel`
-            : hasConversations
+            ? `${selectedCount} ${
+                isChats
+                  ? selectedCount === 1
+                    ? "chat"
+                    : "chats"
+                  : selectedCount === 1
+                    ? "project"
+                    : "projects"
+              } selected — Esc to cancel`
+            : hasItems
               ? "⌘ / Ctrl + click to select"
               : ""}
         </span>
 
-        {selectedCount > 0 && (
-          <PrimaryButton
-            text={`Delete ${selectedCount} ${selectedCount === 1 ? "chat" : "chats"}`}
-            icon={<Trash2 size={14} />}
-            className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
-            onClick={handleDeleteSelected}
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {selectedCount > 0 && (
+            <PrimaryButton
+              text={`Delete ${selectedCount} ${
+                isChats
+                  ? selectedCount === 1
+                    ? "chat"
+                    : "chats"
+                  : selectedCount === 1
+                    ? "project"
+                    : "projects"
+              }`}
+              icon={<Trash2 size={14} />}
+              className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
+              onClick={
+                isChats
+                  ? chatHandlers.handleDeleteSelected
+                  : projectHandlers.handleDeleteSelected
+              }
+            />
+          )}
 
-        {selectedCount === 0 && hasConversations && (
-          <PrimaryButton
-            text="Delete all chats"
-            icon={<Trash2 size={14} />}
-            className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
-            onClick={handleDeleteAll}
-          />
-        )}
+          {selectedCount === 0 && hasItems && (
+            <PrimaryButton
+              text={`Delete all ${isChats ? "chats" : "projects"}`}
+              icon={<Trash2 size={14} />}
+              className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
+              onClick={() =>
+                isChats
+                  ? chatHandlers.handleDeleteAll(filteredChats)
+                  : projectHandlers.handleDeleteAll(filteredProjects)
+              }
+            />
+          )}
+        </div>
       </div>
 
-      {filteredAndSortedConversations.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          {filteredAndSortedConversations.map((conversation) => (
-            <ChatCard
-              key={conversation.id}
-              conversation={conversation}
-              isSelected={selectedIds.has(conversation.id)}
-              onCardClick={handleCardClick}
-            />
-          ))}
-        </div>
+      {/* Inhalt */}
+      {isLoading ? (
+        <p className="text-center py-12 text-neutral-400">
+          Loading {isChats ? "chats" : "projects"}...
+        </p>
+      ) : currentList.length > 0 ? (
+        isChats ? (
+          <div className="flex flex-col gap-2">
+            {filteredChats.map((conversation) => (
+              <ChatCard
+                key={conversation.id}
+                conversation={conversation}
+                isSelected={chatHandlers.selectedIds.has(conversation.id)}
+                onCardClick={chatHandlers.handleCardClick}
+                project={
+                  conversation.projectId
+                    ? (projectsById[conversation.projectId] ?? null)
+                    : null
+                }
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {filteredProjects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                sort={sortBy}
+                isSelected={projectHandlers.selectedIds.has(project.id)}
+                onCardClick={projectHandlers.handleCardClick}
+              />
+            ))}
+          </div>
+        )
       ) : (
         <div className="text-center py-12 text-neutral-400">
           {searchQuery ? (
-            <>No chats found matching &quot;{searchQuery}&quot;</>
+            <>
+              No {isChats ? "chats" : "projects"} found matching &quot;
+              {searchQuery}&quot;
+            </>
           ) : (
             <div className="flex flex-col items-center gap-4">
-              <p>No chats yet</p>
+              <p>No {isChats ? "chats" : "projects"} yet</p>
               <PrimaryButton
-                text="Start your first chat"
+                text={isChats ? "Start your first chat" : "Create a project"}
                 icon={<Plus size={17} />}
                 className="w-max justify-center text-sm"
-                href="/chat"
+                href={isChats ? "/chat" : "/projects/new"}
                 filled
               />
             </div>

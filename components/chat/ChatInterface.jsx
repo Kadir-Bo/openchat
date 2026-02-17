@@ -34,6 +34,7 @@ export default function ChatInterface({
   textAreaGrowHeight = 180,
   buttonContainerHeight = 50,
   placeholder = "ask anything",
+  autofocus = true,
 }) {
   const router = useRouter();
   const params = useParams();
@@ -163,6 +164,7 @@ export default function ChatInterface({
             accept={ACCEPTED_FILE_TYPES}
             onChange={handleFileSelect}
             className="hidden"
+            autoFocus={autofocus}
           />
 
           {/* Attachment Button */}
@@ -203,6 +205,7 @@ export default function ChatInterface({
             rows={1}
             disabled={isLoading}
             maxLength={4000}
+            autoFocus={autofocus}
           />
 
           {/* Send/Stop Button */}

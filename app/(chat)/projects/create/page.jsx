@@ -57,7 +57,7 @@ export default function ProjectCreatePage() {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && e.metaKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       handleCreateProject();
     }
   };

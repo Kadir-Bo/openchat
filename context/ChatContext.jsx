@@ -9,6 +9,7 @@ import {
   trimMessagesToTokenLimit,
   buildMemoryExtractionPrompt,
   buildSummaryPrompt,
+  extractProjectMemoryFromConversation,
 } from "@/lib";
 
 export const ChatContext = createContext(null);
@@ -52,21 +53,15 @@ const extractMemoryFromConversation = async (
   }
 };
 
-/**
- * Fire-and-forget: generates a summary of the conversation so far and
- * persists it on the conversation document. Sibling chats in the same
- * project will pick it up on their next message.
- */
 const generateAndSaveConversationSummary = async (
   chatId,
-  messages, // existing messages already in DB (before this turn)
+  messages,
   userMessage,
   assistantResponse,
   updateConversation,
   streamResponseFn,
 ) => {
   try {
-    // Build a compact transcript for the summarizer
     const transcript = [
       ...messages.map(
         (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`,
@@ -75,7 +70,7 @@ const generateAndSaveConversationSummary = async (
       `Assistant: ${assistantResponse}`,
     ]
       .join("\n\n")
-      .substring(0, 8000); // keep well within token budget
+      .substring(0, 8000);
 
     const summary = await streamResponseFn(
       [
@@ -94,15 +89,10 @@ const generateAndSaveConversationSummary = async (
       summaryUpdatedAt: new Date().toISOString(),
     });
   } catch (err) {
-    // Non-critical — silently swallow so it never blocks the main flow
     console.warn("Summary generation failed:", err);
   }
 };
 
-/**
- * Fetches summaries from all OTHER conversations in the same project
- * and returns them as an array of { title, summary } objects.
- */
 const fetchSiblingConversationSummaries = async (
   projectId,
   currentChatId,
@@ -151,8 +141,9 @@ export default function ChatProvider({ children }) {
     addMessage,
     getMessages,
     addConversationToProject,
-    getProjectConversations, // ← new
+    getProjectConversations,
     updateUserProfile,
+    updateProjectMemory,
     userProfile,
     projectId,
     project = null,
@@ -182,9 +173,7 @@ export default function ChatProvider({ children }) {
       });
     }
 
-    // Fetch sibling summaries BEFORE setIsLoading so the Firestore call
-    // doesn't trigger DatabaseContext re-renders mid-send.
-    // Guard: skip entirely for non-project chats or single-chat projects.
+    // Fetch sibling summaries BEFORE setIsLoading to avoid mid-send re-renders
     let projectWithSummaries = project;
     if (
       projectId &&
@@ -286,10 +275,10 @@ export default function ChatProvider({ children }) {
           }
         }
 
-        // ── User sees the response now — nothing below should make them wait ──
+        // ── User sees the response — nothing below blocks them ──
         onSuccess?.(chatId, responseToSave);
 
-        // ── Background: summary ──
+        // ── Background: conversation summary (project chats only) ──
         if (projectId) {
           setTimeout(() => {
             generateAndSaveConversationSummary(
@@ -303,8 +292,8 @@ export default function ChatProvider({ children }) {
           }, 0);
         }
 
-        // ── Background: memory extraction ──
-        if (updateUserProfile) {
+        // ── Background: user memory (non-project chats only) ──
+        if (updateUserProfile && !projectId) {
           const currentMemories = userProfile?.memories || [];
           setTimeout(() => {
             extractMemoryFromConversation(
@@ -313,30 +302,30 @@ export default function ChatProvider({ children }) {
               currentMemories,
               streamResponse,
             )
-              .then(async (memoryResult) => {
-                if (memoryResult.action === "add" && memoryResult.memory) {
+              .then(async (result) => {
+                if (result.action === "add" && result.memory) {
                   await updateUserProfile({
                     memories: [
                       ...currentMemories,
                       {
                         id: crypto.randomUUID(),
-                        text: memoryResult.memory,
+                        text: result.memory,
                         createdAt: new Date().toISOString(),
                         source: "auto",
                       },
                     ],
                   });
                 } else if (
-                  memoryResult.action === "update" &&
-                  memoryResult.id &&
-                  memoryResult.memory
+                  result.action === "update" &&
+                  result.id &&
+                  result.memory
                 ) {
                   await updateUserProfile({
                     memories: currentMemories.map((m) =>
-                      m.id === memoryResult.id
+                      m.id === result.id
                         ? {
                             ...m,
-                            text: memoryResult.memory,
+                            text: result.memory,
                             updatedAt: new Date().toISOString(),
                           }
                         : m,
@@ -344,7 +333,55 @@ export default function ChatProvider({ children }) {
                   });
                 }
               })
-              .catch((err) => console.warn("Memory extraction failed:", err));
+              .catch((err) =>
+                console.warn("User memory extraction failed:", err),
+              );
+          }, 0);
+        }
+
+        // ── Background: project memory (project chats only) ──
+        if (projectId && updateProjectMemory && project) {
+          const currentProjectMemories = project?.memories || [];
+          setTimeout(() => {
+            extractProjectMemoryFromConversation(
+              messageText,
+              responseToSave,
+              currentProjectMemories,
+              streamResponse,
+            )
+              .then(async (result) => {
+                if (result.action === "add" && result.memory) {
+                  await updateProjectMemory(projectId, [
+                    ...currentProjectMemories,
+                    {
+                      id: crypto.randomUUID(),
+                      text: result.memory,
+                      createdAt: new Date().toISOString(),
+                      source: "auto",
+                    },
+                  ]);
+                } else if (
+                  result.action === "update" &&
+                  result.id &&
+                  result.memory
+                ) {
+                  await updateProjectMemory(
+                    projectId,
+                    currentProjectMemories.map((m) =>
+                      m.id === result.id
+                        ? {
+                            ...m,
+                            text: result.memory,
+                            updatedAt: new Date().toISOString(),
+                          }
+                        : m,
+                    ),
+                  );
+                }
+              })
+              .catch((err) =>
+                console.warn("Project memory extraction failed:", err),
+              );
           }, 0);
         }
       }

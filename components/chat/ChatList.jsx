@@ -20,7 +20,7 @@ export default function ChatList({
 }) {
   const { deleteConversation, updateConversation, toggleArchiveConversation } =
     useDatabase();
-  const { openModal, openMessage } = useModal(); // ← NEU
+  const { openModal, openMessage } = useModal();
   const [isOpen, setIsOpen] = useState(defaultExpanded);
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
@@ -60,7 +60,7 @@ export default function ChatList({
       if (result) {
         setEditingId(null);
         setEditTitle("");
-        openMessage("Chat renamed successfully!", "success"); // ← Optional
+        openMessage("Chat renamed successfully!", "success");
       }
     },
     [editTitle, updateConversation, openMessage],
@@ -75,7 +75,7 @@ export default function ChatList({
     async (id) => {
       const result = await toggleArchiveConversation(id, true);
       if (result) {
-        openMessage("Chat archived successfully!", "success"); // ← Optional
+        openMessage("Chat archived successfully!", "success");
       }
     },
     [toggleArchiveConversation, openMessage],

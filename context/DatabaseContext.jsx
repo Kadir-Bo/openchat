@@ -530,6 +530,25 @@ export default function DatabaseProvider({ children }) {
     },
     [user, db, handleError, resetError],
   );
+  const updateProjectMemory = useCallback(
+    async (projectId, memories) => {
+      if (!user || !db) return null;
+      try {
+        const projectRef = doc(db, "projects", projectId);
+        await updateDoc(projectRef, {
+          memories,
+          updatedAt: serverTimestamp(),
+        });
+        return true;
+      } catch (err) {
+        return handleError(
+          err,
+          "Fehler beim Aktualisieren der Projekt-Erinnerungen",
+        );
+      }
+    },
+    [user, db, handleError],
+  );
 
   const searchProjects = useCallback(
     async (searchTerm) => {
@@ -971,6 +990,7 @@ export default function DatabaseProvider({ children }) {
     updateDocumentInProject,
     removeDocumentFromProject,
     getProjectConversations,
+    updateProjectMemory,
     searchProjects,
 
     // Chats

@@ -61,8 +61,9 @@ export default function ChatInterface({
     addMessage,
     addConversationToProject,
     getMessages,
-    getProjectConversations, // ← pulled from DatabaseContext
+    getProjectConversations,
     updateUserProfile,
+    updateProjectMemory,
     userProfile,
   } = useDatabase();
 
@@ -91,8 +92,9 @@ export default function ChatInterface({
     addMessage,
     getMessages,
     addConversationToProject,
-    getProjectConversations, // ← new position in arg list
+    getProjectConversations,
     updateUserProfile,
+    updateProjectMemory,
     userProfile,
     project_id,
     project,

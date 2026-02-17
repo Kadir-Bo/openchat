@@ -2,7 +2,7 @@
 
 import { useDatabase } from "@/context";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Archive } from "react-feather";
+import { ArrowLeft, Plus } from "react-feather";
 import { PrimaryButton, ChatCard, Searchbar, Select } from "@/components";
 
 const FILTER_OPTIONS = [
@@ -134,7 +134,7 @@ export default function ArchivePage() {
         <h1 className="text-3xl font-light">Archive</h1>
         <PrimaryButton
           text="New Chat"
-          icon={<Archive size={17} />}
+          icon={<Plus size={17} />}
           className="w-max justify-center text-sm min-w-32"
           href="/chat"
           filled
@@ -181,8 +181,9 @@ export default function ArchivePage() {
                   <p>No archived chats</p>
                   <PrimaryButton
                     text="Go to Chats"
-                    className="w-max justify-center text-sm"
+                    className="w-max justify-center text-sm px-4"
                     href="/chats"
+                    icon={<ArrowLeft size={15} />}
                   />
                 </div>
               )}

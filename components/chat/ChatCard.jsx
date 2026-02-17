@@ -2,9 +2,8 @@
 
 import React, { useState } from "react";
 import { useDatabase, useModal } from "@/context";
-import { ChatDeleteModal, ChatRenameModal, DropdownMenu } from "@/components";
-import { Archive, Check, Edit2, Trash } from "react-feather";
-import { useRouter } from "next/navigation";
+import { DeleteChatModal, RenameChatModal, DropdownMenu } from "@/components";
+import { Archive, Edit2, Trash } from "react-feather";
 import { twMerge } from "tailwind-merge";
 
 export default function ChatCard({
@@ -17,7 +16,6 @@ export default function ChatCard({
   const { toggleArchiveConversation } = useDatabase();
   const { openModal, openMessage } = useModal();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const router = useRouter();
 
   const handleArchiveChat = async (id) => {
     const result = await toggleArchiveConversation(id);
@@ -31,7 +29,7 @@ export default function ChatCard({
       icon: Edit2,
       action: () =>
         openModal(
-          <ChatRenameModal title={conversation.title} id={conversation.id} />,
+          <RenameChatModal title={conversation.title} id={conversation.id} />,
         ),
     },
     {
@@ -46,7 +44,7 @@ export default function ChatCard({
       icon: Trash,
       action: () =>
         openModal(
-          <ChatDeleteModal
+          <DeleteChatModal
             title={conversation.title}
             id={conversation.id}
             type="chat"
@@ -63,13 +61,26 @@ export default function ChatCard({
   };
 
   const defaultClasses = `
-    relative flex justify-between items-center gap-4 w-full
-    border rounded-xl cursor-pointer select-none
-    transition-all duration-150
-    border-neutral-500/20 hover:border-neutral-500/50
-    bg-neutral-950/10 hover:bg-neutral-950
-    shadow shadow-neutral-950/10 hover:shadow-neutral-950/50
-  `;
+    relative 
+    flex
+    justify-between
+    items-center
+    gap-4
+    w-full
+    border
+    rounded-xl
+    cursor-pointer
+    select-none
+    transition-all
+    duration-150
+    border-neutral-500/20
+    hover:border-neutral-500/50
+    bg-neutral-950/10
+    hover:bg-neutral-950
+    shadow
+    shadow-neutral-950/10
+    hover:shadow-neutral-950/50
+    `;
 
   const selectedClasses = isSelected
     ? "bg-neutral-900 border-neutral-500/60 shadow-neutral-950/50 hover:bg-neutral-900/90"

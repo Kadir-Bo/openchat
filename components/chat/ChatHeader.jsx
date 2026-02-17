@@ -1,5 +1,5 @@
 import React from "react";
-import { ChatDeleteModal, ChatRenameModal, DropdownMenu } from "@/components";
+import { DeleteChatModal, RenameChatModal, DropdownMenu } from "@/components";
 import { Archive, ChevronDown, Edit2, Trash } from "react-feather";
 import { useModal, useDatabase } from "@/context";
 
@@ -13,7 +13,7 @@ export default function ChatHeader({ conversation = null }) {
 
   const handleRenameChat = () => {
     return openModal(
-      <ChatRenameModal title={title} description={description} id={id} />,
+      <RenameChatModal title={title} description={description} id={id} />,
     );
   };
 
@@ -25,7 +25,7 @@ export default function ChatHeader({ conversation = null }) {
   };
 
   const handleDeleteChat = () => {
-    return openModal(<ChatDeleteModal title={title} id={id} />);
+    return openModal(<DeleteChatModal title={title} id={id} />);
   };
 
   const ChatDropDownMenu = [

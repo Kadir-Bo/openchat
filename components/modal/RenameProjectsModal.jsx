@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { PrimaryButton, Input, Textarea } from "@/components";
 import { useDatabase, useModal } from "@/context";
 
-export default function ProjectsRenameModal({ title, description, id }) {
+export default function RenameProjectsModal({ title, description, id }) {
   const { closeModal, openMessage } = useModal();
   const { updateProject, loading } = useDatabase();
 

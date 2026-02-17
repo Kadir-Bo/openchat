@@ -29,10 +29,10 @@ export { default as DropdownContent } from "./dropdown/DropdownContent";
 export { default as DropdownTrigger } from "./dropdown/DropdownTrigger";
 export { default as DropdownMenu } from "./dropdown/DropdownMenu";
 // MODAl COMPONENTS
-export { default as ProjectsRenameModal } from "./modal/ProjectsRenameModal";
-export { default as ProjectsDeleteModal } from "./modal/ProjectsDeleteModal";
-export { default as ChatDeleteModal } from "./modal/ChatDeleteModal";
-export { default as ChatRenameModal } from "./modal/ChatRenameModal";
+export { default as RenameProjectsModal } from "./modal/RenameProjectsModal";
+export { default as DeleteProjectsModal } from "./modal/DeleteProjectsModal";
+export { default as DeleteChatModal } from "./modal/DeleteChatModal";
+export { default as RenameChatModal } from "./modal/RenameChatModal";
 export { default as DeleteAccountModal } from "./modal/DeleteAccountModal";
 // INPUT COMPONENTS
 export { default as Input } from "./input/Input";

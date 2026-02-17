@@ -4,7 +4,7 @@ import { useDatabase, useModal } from "@/context";
 import React, { useState } from "react";
 import { PrimaryButton } from "..";
 
-export default function ChatRenameModal({ title, id }) {
+export default function RenameChatModal({ title, id }) {
   const { loading, updateConversation } = useDatabase();
   const { openMessage, closeModal } = useModal();
   const [newTitle, setNewTitle] = useState(title);

@@ -6,8 +6,8 @@ import { useDatabase, useModal } from "@/context";
 
 import {
   DropdownMenu,
-  ProjectsDeleteModal,
-  ProjectsRenameModal,
+  DeleteProjectsModal,
+  RenameProjectsModal,
 } from "@/components";
 
 import { Archive, Edit2, Trash } from "react-feather";
@@ -23,7 +23,7 @@ export default function ProjectCard({ project, sort }) {
 
   const handleRenameProject = (id) => {
     return openModal(
-      <ProjectsRenameModal title={title} description={description} id={id} />,
+      <RenameProjectsModal title={title} description={description} id={id} />,
     );
   };
 
@@ -35,7 +35,7 @@ export default function ProjectCard({ project, sort }) {
   };
 
   const handleDeleteProject = (id) => {
-    return openModal(<ProjectsDeleteModal title={title} id={id} />);
+    return openModal(<DeleteProjectsModal title={title} id={id} />);
   };
 
   const handleNavigateToProject = (id) => {

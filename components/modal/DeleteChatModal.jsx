@@ -2,7 +2,7 @@ import { useDatabase, useModal } from "@/context";
 import React from "react";
 import { PrimaryButton } from "@/components";
 
-export default function ChatDeleteModal({ title, id }) {
+export default function DeleteChatModal({ title, id }) {
   const { loading, deleteConversation } = useDatabase();
   const { openMessage, closeModal } = useModal();
   const handleDeleteChat = async () => {

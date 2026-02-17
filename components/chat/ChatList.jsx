@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDatabase, useModal } from "@/context";
 
-import { ChatDeleteModal, DropdownMenu } from "@/components";
+import { DeleteChatModal, DropdownMenu } from "@/components";
 
 import { Archive, ChevronDown, Edit2, Trash } from "react-feather";
 import { twMerge } from "tailwind-merge";
@@ -83,7 +83,7 @@ export default function ChatList({
 
   const handleDeleteChat = useCallback(
     (id, title) => {
-      openModal(<ChatDeleteModal title={title} id={id} />);
+      openModal(<DeleteChatModal title={title} id={id} />);
     },
     [openModal],
   );

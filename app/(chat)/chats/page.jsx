@@ -6,9 +6,10 @@ import { Plus, Trash2 } from "react-feather";
 import {
   PrimaryButton,
   ChatCard,
-  ProjectCard,
   Searchbar,
   Select,
+  ProjectCard,
+  StackedProjectCard,
 } from "@/components";
 import { useRouter } from "next/navigation";
 import { useSelectionHandlers } from "@/hooks";
@@ -22,17 +23,13 @@ const FILTER_OPTIONS = [
 const fuzzyMatch = (str, pattern) => {
   if (!pattern) return { match: true, score: 0 };
   if (!str) return { match: false, score: 0 };
-
   const lowerStr = str.toLowerCase();
   const lowerPattern = pattern.toLowerCase();
-
   if (lowerStr.includes(lowerPattern)) return { match: true, score: 1000 };
-
-  let patternIdx = 0;
-  let strIdx = 0;
-  let score = 0;
-  let consecutiveMatches = 0;
-
+  let patternIdx = 0,
+    strIdx = 0,
+    score = 0,
+    consecutiveMatches = 0;
   while (strIdx < lowerStr.length && patternIdx < lowerPattern.length) {
     if (lowerStr[strIdx] === lowerPattern[patternIdx]) {
       score += 1;
@@ -45,10 +42,8 @@ const fuzzyMatch = (str, pattern) => {
     }
     strIdx++;
   }
-
   const match = patternIdx === lowerPattern.length;
   if (match) score = score * (1 + score / lowerStr.length);
-
   return { match, score: match ? score : 0 };
 };
 
@@ -64,19 +59,14 @@ export default function ChatsPage() {
   const [activeTab, setActiveTab] = useState("chats");
   const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].value);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Chats state
   const [conversations, setConversations] = useState([]);
   const [chatsLoading, setChatsLoading] = useState(true);
-
-  // Projects state
-  const [projects, setProjects] = useState([]);
+  const [allProjects, setAllProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
 
   const chatListRef = useRef([]);
   const projectListRef = useRef([]);
 
-  // Aktive Chats abonnieren
   useEffect(() => {
     const unsubscribe = subscribeToConversations((data) => {
       setConversations(data);
@@ -85,69 +75,142 @@ export default function ChatsPage() {
     return () => unsubscribe?.();
   }, [subscribeToConversations]);
 
-  // Aktive Projekte abonnieren — client-seitig gefiltert
   useEffect(() => {
     const unsubscribe = subscribeToProjects((data) => {
-      setProjects(data.filter((p) => !p.isArchived));
+      setAllProjects(data);
       setProjectsLoading(false);
     }, true);
     return () => unsubscribe?.();
   }, [subscribeToProjects]);
 
-  // Lookup-Map für O(1) Projektzugriff (für Chat-Badges)
-  const projectsById = useMemo(
-    () => Object.fromEntries(projects.map((p) => [p.id, p])),
-    [projects],
+  const activeProjects = useMemo(
+    () => allProjects.filter((p) => !p.isArchived),
+    [allProjects],
   );
 
-  // Suche beim Tab-Wechsel zurücksetzen
-  useEffect(() => {
-    setSearchQuery("");
-  }, [activeTab]);
+  const archivedProjectIds = useMemo(
+    () => new Set(allProjects.filter((p) => p.isArchived).map((p) => p.id)),
+    [allProjects],
+  );
 
-  // Escape leert die Auswahl in beiden Tabs
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") {
-        chatHandlers.clearSelection();
-        projectHandlers.clearSelection();
+  const projectsById = useMemo(
+    () => Object.fromEntries(activeProjects.map((p) => [p.id, p])),
+    [activeProjects],
+  );
+
+  const visibleConversations = useMemo(
+    () =>
+      conversations.filter(
+        (c) => !c.projectId || !archivedProjectIds.has(c.projectId),
+      ),
+    [conversations, archivedProjectIds],
+  );
+
+  // Group conversations by their projectId
+  const conversationsByProject = useMemo(() => {
+    const map = {};
+    for (const c of visibleConversations) {
+      if (c.projectId && projectsById[c.projectId]) {
+        if (!map[c.projectId]) map[c.projectId] = [];
+        map[c.projectId].push(c);
       }
+    }
+    return map;
+  }, [visibleConversations, projectsById]);
+
+  // Build the mixed list for the chats tab:
+  // standalone chats render as ChatCard, project groups as StackedProjectCard
+  const chatTabItems = useMemo(() => {
+    const q = searchQuery.trim();
+    const toMs = (v) => v?.toDate?.().getTime() ?? new Date(v).getTime();
+    const sortKey = (item) => {
+      if (sortBy === "name") return item.title || "";
+      const key = sortBy === "date" ? "createdAt" : "updatedAt";
+      return toMs(item[key]);
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  // Gefilterte & sortierte Chats
-  const filteredChats = useMemo(() => {
-    const list = searchQuery.trim()
-      ? conversations
-          .map((c) => ({ c, ...fuzzyMatch(c.title || "", searchQuery) }))
-          .filter(({ match }) => match)
-          .sort((a, b) => b.score - a.score)
-          .map(({ c }) => c)
-      : [...conversations].sort((a, b) => {
-          if (sortBy === "name")
-            return (a.title || "").localeCompare(b.title || "");
-          const key = sortBy === "date" ? "createdAt" : "updatedAt";
-          const toDate = (v) => v?.toDate?.() ?? new Date(v);
-          return toDate(b[key]) - toDate(a[key]);
-        });
-    chatListRef.current = list;
-    return list;
-  }, [conversations, searchQuery, sortBy]);
+    const items = [];
+    const seenProjects = new Set();
 
-  // Gefilterte & sortierte Projekte
+    for (const c of visibleConversations) {
+      const project = c.projectId ? projectsById[c.projectId] : null;
+
+      if (project) {
+        // Only add one entry per project group
+        if (seenProjects.has(project.id)) continue;
+        seenProjects.add(project.id);
+
+        if (q) {
+          const projectMatch = fuzzyMatch(project.title || "", q);
+          const chatMatches = (conversationsByProject[project.id] ?? []).map(
+            (conv) => fuzzyMatch(conv.title || "", q),
+          );
+          const bestChatScore = chatMatches.reduce(
+            (best, s) => (s.score > best.score ? s : best),
+            { match: false, score: 0 },
+          );
+          if (!projectMatch.match && !bestChatScore.match) continue;
+          items.push({
+            type: "project",
+            item: project,
+            score: Math.max(projectMatch.score, bestChatScore.score),
+            sortValue: sortKey(project),
+          });
+        } else {
+          items.push({
+            type: "project",
+            item: project,
+            sortValue: sortKey(project),
+          });
+        }
+      } else {
+        // Standalone chat
+        if (q) {
+          const { match, score } = fuzzyMatch(c.title || "", q);
+          if (!match) continue;
+          items.push({ type: "chat", item: c, score, sortValue: sortKey(c) });
+        } else {
+          items.push({ type: "chat", item: c, sortValue: sortKey(c) });
+        }
+      }
+    }
+
+    // Sort
+    if (q) {
+      items.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    } else if (sortBy === "name") {
+      items.sort((a, b) =>
+        (a.sortValue || "").localeCompare(b.sortValue || ""),
+      );
+    } else {
+      items.sort((a, b) => b.sortValue - a.sortValue);
+    }
+
+    // Sync chatListRef for selection handlers (standalone chats only)
+    chatListRef.current = items
+      .filter((i) => i.type === "chat")
+      .map((i) => i.item);
+
+    return items;
+  }, [
+    visibleConversations,
+    projectsById,
+    conversationsByProject,
+    searchQuery,
+    sortBy,
+  ]);
+
   const filteredProjects = useMemo(() => {
-    const list = searchQuery.trim()
-      ? projects.filter((p) =>
+    const q = searchQuery.trim();
+    const list = q
+      ? activeProjects.filter((p) =>
           [p.title, p.description]
             .filter(Boolean)
             .join(" ")
             .toLowerCase()
-            .includes(searchQuery.toLowerCase()),
+            .includes(q.toLowerCase()),
         )
-      : [...projects].sort((a, b) => {
+      : [...activeProjects].sort((a, b) => {
           if (sortBy === "name")
             return (a.title || "").localeCompare(b.title || "");
           const key = sortBy === "date" ? "createdAt" : "updatedAt";
@@ -156,7 +219,7 @@ export default function ChatsPage() {
         });
     projectListRef.current = list;
     return list;
-  }, [projects, searchQuery, sortBy]);
+  }, [activeProjects, searchQuery, sortBy]);
 
   const chatHandlers = useSelectionHandlers({
     listRef: chatListRef,
@@ -170,14 +233,31 @@ export default function ChatsPage() {
     deleteOne: deleteProject,
   });
 
+  useEffect(() => {
+    setSearchQuery("");
+  }, [activeTab]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        chatHandlers.clearSelection();
+        projectHandlers.clearSelection();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const isChats = activeTab === "chats";
   const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
   const selectedCount = isChats
     ? chatHandlers.selectedIds.size
     : projectHandlers.selectedIds.size;
   const isLoading = isChats ? chatsLoading : projectsLoading;
-  const currentList = isChats ? filteredChats : filteredProjects;
-  const hasItems = isChats ? conversations.length > 0 : projects.length > 0;
+  const hasItems = isChats
+    ? chatTabItems.length > 0
+    : activeProjects.length > 0;
 
   return (
     <div className="flex-1 flex flex-col max-w-5xl mx-auto py-8 gap-6 w-full">
@@ -206,7 +286,9 @@ export default function ChatsPage() {
           >
             {tab}
             <span className="ml-2 text-xs text-neutral-600">
-              {tab === "chats" ? conversations.length : projects.length}
+              {tab === "chats"
+                ? visibleConversations.length
+                : activeProjects.length}
             </span>
           </button>
         ))}
@@ -229,10 +311,12 @@ export default function ChatsPage() {
 
       <Searchbar
         onSearch={(q) => setSearchQuery(q)}
-        placeholder={`Search ${isChats ? "chats" : "projects"}`}
+        placeholder={
+          isChats ? "Search chats or projects..." : "Search projects..."
+        }
       />
 
-      {/* Aktionsleiste */}
+      {/* Action bar */}
       <div className="flex items-center justify-between">
         <span className="text-xs text-neutral-600">
           {selectedCount > 0
@@ -249,7 +333,6 @@ export default function ChatsPage() {
               ? "⌘ / Ctrl + click to select"
               : ""}
         </span>
-
         <div className="flex items-center gap-2">
           {selectedCount > 0 && (
             <PrimaryButton
@@ -271,7 +354,6 @@ export default function ChatsPage() {
               }
             />
           )}
-
           {selectedCount === 0 && hasItems && (
             <PrimaryButton
               text={`Delete all ${isChats ? "chats" : "projects"}`}
@@ -279,7 +361,7 @@ export default function ChatsPage() {
               className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
               onClick={() =>
                 isChats
-                  ? chatHandlers.handleDeleteAll(filteredChats)
+                  ? chatHandlers.handleDeleteAll(chatListRef.current)
                   : projectHandlers.handleDeleteAll(filteredProjects)
               }
             />
@@ -287,56 +369,76 @@ export default function ChatsPage() {
         </div>
       </div>
 
-      {/* Inhalt */}
+      {/* Content */}
       {isLoading ? (
         <p className="text-center py-12 text-neutral-400">
           Loading {isChats ? "chats" : "projects"}...
         </p>
-      ) : currentList.length > 0 ? (
-        isChats ? (
+      ) : isChats ? (
+        chatTabItems.length > 0 ? (
           <div className="flex flex-col gap-2">
-            {filteredChats.map((conversation) => (
-              <ChatCard
-                key={conversation.id}
-                conversation={conversation}
-                isSelected={chatHandlers.selectedIds.has(conversation.id)}
-                onCardClick={chatHandlers.handleCardClick}
-                project={
-                  conversation.projectId
-                    ? (projectsById[conversation.projectId] ?? null)
-                    : null
-                }
-              />
-            ))}
+            {chatTabItems.map(({ type, item }) =>
+              type === "project" ? (
+                <StackedProjectCard
+                  key={item.id}
+                  project={item}
+                  conversations={conversationsByProject[item.id] ?? []}
+                  isSelected={projectHandlers.selectedIds.has(item.id)}
+                  onCardClick={projectHandlers.handleCardClick}
+                />
+              ) : (
+                <ChatCard
+                  key={item.id}
+                  conversation={item}
+                  isSelected={chatHandlers.selectedIds.has(item.id)}
+                  onCardClick={chatHandlers.handleCardClick}
+                  project={null}
+                />
+              ),
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-4">
-            {filteredProjects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                sort={sortBy}
-                isSelected={projectHandlers.selectedIds.has(project.id)}
-                onCardClick={projectHandlers.handleCardClick}
-              />
-            ))}
+          <div className="text-center py-12 text-neutral-400">
+            {searchQuery ? (
+              <>No chats found matching &quot;{searchQuery}&quot;</>
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <p>No chats yet</p>
+                <PrimaryButton
+                  text="Start your first chat"
+                  icon={<Plus size={17} />}
+                  className="w-max justify-center text-sm"
+                  href="/chat"
+                  filled
+                />
+              </div>
+            )}
           </div>
         )
+      ) : filteredProjects.length > 0 ? (
+        <div className="grid grid-cols-3 gap-4">
+          {filteredProjects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              sort={sortBy}
+              isSelected={projectHandlers.selectedIds.has(project.id)}
+              onCardClick={projectHandlers.handleCardClick}
+            />
+          ))}
+        </div>
       ) : (
         <div className="text-center py-12 text-neutral-400">
           {searchQuery ? (
-            <>
-              No {isChats ? "chats" : "projects"} found matching &quot;
-              {searchQuery}&quot;
-            </>
+            <>No projects found matching &quot;{searchQuery}&quot;</>
           ) : (
             <div className="flex flex-col items-center gap-4">
-              <p>No {isChats ? "chats" : "projects"} yet</p>
+              <p>No projects yet</p>
               <PrimaryButton
-                text={isChats ? "Start your first chat" : "Create a project"}
+                text="Create a project"
                 icon={<Plus size={17} />}
                 className="w-max justify-center text-sm"
-                href={isChats ? "/chat" : "/projects/new"}
+                href="/projects/new"
                 filled
               />
             </div>

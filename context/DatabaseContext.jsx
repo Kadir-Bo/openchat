@@ -302,27 +302,47 @@ export default function DatabaseProvider({ children }) {
       setLoading(true);
       resetError();
       try {
-        const batch = writeBatch(db);
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-        const conversationIds = projectDoc.exists()
-          ? projectDoc.data().conversationIds || []
-          : [];
 
-        await Promise.all(
-          conversationIds.map(async (convId) => {
-            const messagesRef = collection(
-              db,
-              `conversations/${convId}/messages`,
-            );
-            const messagesSnapshot = await getDocs(messagesRef);
-            messagesSnapshot.forEach((msgDoc) => batch.delete(msgDoc.ref));
-            batch.delete(doc(db, "conversations", convId));
-          }),
-        );
+        if (!projectDoc.exists()) {
+          throw new Error("Projekt nicht gefunden");
+        }
 
-        batch.delete(projectRef);
-        await batch.commit();
+        const conversationIds = projectDoc.data().conversationIds || [];
+
+        // Step 1: delete all messages FIRST — while parent conversations still
+        // exist so the Rule's get(conversation).userId check can succeed
+        for (const convId of conversationIds) {
+          const messagesSnapshot = await getDocs(
+            collection(db, `conversations/${convId}/messages`),
+          );
+          if (!messagesSnapshot.empty) {
+            const BATCH_SIZE = 499;
+            const docs = messagesSnapshot.docs;
+            for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+              const batch = writeBatch(db);
+              docs.slice(i, i + BATCH_SIZE).forEach((d) => batch.delete(d.ref));
+              await batch.commit();
+            }
+          }
+        }
+
+        // Step 2: delete conversations + project AFTER all messages are gone
+        const refsToDelete = [
+          ...conversationIds.map((id) => doc(db, "conversations", id)),
+          projectRef,
+        ];
+
+        const BATCH_SIZE = 499;
+        for (let i = 0; i < refsToDelete.length; i += BATCH_SIZE) {
+          const batch = writeBatch(db);
+          refsToDelete
+            .slice(i, i + BATCH_SIZE)
+            .forEach((ref) => batch.delete(ref));
+          await batch.commit();
+        }
+
         return true;
       } catch (err) {
         return handleError(err, "Fehler beim Loeschen des Projekts");
@@ -332,7 +352,6 @@ export default function DatabaseProvider({ children }) {
     },
     [user, db, handleError, resetError],
   );
-
   const addConversationToProject = useCallback(
     async (projectId, conversationId) => {
       if (!user || !db) return null;

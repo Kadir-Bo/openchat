@@ -96,7 +96,7 @@ export default function ChatCard({
         </h4>
         {project && (
           <span className="flex gap-1 mt-2 text-xs text-neutral-600 truncate max-w-48 leading-none">
-            <Folder size={9} />
+            <Folder size={9} className="shrink-0" />
             {project.title}
           </span>
         )}

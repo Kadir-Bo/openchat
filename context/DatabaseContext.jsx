@@ -42,6 +42,7 @@ export const useDatabase = () => {
 export default function DatabaseProvider({ children }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
   const [error, setError] = useState(null);
   const db = getFirebaseDB();
 
@@ -68,8 +69,10 @@ export default function DatabaseProvider({ children }) {
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
 
+        let profile;
+
         if (!userDoc.exists()) {
-          await setDoc(userRef, {
+          const newProfile = {
             email: user.email,
             displayName: user.displayName || null,
             photoURL: user.photoURL || null,
@@ -79,18 +82,23 @@ export default function DatabaseProvider({ children }) {
               language: "de",
               modelPreferences: "",
             },
+            memories: [], // ← NEU
             usage: {
               totalMessages: 0,
               lastReset: serverTimestamp(),
             },
             createdAt: serverTimestamp(),
             lastActive: serverTimestamp(),
-          });
+          };
+
+          await setDoc(userRef, newProfile);
+          profile = { id: user.uid, ...newProfile };
         } else {
-          await updateDoc(userRef, {
-            lastActive: serverTimestamp(),
-          });
+          await updateDoc(userRef, { lastActive: serverTimestamp() });
+          profile = { id: userDoc.id, ...userDoc.data() };
         }
+
+        setUserProfile(profile);
       } catch (err) {
         console.error("Fehler beim Initialisieren des User-Profils:", err);
       }
@@ -119,11 +127,17 @@ export default function DatabaseProvider({ children }) {
           ...(userData.preferences && {
             preferences: userData.preferences,
           }),
+          ...(userData.memories !== undefined && {
+            // ← NEU
+            memories: userData.memories,
+          }),
           lastActive: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
 
         await updateDoc(userRef, updates);
+
+        setUserProfile((prev) => ({ ...prev, ...updates }));
 
         return { id: user.uid, ...updates };
       } catch (err) {
@@ -134,7 +148,6 @@ export default function DatabaseProvider({ children }) {
     },
     [user, db, handleError, resetError],
   );
-
   /* Lädt User-Profil */
   const getUserProfile = useCallback(async () => {
     if (!user || !db) return null;
@@ -1163,6 +1176,7 @@ export default function DatabaseProvider({ children }) {
     loading,
     error,
     resetError,
+    userProfile,
 
     // User Operations
     updateUserProfile,

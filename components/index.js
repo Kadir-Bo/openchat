@@ -17,6 +17,7 @@ export { default as PrimaryButton } from "./buttons/PrimaryButton";
 // UI COMPONENTS
 export { default as Searchbar } from "./ui/Searchbar";
 export { default as Message } from "./ui/Message";
+export { default as MemoryItem } from "./ui/MemoryItem";
 // DROPDOWN COMPONENTS
 export {
   DropdownItem,

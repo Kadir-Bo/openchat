@@ -120,11 +120,13 @@ function GeneralSettingsPage() {
   const currentModelLabel =
     MODELS.find((m) => m.id === userDefaultModel)?.label || userDefaultModel;
 
+  if (isProfileLoading) return null;
+
   return (
-    !isProfileLoading && (
-      <div className="flex flex-col gap-10">
-        <div className="flex flex-col gap-5">
-          <h4 className="font-medium">Profile</h4>
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-5">
+        <h4 className="font-medium">Profile</h4>
+        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
           <div className="flex items-start justify-between gap-6">
             <Input
               label="What would you like to be called?"
@@ -144,6 +146,12 @@ function GeneralSettingsPage() {
               disabled
             />
           </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-5">
+        <h4 className="font-medium">Preferences</h4>
+        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
           <Textarea
             label="What personal preferences should Claude consider in responses?"
             value={modelPreferences}
@@ -154,28 +162,13 @@ function GeneralSettingsPage() {
             inputClassName="min-h-32"
           />
         </div>
+      </div>
 
-        <motion.div
-          className="overflow-hidden flex justify-end"
-          initial={{ height: 0, opacity: 0 }}
-          animate={{
-            height: hasChanges ? "auto" : 0,
-            opacity: hasChanges ? 1 : 0,
-          }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
-        >
-          <PrimaryButton
-            className="w-max px-4"
-            text={loading ? "Saving..." : isSaved ? "Saved!" : "Save Changes"}
-            disabled={loading}
-            onClick={handleOnSave}
-          />
-        </motion.div>
+      <hr className="text-neutral-700" />
 
-        <hr className="text-neutral-700" />
-
-        <div className="flex flex-col gap-5">
-          <h4 className="font-medium mb-4">Preferences</h4>
+      <div className="flex flex-col gap-5">
+        <h4 className="font-medium">Model & Theme</h4>
+        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
           <Select
             id="default-model"
             name="default-model"
@@ -191,7 +184,24 @@ function GeneralSettingsPage() {
           />
         </div>
       </div>
-    )
+
+      <motion.div
+        className="overflow-hidden flex justify-end"
+        initial={{ height: 0, opacity: 0 }}
+        animate={{
+          height: hasChanges ? "auto" : 0,
+          opacity: hasChanges ? 1 : 0,
+        }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+      >
+        <PrimaryButton
+          className="w-max px-4"
+          text={loading ? "Saving..." : isSaved ? "Saved!" : "Save Changes"}
+          disabled={loading}
+          onClick={handleOnSave}
+        />
+      </motion.div>
+    </div>
   );
 }
 

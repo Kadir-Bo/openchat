@@ -33,9 +33,6 @@ function AccountSettingsPage() {
         <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-white">
-                {user?.displayName || "No name set"}
-              </p>
               <p className="text-sm text-neutral-400">{user?.email}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-white font-medium text-sm">

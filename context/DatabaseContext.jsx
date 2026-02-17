@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getFirebaseDB } from "@/lib/firebase/config";
 import {
@@ -36,6 +42,7 @@ export const useDatabase = () => {
 export default function DatabaseProvider({ children }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
   const [error, setError] = useState(null);
   const db = getFirebaseDB();
 
@@ -53,8 +60,55 @@ export default function DatabaseProvider({ children }) {
 
   // ==================== USER OPERATIONS ====================
 
-  /* Erstellt oder aktualisiert ein User-Profil */
-  const createOrUpdateUser = useCallback(
+  /* Auto-create User Profile wenn User sich einloggt */
+  useEffect(() => {
+    if (!user || !db) return;
+
+    const initUserProfile = async () => {
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+
+        let profile;
+
+        if (!userDoc.exists()) {
+          const newProfile = {
+            email: user.email,
+            displayName: user.displayName || null,
+            photoURL: user.photoURL || null,
+            preferences: {
+              theme: "dark",
+              defaultModel: "openai/gpt-oss-120b",
+              language: "de",
+              modelPreferences: "",
+            },
+            memories: [], // ← NEU
+            usage: {
+              totalMessages: 0,
+              lastReset: serverTimestamp(),
+            },
+            createdAt: serverTimestamp(),
+            lastActive: serverTimestamp(),
+          };
+
+          await setDoc(userRef, newProfile);
+          profile = { id: user.uid, ...newProfile };
+        } else {
+          await updateDoc(userRef, { lastActive: serverTimestamp() });
+          profile = { id: userDoc.id, ...userDoc.data() };
+        }
+
+        setUserProfile(profile);
+      } catch (err) {
+        console.error("Fehler beim Initialisieren des User-Profils:", err);
+      }
+    };
+
+    initUserProfile();
+  }, [user, db]);
+
+  /* aktualisiert ein User-Profil */
+  const updateUserProfile = useCallback(
     async (userData) => {
       if (!user || !db) return null;
       setLoading(true);
@@ -62,52 +116,38 @@ export default function DatabaseProvider({ children }) {
 
       try {
         const userRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userRef);
 
-        const data = {
-          email: user.email,
-          displayName: user.displayName || userData.displayName || null,
-          photoURL: user.photoURL || userData.photoURL || null,
-          preferences: {
-            theme: "dark",
-            defaultModel: "gpt-oss",
-            language: "de",
-            ...userData.preferences,
-          },
-          usage: {
-            totalMessages: 0,
-            lastReset: serverTimestamp(),
-          },
+        const updates = {
+          ...(userData.displayName !== undefined && {
+            displayName: userData.displayName,
+          }),
+          ...(userData.photoURL !== undefined && {
+            photoURL: userData.photoURL,
+          }),
+          ...(userData.preferences && {
+            preferences: userData.preferences,
+          }),
+          ...(userData.memories !== undefined && {
+            // ← NEU
+            memories: userData.memories,
+          }),
           lastActive: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         };
 
-        if (userDoc.exists()) {
-          // Update existing user
-          await updateDoc(userRef, {
-            ...data,
-            updatedAt: serverTimestamp(),
-          });
-        } else {
-          // Create new user
-          await setDoc(userRef, {
-            ...data,
-            createdAt: serverTimestamp(),
-          });
-        }
+        await updateDoc(userRef, updates);
 
-        return { id: user.uid, ...data };
+        setUserProfile((prev) => ({ ...prev, ...updates }));
+
+        return { id: user.uid, ...updates };
       } catch (err) {
-        return handleError(
-          err,
-          "Fehler beim Erstellen/Aktualisieren des Users",
-        );
+        return handleError(err, "Fehler beim Aktualisieren des User-Profils");
       } finally {
         setLoading(false);
       }
     },
     [user, db, handleError, resetError],
   );
-
   /* Lädt User-Profil */
   const getUserProfile = useCallback(async () => {
     if (!user || !db) return null;
@@ -1136,9 +1176,10 @@ export default function DatabaseProvider({ children }) {
     loading,
     error,
     resetError,
+    userProfile,
 
     // User Operations
-    createOrUpdateUser,
+    updateUserProfile,
     getUserProfile,
     updateUserPreferences,
 

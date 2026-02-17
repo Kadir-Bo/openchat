@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useDatabase, useModal } from "@/context";
 
 import { ChatDeleteModal, ChatRenameModal, DropdownMenu } from "@/components";
@@ -13,6 +13,7 @@ export default function ChatCard({ conversation, sort, className = "" }) {
   const { title, id } = conversation;
   const { toggleArchiveConversation } = useDatabase();
   const { openModal, openMessage } = useModal();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
 
   const handleNavigateToChat = (id) => {
@@ -78,18 +79,23 @@ export default function ChatCard({ conversation, sort, className = "" }) {
     duration-150
   `;
 
+  const activeClasses =
+    isDropdownOpen &&
+    "bg-neutral-950 shadow-neutral-950/50 border-neutral-500/50";
+
   return (
     <div
-      className={twMerge(defaultClasses, className)}
+      className={twMerge(defaultClasses, activeClasses, className)}
       onClick={() => handleNavigateToChat(conversation.id)}
     >
-      <h4 className="font-medium p-4">{title || "Untitled Chat"}</h4>
+      <h4 className="font-medium ml-3.5 py-2">{title || "Untitled Chat"}</h4>
       <DropdownMenu
         dropdownList={ChatDropDownMenu}
-        triggerClassName="p-4"
+        triggerClassName="p-3.5"
         contentSide="right"
         contentClassName="-translate-x-2 translate-y-1"
         contentSideOffset={0}
+        onOpenChange={setIsDropdownOpen}
         onClick={(e, menuItem) => {
           e.stopPropagation();
           menuItem.action();

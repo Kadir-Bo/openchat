@@ -7,13 +7,7 @@ import { useDatabase, useModal } from "@/context";
 
 import { ChatDeleteModal, DropdownMenu } from "@/components";
 
-import {
-  Archive,
-  ChevronDown,
-  Edit2,
-  MoreHorizontal,
-  Trash,
-} from "react-feather";
+import { Archive, ChevronDown, Edit2, Trash } from "react-feather";
 import { twMerge } from "tailwind-merge";
 
 export default function ChatList({
@@ -87,14 +81,12 @@ export default function ChatList({
     [toggleArchiveConversation, openMessage],
   );
 
-  // ====== NEU: Modal statt confirm ======
   const handleDeleteChat = useCallback(
     (id, title) => {
       openModal(<ChatDeleteModal title={title} id={id} />);
     },
     [openModal],
   );
-  // ====== ENDE NEU ======
 
   const handleKeyDown = useCallback(
     (e, id, originalTitle) => {
@@ -161,7 +153,7 @@ export default function ChatList({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="mt-1 w-full py-2 px-1 flex flex-col gap-2 overflow-hidden"
+            className="mt-1 w-full py-2 px-1 flex flex-col gap-1 overflow-hidden"
           >
             {button && <li>{button}</li>}
 
@@ -207,14 +199,20 @@ const ChatListItem = React.memo(
     listIcon,
     listItemClasses,
   }) => {
-    const isEditingClasses = isEditing
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    const defaultClasses = `w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border`;
+    const editingClasses = isEditing
       ? "border-neutral-500 bg-neutral-900/50"
       : "hover:bg-neutral-800 border-transparent";
+    const activeClasses = isDropdownOpen && "bg-neutral-800 border-transparent";
+
     return (
       <li
         className={twMerge(
-          "w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border",
-          isEditingClasses,
+          defaultClasses,
+          editingClasses,
+          activeClasses,
           listItemClasses,
         )}
       >
@@ -226,7 +224,7 @@ const ChatListItem = React.memo(
             onKeyDown={onKeyDown}
             onBlur={onSave}
             autoFocus
-            className="w-full bg-transparent text-gray-200 px-3 py-2 border-transparent outline-none"
+            className="w-full bg-transparent text-gray-200 py-2 px-3 border-transparent outline-none"
           />
         ) : (
           <>
@@ -243,8 +241,9 @@ const ChatListItem = React.memo(
 
             <DropdownMenu
               dropdownList={getMenuItems(item)}
-              triggerClassName="p-4"
+              triggerClassName="p-2"
               contentSide="right"
+              onOpenChange={setIsDropdownOpen}
               contentClassName="-translate-x-2 translate-y-1"
               contentSideOffset={0}
               onClick={(e, menuItem) => {

@@ -107,14 +107,16 @@ export default function ProjectsPage() {
         />
       </div>
 
-      <Searchbar onSearch={handleSearchProjects} />
+      <Searchbar onSearch={handleSearchProjects} className="mb-6" />
+
+      <div className="flex gap-2 w-full"></div>
 
       {isInitialLoading ? (
         <div className="col-span-2 text-center py-12 text-neutral-400">
           Loading projects...
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-4 mt-6 w-full">
+        <div className="grid grid-cols-3 gap-4 w-full">
           {filteredAndSortedProjects.length > 0 ? (
             filteredAndSortedProjects.map((project) => (
               <ProjectCard key={project.id} project={project} sort={sortBy} />

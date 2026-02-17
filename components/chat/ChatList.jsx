@@ -161,7 +161,7 @@ export default function ChatList({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="mt-1 w-full py-2 px-1 flex flex-col gap-2 overflow-hidden"
+            className="mt-1 w-full py-2 px-1 flex flex-col gap-1 overflow-hidden"
           >
             {button && <li>{button}</li>}
 
@@ -226,7 +226,7 @@ const ChatListItem = React.memo(
             onKeyDown={onKeyDown}
             onBlur={onSave}
             autoFocus
-            className="w-full bg-transparent text-gray-200 px-3 py-2 border-transparent outline-none"
+            className="w-full bg-transparent text-gray-200 py-2 px-3 border-transparent outline-none"
           />
         ) : (
           <>
@@ -243,7 +243,7 @@ const ChatListItem = React.memo(
 
             <DropdownMenu
               dropdownList={getMenuItems(item)}
-              triggerClassName="p-4"
+              triggerClassName="p-2"
               contentSide="right"
               contentClassName="-translate-x-2 translate-y-1"
               contentSideOffset={0}

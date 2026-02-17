@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth, useChat, useDatabase } from "@/context";
 import { Loader } from "react-feather";
-import { MessageBubble } from "@/components";
+import { MessageBubble, ProcessingIndicator } from "@/components";
 import { formatUsername } from "@/lib";
 
 export default function ChatConversation({ onConversationLoad = null }) {
@@ -19,7 +19,7 @@ export default function ChatConversation({ onConversationLoad = null }) {
   const [loading, setLoading] = useState(!!conversationId);
   const messagesEndRef = useRef(null);
 
-  const { currentStreamResponse } = useChat();
+  const { currentStreamResponse, processingMessage } = useChat();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
@@ -27,7 +27,7 @@ export default function ChatConversation({ onConversationLoad = null }) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, currentStreamResponse]);
+  }, [messages, currentStreamResponse, processingMessage]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -83,6 +83,8 @@ export default function ChatConversation({ onConversationLoad = null }) {
     currentStreamResponse.trim().length > 0 &&
     !isStreamingComplete;
 
+  const showIndicator = !!processingMessage;
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -112,6 +114,8 @@ export default function ChatConversation({ onConversationLoad = null }) {
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
+
+        {/* Streaming response bubble */}
         {shouldShowStream && (
           <MessageBubble
             message={{
@@ -121,6 +125,14 @@ export default function ChatConversation({ onConversationLoad = null }) {
             }}
           />
         )}
+
+        {/* Processing indicator — thinking / memory update */}
+        {showIndicator && (
+          <div className="flex justify-start px-1">
+            <ProcessingIndicator message={processingMessage} />
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
     </div>

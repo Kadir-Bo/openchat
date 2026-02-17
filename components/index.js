@@ -9,6 +9,7 @@ export { default as ChatConversation } from "./chat/ChatConversation";
 export { default as MessageBubble } from "./chat/MessageBubble";
 export { default as ChatLoader } from "./chat/ChatLoader";
 export { default as AttachmentThumbnail } from "./chat/AttachmentThumbnail";
+export { default as ProcessingIndicator } from "./chat/ProcessingIndicator";
 // PROJECT COMPONENTS
 export { default as ProjectCard } from "./project/ProjectCard";
 export { default as ProjectTitle } from "./project/ProjectTitle";

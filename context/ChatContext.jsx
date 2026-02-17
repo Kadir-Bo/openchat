@@ -6,7 +6,9 @@ import {
   streamResponse,
   buildContextMessages,
   trimMessagesToTokenLimit,
+  buildMemoryExtractionPrompt,
 } from "@/lib";
+
 export const ChatContext = createContext(null);
 
 export const useChat = () => {
@@ -17,25 +19,79 @@ export const useChat = () => {
   return context;
 };
 
+const extractMemoryFromConversation = async (
+  userMessage,
+  assistantResponse,
+  existingMemories = [],
+  streamResponseFn,
+) => {
+  try {
+    const result = await streamResponseFn(
+      [
+        {
+          role: "system",
+          content: buildMemoryExtractionPrompt(existingMemories),
+        },
+        {
+          role: "user",
+          content: `User said: "${userMessage}"\n\nAssistant responded: "${assistantResponse.substring(0, 500)}"`,
+        },
+      ],
+      "openai/gpt-oss-120b",
+      null,
+      false,
+      50,
+      null,
+    );
+
+    const cleaned = result.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    return parsed;
+  } catch {
+    return { action: "none" };
+  }
+};
+
+// ==================== SYSTEM PROMPT MIT ERINNERUNGEN ====================
+
+const buildSystemPromptWithMemories = (memories = [], basePreferences = "") => {
+  let systemPrompt = "You are a helpful AI assistant.";
+
+  if (basePreferences) {
+    systemPrompt += `\n\nUser preferences: ${basePreferences}`;
+  }
+
+  if (memories && memories.length > 0) {
+    const memoriesList = memories.map((m) => `- ${m.text}`).join("\n");
+    systemPrompt += `\n\nWhat you remember about this user:\n${memoriesList}`;
+  }
+
+  return systemPrompt;
+};
+
+// ==================== CHAT PROVIDER ====================
+
 export default function ChatProvider({ children }) {
   const [currentStreamResponse, setCurrentStreamResponse] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState("");
+  const [reasoning, setReasoning] = useState(false);
 
-  // AbortController für alle Komponenten verfügbar
   const abortControllerRef = useRef(null);
 
-  // ==================== RESPONSE OPERATIONS ====================
+  // ==================== RESPONSE ====================
+
   const updateStreamResponse = (chunk) => {
     setCurrentStreamResponse(chunk || "");
   };
 
-  // ==================== LOADING STATE ====================
   const setLoadingState = (loading) => {
     setIsLoading(loading);
   };
 
-  // ==================== ATTACHMENT OPERATIONS ====================
+  // ==================== ANHÄNGE ====================
+
   const addAttachment = (newAttachment) => {
     setAttachments((prev) => [...prev, newAttachment]);
   };
@@ -48,11 +104,13 @@ export default function ChatProvider({ children }) {
     setAttachments([]);
   };
 
-  // ==================== MESSAGE OPERATIONS ====================
+  // ==================== NACHRICHT SENDEN ====================
+
   const sendMessage = async ({
     message,
     conversationId,
     model = "openai/gpt-oss-120b",
+    reasoning = false,
     onSuccess,
     onError,
     createConversation,
@@ -60,6 +118,8 @@ export default function ChatProvider({ children }) {
     addMessage,
     getMessages,
     addConversationToProject,
+    updateUserProfile,
+    userProfile,
     projectId,
     router,
   }) => {
@@ -71,7 +131,6 @@ export default function ChatProvider({ children }) {
 
     let messageText = message.trim();
 
-    // Store attachments for display
     const messageAttachments = attachments.map((att) => ({
       id: att.id,
       type: att.type,
@@ -93,6 +152,11 @@ export default function ChatProvider({ children }) {
     clearAttachments();
     setIsLoading(true);
 
+    // Indikator nur bei aktiviertem Reasoning zeigen
+    if (reasoning) {
+      setProcessingMessage("Einen Moment – ich denke nach …");
+    }
+
     try {
       let chatId = conversationId;
 
@@ -100,34 +164,34 @@ export default function ChatProvider({ children }) {
         const newConv = await createConversation("New Chat", model);
         chatId = newConv.id;
 
-        if (projectId) {
+        // Sicherheitsprüfung: projectId muss ein String sein
+        if (projectId && typeof projectId === "string") {
           await addConversationToProject(projectId, chatId);
         }
 
         router?.push(`/chat/${chatId}`);
       }
 
-      // Hole Messages
       let existingMessages = [];
-
       if (conversationId) {
         existingMessages = await getMessages(chatId, 20);
-        console.log("📚 Existing messages:", existingMessages.length);
       }
+
+      // System Prompt mit gespeicherten Erinnerungen aufbauen
+      const systemPrompt = buildSystemPromptWithMemories(
+        userProfile?.memories || [],
+        userProfile?.preferences?.modelPreferences || "",
+      );
 
       const contextMessages = buildContextMessages(
         existingMessages,
         messageText,
         10,
+        systemPrompt,
       );
-
-      console.log("📨 Context messages built:", contextMessages); // ← DEBUG
 
       const trimmedMessages = trimMessagesToTokenLimit(contextMessages, 100000);
 
-      console.log("✂️ Trimmed messages:", trimmedMessages); // ← DEBUG
-
-      // Speichere User-Message BEVOR wir die API aufrufen
       await addMessage(chatId, {
         role: "user",
         content: messageText,
@@ -143,32 +207,20 @@ export default function ChatProvider({ children }) {
         (chunk, accumulated) => {
           accumulatedResponse = accumulated;
           updateStreamResponse(accumulated);
+          // Reasoning-Indikator ausblenden sobald erste Tokens ankommen
+          if (reasoning) setProcessingMessage("");
         },
-        false,
+        reasoning,
         50,
         abortController.signal,
       );
 
-      console.log("✅ Final response:", finalResponse?.substring(0, 100)); // ← DEBUG
-      console.log(
-        "📊 Accumulated from callback:",
-        accumulatedResponse?.substring(0, 100),
-      ); // ← DEBUG
-
-      // Only save if not aborted
       if (!abortController.signal.aborted) {
         const responseToSave = finalResponse || accumulatedResponse;
 
         if (!responseToSave || !responseToSave.trim()) {
-          console.error("❌ Empty response! Not saving.");
           throw new Error("Leere Antwort vom Model erhalten");
         }
-
-        console.log(
-          "💾 Saving assistant message:",
-          responseToSave.length,
-          "chars",
-        );
 
         await addMessage(chatId, {
           role: "assistant",
@@ -178,21 +230,76 @@ export default function ChatProvider({ children }) {
 
         if (!conversationId) {
           try {
-            console.log("🏷️ Generating title...");
             const title = await generateTitleFromResponse(
               messageText,
               responseToSave,
               streamResponse,
             );
-            console.log("✅ Title generated:", title);
             await updateConversation(chatId, { title });
-          } catch (titleError) {
-            console.warn(
-              "⚠️ Title generation failed, using fallback:",
-              titleError.message,
-            );
+          } catch {
             const fallbackTitle = messageText.substring(0, 30) + "...";
             await updateConversation(chatId, { title: fallbackTitle });
+          }
+        }
+
+        // Erinnerungs-Extraktion mit bestehenden Memories als Kontext
+        if (updateUserProfile) {
+          try {
+            const currentMemories = userProfile?.memories || [];
+
+            const memoryResult = await extractMemoryFromConversation(
+              messageText,
+              responseToSave,
+              currentMemories,
+              streamResponse,
+            );
+
+            if (memoryResult.action === "add" && memoryResult.memory) {
+              // Neue Erinnerung hinzufügen
+              setProcessingMessage("Erinnerung wird gespeichert …");
+
+              const newMemory = {
+                id: crypto.randomUUID(),
+                text: memoryResult.memory,
+                createdAt: new Date().toISOString(),
+                source: "auto",
+              };
+
+              await updateUserProfile({
+                memories: [...currentMemories, newMemory],
+              });
+
+              setProcessingMessage("✓ Erinnerung gespeichert");
+              await new Promise((r) => setTimeout(r, 1500));
+            } else if (
+              memoryResult.action === "update" &&
+              memoryResult.id &&
+              memoryResult.memory
+            ) {
+              // Bestehende Erinnerung überschreiben
+              setProcessingMessage("Erinnerung wird aktualisiert …");
+
+              const updatedMemories = currentMemories.map((m) =>
+                m.id === memoryResult.id
+                  ? {
+                      ...m,
+                      text: memoryResult.memory,
+                      updatedAt: new Date().toISOString(),
+                    }
+                  : m,
+              );
+
+              await updateUserProfile({ memories: updatedMemories });
+
+              setProcessingMessage("✓ Erinnerung aktualisiert");
+              await new Promise((r) => setTimeout(r, 1500));
+            }
+            // action === "none" → kein Indikator, nichts speichern
+          } catch (memoryError) {
+            console.warn(
+              "Speichern der Erinnerung fehlgeschlagen:",
+              memoryError,
+            );
           }
         }
 
@@ -200,11 +307,12 @@ export default function ChatProvider({ children }) {
       }
     } catch (error) {
       if (error.name !== "AbortError") {
-        console.error("Error sending message:", error);
+        console.error("Fehler beim Senden der Nachricht:", error);
         onError?.(error);
       }
     } finally {
       setIsLoading(false);
+      setProcessingMessage("");
       updateStreamResponse("");
       abortControllerRef.current = null;
     }
@@ -214,24 +322,23 @@ export default function ChatProvider({ children }) {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       setIsLoading(false);
+      setProcessingMessage("");
       updateStreamResponse("");
       abortControllerRef.current = null;
     }
   };
 
   const values = {
-    // RESPONSE
     currentStreamResponse,
     updateStreamResponse,
-    // ATTACHMENTS
     attachments,
     addAttachment,
     removeAttachment,
     clearAttachments,
-    // LOADING
     isLoading,
     setLoadingState,
-    // MESSAGE OPERATIONS
+    processingMessage,
+    setProcessingMessage,
     sendMessage,
     stopGeneration,
   };

@@ -145,6 +145,8 @@ export const useSendMessageHandler = (
   addMessage,
   getMessages,
   addConversationToProject,
+  updateUserProfile,
+  userProfile,
   project_id,
   router,
   textareaRef,
@@ -162,7 +164,11 @@ export const useSendMessageHandler = (
       addMessage,
       addConversationToProject,
       getMessages,
-      projectId: project_id,
+      // Pass through profile so ChatContext can inject memories into system
+      // prompt and run memory extraction after each response
+      updateUserProfile,
+      userProfile,
+      projectId: typeof project_id === "string" ? project_id : project_id?.id,
       router,
       onSuccess: () => {
         setLocalUserInput("");
@@ -178,6 +184,8 @@ export const useSendMessageHandler = (
     updateConversation,
     addMessage,
     addConversationToProject,
+    updateUserProfile,
+    userProfile,
     project_id,
     router,
     textareaRef,

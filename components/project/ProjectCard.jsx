@@ -25,7 +25,7 @@ export default function ProjectCard({
   const router = useRouter();
 
   const handleArchiveProject = async () => {
-    const result = await toggleArchiveProject(id, true);
+    const result = await toggleArchiveProject(id, !project.isArchived);
     if (result) openMessage("Project archived", "success");
   };
 

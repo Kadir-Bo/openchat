@@ -12,6 +12,7 @@ export { default as AttachmentThumbnail } from "./chat/AttachmentThumbnail";
 export { default as ProcessingIndicator } from "./chat/ProcessingIndicator";
 export { default as FilesPanel } from "./chat/FilesPanel";
 export { default as InstructionsPanel } from "./chat/InstructionsPanel";
+export { default as StackedProjectCard } from "./chat/StackedProjectCard";
 // PROJECT COMPONENTS
 export { default as ProjectCard } from "./project/ProjectCard";
 export { default as ProjectTitle } from "./project/ProjectTitle";

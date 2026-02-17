@@ -7,7 +7,7 @@ import { twMerge } from "tailwind-merge";
 
 import { PrimaryButton, AttachmentThumbnail } from "@/components";
 import { useChat, useDatabase } from "@/context";
-import { ArrowUp, Folder, Plus, Square } from "react-feather";
+import { ArrowUp, Plus, Square } from "react-feather";
 
 import {
   usePasteHandler,
@@ -23,6 +23,7 @@ import {
 
 export default function ChatInterface({
   project_id,
+  project = null, // full project object (instructions + documents)
   className = "",
   containerClassName = "",
   textareaClassName = "",
@@ -95,6 +96,7 @@ export default function ChatInterface({
     updateUserProfile,
     userProfile,
     project_id,
+    project,
     router,
     textareaRef,
     setLocalUserInput,
@@ -115,6 +117,7 @@ export default function ChatInterface({
     () => getTextAreaVariant(buttonContainerHeight),
     [buttonContainerHeight],
   );
+
   return (
     <div
       className={twMerge(
@@ -170,7 +173,7 @@ export default function ChatInterface({
           {/* Attachment Button */}
           <PrimaryButton
             className={twMerge(
-              "w-max  border-none shadow-none rounded-none p-2 flex items-center justify-center hover:bg-transparent hover:border-transparent hover:text-neutral-950 group focus:border-transparent",
+              "w-max border-none shadow-none rounded-none p-2 flex items-center justify-center hover:bg-transparent hover:border-transparent hover:text-neutral-950 group focus:border-transparent",
               buttonClassName,
               extrasButtonClassName,
             )}

@@ -1,53 +1,101 @@
 "use client";
 
-import { ChatCard, ChatInterface, PrimaryButton } from "@/components";
+import {
+  ChatCard,
+  ChatInterface,
+  FilesPanel,
+  PrimaryButton,
+} from "@/components";
+import InstructionsPanel from "@/components/chat/InstructionsPanel";
 import { useDatabase } from "@/context/DatabaseContext";
 import { useParams, useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
-import { ArrowLeft, MoreVertical, Plus, Star } from "react-feather";
+import React, { useEffect, useState, useRef } from "react";
+import {
+  ArrowLeft,
+  MoreVertical,
+  Plus,
+  Star,
+  Check,
+  X,
+  FileText,
+  Trash2,
+  Edit3,
+  Upload,
+} from "react-feather";
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ProjectIDPage() {
   const params = useParams();
   const projectId = params?.id;
   const router = useRouter();
-  const { getProject, subscribeToConversations } = useDatabase();
+  const {
+    getProject,
+    updateProject,
+    addDocumentToProject,
+    removeDocumentFromProject,
+    subscribeToConversations,
+  } = useDatabase();
 
   const [currentProject, setCurrentProject] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
+  // ── load project ──
   useEffect(() => {
     const loadProject = async () => {
       if (!projectId) return;
-
       try {
         const project = await getProject(projectId);
         if (project) {
           setCurrentProject(project);
         } else {
           router.push("/projects");
-          return;
         }
       } finally {
         setIsInitialLoading(false);
       }
     };
-
     loadProject();
   }, [projectId, getProject, router]);
 
+  // ── subscribe to conversations ──
   useEffect(() => {
     if (!projectId) return;
-
     const unsubscribe = subscribeToConversations((allConversations) => {
-      const projectConversations = allConversations.filter(
-        (conv) => conv.projectId === projectId,
+      setConversations(
+        allConversations.filter((conv) => conv.projectId === projectId),
       );
-      setConversations(projectConversations);
     });
-
     return () => unsubscribe();
   }, [projectId, subscribeToConversations]);
+
+  // ── handlers ──
+
+  const handleSaveInstructions = async (updates) => {
+    await updateProject(projectId, updates);
+    setCurrentProject((prev) => ({ ...prev, ...updates }));
+  };
+
+  const handleAddDocument = async (document) => {
+    const newDoc = await addDocumentToProject(projectId, document);
+    if (newDoc) {
+      setCurrentProject((prev) => ({
+        ...prev,
+        documents: [...(prev.documents ?? []), newDoc],
+      }));
+    }
+  };
+
+  const handleRemoveDocument = async (documentId) => {
+    await removeDocumentFromProject(projectId, documentId);
+    setCurrentProject((prev) => ({
+      ...prev,
+      documents: (prev.documents ?? []).filter((d) => d.id !== documentId),
+    }));
+  };
+
+  // ── render ──
 
   if (isInitialLoading) {
     return (
@@ -57,9 +105,7 @@ export default function ProjectIDPage() {
     );
   }
 
-  if (!currentProject) {
-    return null;
-  }
+  if (!currentProject) return null;
 
   return (
     <div className="max-w-5xl mx-auto min-h-screen flex flex-col items-start justify-start gap-8 py-8">
@@ -69,7 +115,9 @@ export default function ProjectIDPage() {
         icon={<ArrowLeft size={15} />}
         className="border-none hover:bg-transparent text-neutral-400 hover:text-neutral-100 w-max text-sm"
       />
+
       <div className="flex w-full gap-8 items-start justify-between">
+        {/* ── left column ── */}
         <div className="flex-1 flex flex-col gap-4">
           <div className="flex items-start gap-4 pl-2">
             <div className="flex flex-col gap-2">
@@ -97,6 +145,7 @@ export default function ProjectIDPage() {
             textareaClassName="px-5"
             textareaExpandedClassName="py-2 px-3"
             project_id={currentProject.id}
+            project={currentProject}
           />
 
           <div className="flex flex-col gap-2">
@@ -106,32 +155,20 @@ export default function ProjectIDPage() {
           </div>
         </div>
 
-        <div className="max-w-sm border border-neutral-700 rounded-2xl">
-          <div className="flex justify-between items-start p-6">
-            <div className="flex flex-col gap-2">
-              <h3>Instructions</h3>
-              <p className="text-neutral-400 text-sm">
-                Add instructions to tailor responses
-              </p>
-            </div>
-            <PrimaryButton
-              text={<Plus size={17} />}
-              className="outline-none border-none shadow-none cursor-pointer p-1.5 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded w-max min-w-max"
-            />
-          </div>
+        {/* ── right column ── */}
+        <div className="max-w-sm w-full border border-neutral-700 rounded-2xl overflow-hidden">
+          <InstructionsPanel
+            project={currentProject}
+            onSave={handleSaveInstructions}
+          />
+
           <hr className="border-neutral-700" />
-          <div className="flex justify-between items-start p-6">
-            <div className="flex flex-col gap-2">
-              <h3>Files</h3>
-              <p className="text-neutral-400 text-sm">
-                {currentProject.documents?.length || 0} files
-              </p>
-            </div>
-            <PrimaryButton
-              text={<Plus size={17} />}
-              className="outline-none border-none shadow-none cursor-pointer p-1.5 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded w-max min-w-max"
-            />
-          </div>
+
+          <FilesPanel
+            project={currentProject}
+            onAddDocument={handleAddDocument}
+            onRemoveDocument={handleRemoveDocument}
+          />
         </div>
       </div>
     </div>

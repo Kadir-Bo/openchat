@@ -10,6 +10,8 @@ export { default as MessageBubble } from "./chat/MessageBubble";
 export { default as ChatLoader } from "./chat/ChatLoader";
 export { default as AttachmentThumbnail } from "./chat/AttachmentThumbnail";
 export { default as ProcessingIndicator } from "./chat/ProcessingIndicator";
+export { default as FilesPanel } from "./chat/FilesPanel";
+export { default as InstructionsPanel } from "./chat/InstructionsPanel";
 // PROJECT COMPONENTS
 export { default as ProjectCard } from "./project/ProjectCard";
 export { default as ProjectTitle } from "./project/ProjectTitle";

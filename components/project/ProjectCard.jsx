@@ -63,38 +63,23 @@ export default function ProjectCard({
     onCardClick(e, id);
   };
 
+  const defaultClasses = `group relative flex flex-col gap-4 w-full border p-4 rounded-xl cursor-pointer select-none transition-all duration-150 border-neutral-500/20 bg-neutral-950/10 shadow shadow-neutral-950/10 over:border-neutral-500/50 hover:bg-neutral-950 hover:shadow-neutral-950/50`;
+  const selectedClasses =
+    isSelected && `border-neutral-500/50 bg-neutral-950 shadow-neutral-950/50`;
+  const isActive =
+    isDropdownOpen &&
+    !isSelected &&
+    `border-neutral-500/50 bg-neutral-950 shadow-neutral-950/50`;
+
   return (
     <div
-      className={twMerge(
-        "group relative flex flex-col gap-4 w-full border p-4 rounded-xl cursor-pointer select-none transition-all duration-150",
-        "border-neutral-500/20 bg-neutral-950/10 shadow shadow-neutral-950/10",
-        "hover:border-neutral-500/50 hover:bg-neutral-950 hover:shadow-neutral-950/50",
-        isSelected &&
-          "border-neutral-500/60 bg-neutral-900 shadow-neutral-950/50",
-        isDropdownOpen &&
-          !isSelected &&
-          "border-neutral-500/50 bg-neutral-950 shadow-neutral-950/50",
-      )}
+      className={twMerge(defaultClasses, selectedClasses, isActive)}
       onClick={handleClick}
     >
-      {/* Checkmark im Auswahl-Modus */}
-      <div
-        className={twMerge(
-          "absolute top-3 left-3 w-4 h-4 flex items-center justify-center transition-all duration-150",
-          isSelected ? "opacity-100" : "opacity-0 pointer-events-none",
-        )}
-      >
-        <Check size={13} className="text-neutral-300" strokeWidth={3} />
-      </div>
-
-      <div
-        className={twMerge("transition-all duration-150", isSelected && "pl-5")}
-      >
-        <span className="font-medium">{title}</span>
-        <p className="max-h-24 overflow-hidden mt-2 text-neutral-400 text-sm line-clamp-3">
-          {description}
-        </p>
-      </div>
+      <h4 className="font-medium">{title}</h4>
+      <p className="max-h-24 overflow-hidden mt-2 text-neutral-400 text-sm line-clamp-3">
+        {description}
+      </p>
 
       <div className="flex justify-between items-center text-sm text-neutral-500">
         <span>

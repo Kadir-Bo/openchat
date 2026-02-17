@@ -148,6 +148,7 @@ export const useSendMessageHandler = (
   updateUserProfile,
   userProfile,
   project_id,
+  project,
   router,
   textareaRef,
   setLocalUserInput,
@@ -169,6 +170,7 @@ export const useSendMessageHandler = (
       updateUserProfile,
       userProfile,
       projectId: typeof project_id === "string" ? project_id : project_id?.id,
+      project,
       router,
       onSuccess: () => {
         setLocalUserInput("");
@@ -187,6 +189,7 @@ export const useSendMessageHandler = (
     updateUserProfile,
     userProfile,
     project_id,
+    project,
     router,
     textareaRef,
     getMessages,

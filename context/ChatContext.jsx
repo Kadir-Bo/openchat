@@ -5,6 +5,7 @@ import {
   generateTitleFromResponse,
   streamResponse,
   buildContextMessages,
+  buildSystemPromptWithMemories,
   trimMessagesToTokenLimit,
   buildMemoryExtractionPrompt,
 } from "@/lib";
@@ -45,28 +46,10 @@ const extractMemoryFromConversation = async (
     );
 
     const cleaned = result.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
-    return parsed;
+    return JSON.parse(cleaned);
   } catch {
     return { action: "none" };
   }
-};
-
-// ==================== SYSTEM PROMPT MIT ERINNERUNGEN ====================
-
-const buildSystemPromptWithMemories = (memories = [], basePreferences = "") => {
-  let systemPrompt = "You are a helpful AI assistant.";
-
-  if (basePreferences) {
-    systemPrompt += `\n\nUser preferences: ${basePreferences}`;
-  }
-
-  if (memories && memories.length > 0) {
-    const memoriesList = memories.map((m) => `- ${m.text}`).join("\n");
-    systemPrompt += `\n\nWhat you remember about this user:\n${memoriesList}`;
-  }
-
-  return systemPrompt;
 };
 
 // ==================== CHAT PROVIDER ====================
@@ -76,33 +59,23 @@ export default function ChatProvider({ children }) {
   const [attachments, setAttachments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [processingMessage, setProcessingMessage] = useState("");
-  const [reasoning, setReasoning] = useState(false);
 
   const abortControllerRef = useRef(null);
 
   // ==================== RESPONSE ====================
 
-  const updateStreamResponse = (chunk) => {
-    setCurrentStreamResponse(chunk || "");
-  };
-
-  const setLoadingState = (loading) => {
-    setIsLoading(loading);
-  };
+  const updateStreamResponse = (chunk) => setCurrentStreamResponse(chunk || "");
+  const setLoadingState = (loading) => setIsLoading(loading);
 
   // ==================== ANHÄNGE ====================
 
-  const addAttachment = (newAttachment) => {
+  const addAttachment = (newAttachment) =>
     setAttachments((prev) => [...prev, newAttachment]);
-  };
 
-  const removeAttachment = (id) => {
+  const removeAttachment = (id) =>
     setAttachments((prev) => prev.filter((att) => att.id !== id));
-  };
 
-  const clearAttachments = () => {
-    setAttachments([]);
-  };
+  const clearAttachments = () => setAttachments([]);
 
   // ==================== NACHRICHT SENDEN ====================
 
@@ -121,6 +94,7 @@ export default function ChatProvider({ children }) {
     updateUserProfile,
     userProfile,
     projectId,
+    project = null, // Vollständiges Projekt-Objekt (instructions + documents)
     router,
   }) => {
     if (!message?.trim() && attachments.length === 0) return;
@@ -152,10 +126,7 @@ export default function ChatProvider({ children }) {
     clearAttachments();
     setIsLoading(true);
 
-    // Indikator nur bei aktiviertem Reasoning zeigen
-    if (reasoning) {
-      setProcessingMessage("Einen Moment – ich denke nach …");
-    }
+    if (reasoning) setProcessingMessage("Einen Moment – ich denke nach …");
 
     try {
       let chatId = conversationId;
@@ -164,7 +135,6 @@ export default function ChatProvider({ children }) {
         const newConv = await createConversation("New Chat", model);
         chatId = newConv.id;
 
-        // Sicherheitsprüfung: projectId muss ein String sein
         if (projectId && typeof projectId === "string") {
           await addConversationToProject(projectId, chatId);
         }
@@ -177,10 +147,11 @@ export default function ChatProvider({ children }) {
         existingMessages = await getMessages(chatId, 20);
       }
 
-      // System Prompt mit gespeicherten Erinnerungen aufbauen
+      // System Prompt: Erinnerungen + Präferenzen + Projekt-Kontext
       const systemPrompt = buildSystemPromptWithMemories(
         userProfile?.memories || [],
         userProfile?.preferences?.modelPreferences || "",
+        project,
       );
 
       const contextMessages = buildContextMessages(
@@ -195,7 +166,7 @@ export default function ChatProvider({ children }) {
       await addMessage(chatId, {
         role: "user",
         content: messageText,
-        model: model,
+        model,
         attachments: messageAttachments,
       });
 
@@ -207,7 +178,6 @@ export default function ChatProvider({ children }) {
         (chunk, accumulated) => {
           accumulatedResponse = accumulated;
           updateStreamResponse(accumulated);
-          // Reasoning-Indikator ausblenden sobald erste Tokens ankommen
           if (reasoning) setProcessingMessage("");
         },
         reasoning,
@@ -218,14 +188,14 @@ export default function ChatProvider({ children }) {
       if (!abortController.signal.aborted) {
         const responseToSave = finalResponse || accumulatedResponse;
 
-        if (!responseToSave || !responseToSave.trim()) {
+        if (!responseToSave?.trim()) {
           throw new Error("Leere Antwort vom Model erhalten");
         }
 
         await addMessage(chatId, {
           role: "assistant",
           content: responseToSave,
-          model: model,
+          model,
         });
 
         if (!conversationId) {
@@ -237,16 +207,16 @@ export default function ChatProvider({ children }) {
             );
             await updateConversation(chatId, { title });
           } catch {
-            const fallbackTitle = messageText.substring(0, 30) + "...";
-            await updateConversation(chatId, { title: fallbackTitle });
+            await updateConversation(chatId, {
+              title: messageText.substring(0, 30) + "...",
+            });
           }
         }
 
-        // Erinnerungs-Extraktion mit bestehenden Memories als Kontext
+        // Erinnerungs-Extraktion
         if (updateUserProfile) {
           try {
             const currentMemories = userProfile?.memories || [];
-
             const memoryResult = await extractMemoryFromConversation(
               messageText,
               responseToSave,
@@ -255,20 +225,16 @@ export default function ChatProvider({ children }) {
             );
 
             if (memoryResult.action === "add" && memoryResult.memory) {
-              // Neue Erinnerung hinzufügen
               setProcessingMessage("Erinnerung wird gespeichert …");
-
               const newMemory = {
                 id: crypto.randomUUID(),
                 text: memoryResult.memory,
                 createdAt: new Date().toISOString(),
                 source: "auto",
               };
-
               await updateUserProfile({
                 memories: [...currentMemories, newMemory],
               });
-
               setProcessingMessage("✓ Erinnerung gespeichert");
               await new Promise((r) => setTimeout(r, 1500));
             } else if (
@@ -276,9 +242,7 @@ export default function ChatProvider({ children }) {
               memoryResult.id &&
               memoryResult.memory
             ) {
-              // Bestehende Erinnerung überschreiben
               setProcessingMessage("Erinnerung wird aktualisiert …");
-
               const updatedMemories = currentMemories.map((m) =>
                 m.id === memoryResult.id
                   ? {
@@ -288,13 +252,10 @@ export default function ChatProvider({ children }) {
                     }
                   : m,
               );
-
               await updateUserProfile({ memories: updatedMemories });
-
               setProcessingMessage("✓ Erinnerung aktualisiert");
               await new Promise((r) => setTimeout(r, 1500));
             }
-            // action === "none" → kein Indikator, nichts speichern
           } catch (memoryError) {
             console.warn(
               "Speichern der Erinnerung fehlgeschlagen:",

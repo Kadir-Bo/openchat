@@ -1,6 +1,11 @@
 import { Dropdown } from "@/context";
 import React from "react";
-import { DropdownContent, DropdownItem, DropdownTrigger } from "@/components";
+import {
+  DropdownContent,
+  DropdownItem,
+  DropdownSeparator,
+  DropdownTrigger,
+} from "@/components";
 import { MoreHorizontal } from "react-feather";
 
 export default function DropdownMenu({
@@ -25,10 +30,19 @@ export default function DropdownMenu({
         sideOffset={contentSideOffset}
       >
         {dropdownList.map((menuItem) => (
-          <DropdownItem key={menuItem.id} onClick={(e) => onClick(e, menuItem)}>
-            {menuItem.icon && <menuItem.icon size={15} strokeWidth={1.5} />}
-            {menuItem.label}
-          </DropdownItem>
+          <React.Fragment key={menuItem.id}>
+            <DropdownItem onClick={(e) => onClick(e, menuItem)}>
+              {menuItem.icon && (
+                <menuItem.icon
+                  size={15}
+                  strokeWidth={1.5}
+                  className="shrink-0"
+                />
+              )}
+              <span className="truncate min-w-0">{menuItem.label}</span>
+            </DropdownItem>
+            {menuItem.seperator && <DropdownSeparator />}
+          </React.Fragment>
         ))}
       </DropdownContent>
     </Dropdown>

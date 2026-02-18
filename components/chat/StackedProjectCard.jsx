@@ -9,7 +9,14 @@ import {
   ChatCard,
   DropdownMenu,
 } from "@/components";
-import { Archive, ChevronDown, Edit2, Folder, Trash } from "react-feather";
+import {
+  Archive,
+  ChevronDown,
+  Edit2,
+  ExternalLink,
+  Folder,
+  Trash,
+} from "react-feather";
 import { twMerge } from "tailwind-merge";
 import { useRouter } from "next/navigation";
 
@@ -82,6 +89,10 @@ export default function StackedProjectCard({
   // How many stacked ghost cards to show behind (max 2)
   const stackDepth = Math.min(chatCount, 2);
 
+  const handleNavigateToPage = (type = "chat", id) => {
+    router.push(`/${type}/${id}`);
+  };
+
   return (
     <div className="relative w-full">
       {/* Stacked ghost cards behind — only when collapsed */}
@@ -132,7 +143,12 @@ export default function StackedProjectCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <Folder size={13} className="text-neutral-500 shrink-0 mt-0.5" />
-              <h4 className="font-medium truncate leading-snug">{title}</h4>
+              <h4
+                className="font-medium truncate leading-snug hover:underline py-1"
+                onClick={() => handleNavigateToPage("project", id)}
+              >
+                {title}
+              </h4>
             </div>
             {description && (
               <p className="mt-1.5 text-sm text-neutral-500 line-clamp-2 leading-relaxed">
@@ -159,7 +175,6 @@ export default function StackedProjectCard({
                 <ChevronDown size={14} />
               </motion.div>
             )}
-
             {/* Dropdown — stop propagation so it doesn't toggle accordion */}
             <div onClick={(e) => e.stopPropagation()}>
               <DropdownMenu
@@ -204,6 +219,9 @@ export default function StackedProjectCard({
                     <ChatCard
                       conversation={conversation}
                       project={null}
+                      onCardClick={() =>
+                        handleNavigateToPage("chat", conversation.id)
+                      }
                       className="border-neutral-500/10 bg-neutral-900/40 hover:bg-neutral-900/80"
                     />
                   </motion.div>

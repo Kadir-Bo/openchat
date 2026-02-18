@@ -850,6 +850,32 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError],
   );
 
+  // Single-document real-time listener — used by ChatIDPage to keep the
+  // header title in sync after a rename without a full page reload.
+  const subscribeToConversation = useCallback(
+    (conversationId, callback) => {
+      if (!user || !db) return () => {};
+      try {
+        const conversationRef = doc(db, "conversations", conversationId);
+        return onSnapshot(
+          conversationRef,
+          (snapshot) => {
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              if (data.userId !== user.uid) return;
+              callback({ id: snapshot.id, ...data });
+            }
+          },
+          (err) => handleError(err, "Error in conversation realtime update"),
+        );
+      } catch (err) {
+        handleError(err, "Error creating conversation listener");
+        return () => {};
+      }
+    },
+    [user, db, handleError],
+  );
+
   const subscribeToProjects = useCallback(
     (callback, includeArchived = false) => {
       if (!user || !db) return () => {};
@@ -944,6 +970,7 @@ export default function DatabaseProvider({ children }) {
 
     // Realtime listeners
     subscribeToMessages,
+    subscribeToConversation,
     subscribeToConversations,
     subscribeToArchivedConversations,
     subscribeToProjects,

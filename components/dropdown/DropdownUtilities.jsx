@@ -1,5 +1,4 @@
 import { useDropdown } from "@/context";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 
@@ -21,7 +20,8 @@ export function DropdownItem({
   };
 
   const itemClassName =
-    "w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-neutral-800/50 transition-colors flex items-center gap-2 cursor-pointer rounded-md";
+    "w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-neutral-800/50 transition-colors flex items-center gap-2 rounded-md";
+
   return (
     <button
       onClick={handleClick}
@@ -41,7 +41,7 @@ export function DropdownLabel({ children, className = "" }) {
   return (
     <div
       className={twMerge(
-        "px-3 py-1.5 text-xs text-gray-500 font-medium",
+        "px-3 py-1.5 text-xs text-gray-500 font-medium truncate",
         className,
       )}
     >

@@ -1,9 +1,9 @@
 import React from "react";
 import { DeleteChatModal, RenameChatModal, DropdownMenu } from "@/components";
-import { Archive, ArrowLeft, ChevronDown, Edit2, Trash } from "react-feather";
+import { Archive, ChevronDown, Edit2, Folder, Trash } from "react-feather";
 import { useModal, useDatabase } from "@/context";
 
-export default function ChatHeader({ conversation = null }) {
+export default function ChatHeader({ conversation = null, project = null }) {
   const { openModal, openMessage } = useModal();
   const { toggleArchiveConversation } = useDatabase();
 
@@ -51,19 +51,38 @@ export default function ChatHeader({ conversation = null }) {
   const PrjojectDropDownMenu = [
     {
       id: "overview",
-      label: "View Project",
-      icon: ArrowLeft,
+      label: `${project.title} Project sadasdsaaaaaaaaaaaaaaaasdsd`,
+      icon: Folder,
+      seperator: true,
       action: () => handleRenameChat(),
+    },
+    {
+      id: "rename-chat",
+      label: "Umbenennen",
+      icon: Edit2,
+      action: () => handleRenameChat(),
+    },
+    {
+      id: "archive-chat",
+      label: "Archivieren",
+      icon: Archive,
+      action: () => handleArchiveChat(),
+    },
+    {
+      id: "delete-chat",
+      label: "Löschen",
+      icon: Trash,
+      action: () => handleDeleteChat(),
     },
   ];
 
   const DROPDOWN_LIST = projectId ? PrjojectDropDownMenu : ChatDropDownMenu;
 
   return (
-    <div className="w-full relative">
-      <div className="absolute left-4 top-4 text-sm flex items-center justify-center text-neutral-400 border border-neutral-700 rounded-xl">
+    <div className="w-full relative flex flex-col">
+      <div className="absolute left-4 top-4 text-sm flex items-center justify-center text-neutral-400 border border-neutral-700 bg-neutral-950 z-50 rounded-xl">
         <DropdownMenu
-          triggerClassName="flex items-center cursor-pointer px-2 py-1"
+          triggerClassName="flex items-center cursor-pointer px-2 py-1 relative z-10"
           dropdownList={DROPDOWN_LIST}
           onClick={(e, menuItem) => {
             e.stopPropagation();

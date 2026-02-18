@@ -166,6 +166,7 @@ export default function DropdownContent({
     shadow-lg
     overflow-hidden
     p-1.5
+    max-w-50
   `;
 
   if (!isOpen) return null;

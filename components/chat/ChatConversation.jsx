@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth, useChat, useDatabase } from "@/context";
 import { Loader } from "react-feather";
@@ -11,7 +11,18 @@ export default function ChatConversation({ onConversationLoad = null }) {
   const params = useParams();
   const conversationId = params?.chatId;
   const router = useRouter();
-  const { subscribeToMessages, getConversation, getProject } = useDatabase();
+  const {
+    subscribeToMessages,
+    getConversation,
+    getProject,
+    deleteMessage,
+    addMessage,
+    getMessages,
+    updateConversation,
+    updateUserProfile,
+    updateProjectMemory,
+    userProfile,
+  } = useDatabase();
   const { username } = useAuth();
   const [messages, setMessages] = useState([]);
   const [conversation, setConversation] = useState(null);
@@ -19,7 +30,17 @@ export default function ChatConversation({ onConversationLoad = null }) {
   const [loading, setLoading] = useState(!!conversationId);
   const messagesEndRef = useRef(null);
 
-  const { currentStreamResponse, processingMessage } = useChat();
+  // When true, incoming Firestore snapshots are ignored so we control the
+  // messages state ourselves during optimistic updates.
+  const suppressListenerRef = useRef(false);
+
+  const {
+    currentStreamResponse,
+    processingMessage,
+    regenerateResponse,
+    editAndResend,
+    isLoading,
+  } = useChat();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
@@ -46,7 +67,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
         if (conv.projectId) {
           const proj = await getProject(conv.projectId);
           setProject(proj);
-
           if (onConversationLoad) {
             onConversationLoad({ conversation: conv, project: proj });
           }
@@ -70,11 +90,130 @@ export default function ChatConversation({ onConversationLoad = null }) {
     if (!conversationId) return;
 
     const unsubscribe = subscribeToMessages(conversationId, (newMessages) => {
+      // While we're doing an optimistic update, ignore Firestore snapshots.
+      if (suppressListenerRef.current) return;
       setMessages(newMessages);
     });
 
     return () => unsubscribe();
   }, [conversationId, subscribeToMessages]);
+
+  const handleRegenerate = useCallback(
+    async (messageId) => {
+      if (isLoading) return;
+
+      const messageIndex = messages.findIndex((m) => m.id === messageId);
+      if (messageIndex === -1) return;
+
+      const targetMessage = messages[messageIndex];
+
+      // ASSISTANT message: keep everything before the assistant bubble.
+      //   The user message before it stays visible and in Firestore.
+      //   Only the assistant reply gets removed.
+      // USER message: keep the user message itself + everything before it.
+      //   Only messages AFTER the user message are removed.
+      //   The user message stays visible — no re-save needed.
+      const keepUpTo =
+        targetMessage.role === "user" ? messageIndex + 1 : messageIndex;
+      const keptMessages = messages.slice(0, keepUpTo);
+      const messagesToDelete = messages.slice(keepUpTo);
+
+      // Optimistic update — instant, no flicker
+      suppressListenerRef.current = true;
+      setMessages(keptMessages);
+
+      try {
+        await regenerateResponse({
+          messageId,
+          conversationId,
+          messages,
+          model: conversation?.model || "openai/gpt-oss-120b",
+          deleteMessage,
+          addMessage,
+          getMessages,
+          updateConversation,
+          updateUserProfile,
+          updateProjectMemory,
+          userProfile,
+          projectId: conversation?.projectId || null,
+          project,
+          _keptMessages: keptMessages,
+          _messagesToDelete: messagesToDelete,
+        });
+      } finally {
+        suppressListenerRef.current = false;
+      }
+    },
+    [
+      isLoading,
+      messages,
+      conversationId,
+      conversation,
+      project,
+      userProfile,
+      regenerateResponse,
+      deleteMessage,
+      addMessage,
+      getMessages,
+      updateConversation,
+      updateUserProfile,
+      updateProjectMemory,
+    ],
+  );
+
+  const handleEdit = useCallback(
+    async (messageId, newContent) => {
+      if (isLoading) return;
+
+      const messageIndex = messages.findIndex((m) => m.id === messageId);
+      if (messageIndex === -1) return;
+
+      // Keep everything strictly before the edited message.
+      const keptMessages = messages.slice(0, messageIndex);
+      const messagesToDelete = messages.slice(messageIndex);
+
+      suppressListenerRef.current = true;
+      setMessages(keptMessages);
+
+      try {
+        await editAndResend({
+          messageId,
+          newContent,
+          conversationId,
+          messages,
+          model: conversation?.model || "openai/gpt-oss-120b",
+          deleteMessage,
+          addMessage,
+          getMessages,
+          updateConversation,
+          updateUserProfile,
+          updateProjectMemory,
+          userProfile,
+          projectId: conversation?.projectId || null,
+          project,
+          _keptMessages: keptMessages,
+          _messagesToDelete: messagesToDelete,
+        });
+      } finally {
+        suppressListenerRef.current = false;
+      }
+    },
+    [
+      isLoading,
+      messages,
+      conversationId,
+      conversation,
+      project,
+      userProfile,
+      editAndResend,
+      deleteMessage,
+      addMessage,
+      getMessages,
+      updateConversation,
+      updateUserProfile,
+      updateProjectMemory,
+    ],
+  );
 
   const lastMessage = messages[messages.length - 1];
   const isStreamingComplete = lastMessage?.role === "assistant";
@@ -112,7 +251,12 @@ export default function ChatConversation({ onConversationLoad = null }) {
     <div className="flex-1 w-full overflow-y-auto py-8 px-4">
       <div className="space-y-3 max-w-5xl mx-auto">
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble
+            key={message.id}
+            message={message}
+            onRegenerate={handleRegenerate}
+            onEdit={handleEdit}
+          />
         ))}
 
         {/* Streaming response bubble */}
@@ -126,7 +270,7 @@ export default function ChatConversation({ onConversationLoad = null }) {
           />
         )}
 
-        {/* Processing indicator — thinking / memory update */}
+        {/* Processing indicator */}
         {showIndicator && (
           <div className="flex justify-start px-1">
             <ProcessingIndicator message={processingMessage} />

@@ -1,56 +1,117 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
 import "highlight.js/styles/github-dark.css";
 import { PrimaryButton, AttachmentThumbnail } from "@/components";
-import { Copy, RefreshCcw, RotateCcw, Loader, Check } from "react-feather";
+import {
+  Copy,
+  RefreshCcw,
+  RotateCcw,
+  Check,
+  Edit2,
+  X,
+  Send,
+} from "react-feather";
 
-export default function MessageBubble({ message, isStreaming = false }) {
+export default function MessageBubble({
+  message,
+  isStreaming = false,
+  onRegenerate,
+  onEdit,
+}) {
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(message.content);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.selectionStart = textareaRef.current.value.length;
+      // Auto-resize
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
+    }
+  }, [isEditing]);
 
   const handleCopyMessage = () => {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 3000);
+    setTimeout(() => setCopied(false), 3000);
   };
 
-  const regenerateResponse = () => {};
+  const handleRegenerate = () => {
+    if (onRegenerate) onRegenerate(message.id);
+  };
+
+  const handleEditStart = () => {
+    setEditValue(message.content);
+    setIsEditing(true);
+  };
+
+  const handleEditCancel = () => {
+    setEditValue(message.content);
+    setIsEditing(false);
+  };
+
+  const handleEditSubmit = () => {
+    if (!editValue.trim() || editValue.trim() === message.content) {
+      setIsEditing(false);
+      return;
+    }
+    if (onEdit) onEdit(message.id, editValue.trim());
+    setIsEditing(false);
+  };
+
+  const handleEditKeyDown = (e) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleEditSubmit();
+    }
+    if (e.key === "Escape") {
+      handleEditCancel();
+    }
+  };
+
+  const handleTextareaChange = (e) => {
+    setEditValue(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = e.target.scrollHeight + "px";
+  };
 
   // Helper function to extract text from React children
   const getCodeText = (children) => {
-    if (typeof children === "string") {
-      return children;
-    }
-
-    if (Array.isArray(children)) {
-      return children.map(getCodeText).join("");
-    }
-
-    if (children?.props?.children) {
-      return getCodeText(children.props.children);
-    }
-
+    if (typeof children === "string") return children;
+    if (Array.isArray(children)) return children.map(getCodeText).join("");
+    if (children?.props?.children) return getCodeText(children.props.children);
     return String(children || "");
   };
 
   const userBubbleActions = [
     {
+      id: "edit",
+      icon: Edit2,
+      onClick: handleEditStart,
+      title: "Edit message",
+    },
+    {
       id: "copy",
       icon: copied ? Check : Copy,
       onClick: handleCopyMessage,
+      title: "Copy message",
     },
     {
       id: "redo",
       icon: RotateCcw,
-      onClick: regenerateResponse,
+      onClick: handleRegenerate,
+      title: "Resend message",
     },
   ];
 
@@ -59,11 +120,13 @@ export default function MessageBubble({ message, isStreaming = false }) {
       id: "copy",
       icon: copied ? Check : Copy,
       onClick: handleCopyMessage,
+      title: "Copy message",
     },
     {
       id: "redo",
       icon: RefreshCcw,
-      onClick: regenerateResponse,
+      onClick: handleRegenerate,
+      title: "Regenerate response",
     },
   ];
 
@@ -108,10 +171,7 @@ export default function MessageBubble({ message, isStreaming = false }) {
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight, rehypeRaw]}
                     components={{
-                      // Override paragraph to use div instead
                       p: ({ children }) => <div>{children}</div>,
-
-                      // Override pre to add copy button wrapper
                       pre: ({ children }) => (
                         <div className="relative group/code">
                           <button
@@ -136,14 +196,42 @@ export default function MessageBubble({ message, isStreaming = false }) {
                     <span className="inline-block w-2 h-4 bg-neutral-400 ml-1 animate-pulse" />
                   )}
                 </>
+              ) : isEditing ? (
+                <div className="flex flex-col gap-2 min-w-[240px]">
+                  <textarea
+                    ref={textareaRef}
+                    value={editValue}
+                    onChange={handleTextareaChange}
+                    onKeyDown={handleEditKeyDown}
+                    rows={1}
+                    className="w-full resize-none bg-transparent text-sm text-neutral-950 outline-none placeholder:text-neutral-400 overflow-hidden"
+                    style={{ minHeight: "1.5rem" }}
+                  />
+                  <div className="flex items-center gap-1 justify-end">
+                    <button
+                      onClick={handleEditCancel}
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-md text-neutral-500 hover:bg-neutral-300/50 hover:text-neutral-700 transition-colors"
+                    >
+                      <X size={12} />
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleEditSubmit}
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-neutral-800 text-white hover:bg-neutral-700 transition-colors"
+                    >
+                      <Send size={12} />
+                      Send
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               )}
             </div>
           </div>
 
-          {/* Controls  */}
-          {message.id !== "streaming" && (
+          {/* Controls */}
+          {message.id !== "streaming" && !isEditing && (
             <div
               className={`flex text-xs mt-2 gap-1 transition-all duration-150 ${
                 isUser
@@ -155,6 +243,7 @@ export default function MessageBubble({ message, isStreaming = false }) {
                 ? userBubbleActions.map((action) => (
                     <PrimaryButton
                       key={action.id}
+                      title={action.title}
                       className="outline-none border-none shadow-none cursor-pointer p-2 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded-md"
                       onClick={action.onClick}
                       text={<action.icon size={14} />}
@@ -163,6 +252,7 @@ export default function MessageBubble({ message, isStreaming = false }) {
                 : assistantBubbleActions.map((action) => (
                     <PrimaryButton
                       key={action.id}
+                      title={action.title}
                       className="outline-none border-none shadow-none cursor-pointer p-2 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded-md"
                       onClick={action.onClick}
                       text={<action.icon size={14} />}

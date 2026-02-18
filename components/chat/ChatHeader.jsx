@@ -1,6 +1,6 @@
 import React from "react";
 import { DeleteChatModal, RenameChatModal, DropdownMenu } from "@/components";
-import { Archive, ChevronDown, Edit2, Trash } from "react-feather";
+import { Archive, ArrowLeft, ChevronDown, Edit2, Trash } from "react-feather";
 import { useModal, useDatabase } from "@/context";
 
 export default function ChatHeader({ conversation = null }) {
@@ -9,7 +9,7 @@ export default function ChatHeader({ conversation = null }) {
 
   if (!conversation) return null;
 
-  const { title, description, id } = conversation;
+  const { title, description, id, projectId } = conversation;
 
   const handleRenameChat = () => {
     return openModal(
@@ -48,20 +48,35 @@ export default function ChatHeader({ conversation = null }) {
       action: () => handleDeleteChat(),
     },
   ];
+  const PrjojectDropDownMenu = [
+    {
+      id: "overview",
+      label: "View Project",
+      icon: ArrowLeft,
+      action: () => handleRenameChat(),
+    },
+  ];
+
+  const DROPDOWN_LIST = projectId ? PrjojectDropDownMenu : ChatDropDownMenu;
 
   return (
     <div className="w-full relative">
-      <div className="absolute left-0 top-0 p-3 text-sm flex items-center justify-center text-neutral-400">
+      <div className="absolute left-4 top-4 text-sm flex items-center justify-center text-neutral-400 border border-neutral-700 rounded-xl">
         <DropdownMenu
-          triggerClassName="flex items-center gap-1"
-          dropdownList={ChatDropDownMenu}
+          triggerClassName="flex items-center cursor-pointer px-2 py-1"
+          dropdownList={DROPDOWN_LIST}
           onClick={(e, menuItem) => {
             e.stopPropagation();
             menuItem.action();
           }}
         >
           <h3 className="max-w-50 truncate">{title}</h3>
-          <ChevronDown size={17} />
+          <button
+            type="button"
+            className="h-8 w-8 flex items-center justify-center outline-none cursor-pointer"
+          >
+            <ChevronDown size={19} />
+          </button>
         </DropdownMenu>
       </div>
     </div>

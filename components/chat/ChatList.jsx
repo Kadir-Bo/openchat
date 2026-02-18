@@ -1,11 +1,21 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDatabase, useModal } from "@/context";
 
-import { DeleteChatModal, DropdownMenu } from "@/components";
+import {
+  DeleteChatModal,
+  DropdownMenu,
+  ProcessingIndicator,
+} from "@/components";
 
 import { Archive, ChevronDown, Edit2, Trash } from "react-feather";
 import { twMerge } from "tailwind-merge";
@@ -17,9 +27,9 @@ export default function ChatList({
   listIcon = null,
   defaultExpanded = true,
   listItemClasses = "",
+  pendingIds = null,
 }) {
-  const { deleteConversation, updateConversation, toggleArchiveConversation } =
-    useDatabase();
+  const { updateConversation, toggleArchiveConversation } = useDatabase();
   const { openModal, openMessage } = useModal();
   const [isOpen, setIsOpen] = useState(defaultExpanded);
   const [editingId, setEditingId] = useState(null);
@@ -42,28 +52,29 @@ export default function ChatList({
     setEditTitle(currentTitle);
   }, []);
 
+  // Mirror editTitle into a ref so handleSaveRename can stay stable
+  // (no editTitle in its dep array) while still reading the latest value.
+  const editTitleRef = useRef(editTitle);
+  useEffect(() => {
+    editTitleRef.current = editTitle;
+  }, [editTitle]);
+
   const handleSaveRename = useCallback(
     async (id, originalTitle) => {
-      if (!editTitle.trim()) {
+      const current = editTitleRef.current;
+      if (!current.trim() || current.trim() === originalTitle) {
         setEditingId(null);
         setEditTitle("");
         return;
       }
-
-      if (editTitle.trim() === originalTitle) {
-        setEditingId(null);
-        setEditTitle("");
-        return;
-      }
-
-      const result = await updateConversation(id, { title: editTitle.trim() });
+      const result = await updateConversation(id, { title: current.trim() });
       if (result) {
         setEditingId(null);
         setEditTitle("");
         openMessage("Chat renamed successfully!", "success");
       }
     },
-    [editTitle, updateConversation, openMessage],
+    [updateConversation, openMessage],
   );
 
   const handleCancelRename = useCallback(() => {
@@ -88,7 +99,7 @@ export default function ChatList({
     [openModal],
   );
 
-  const handleKeyDown = useCallback(
+  const handleKeyDownById = useCallback(
     (e, id, originalTitle) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -125,7 +136,7 @@ export default function ChatList({
     [handleRenameChat, handleArchiveChat, handleDeleteChat],
   );
 
-  const hasItems = useMemo(() => list.length > 0, [list.length]);
+  const hasItems = list.length > 0;
 
   return (
     <div className="py-2.5 w-full">
@@ -168,11 +179,18 @@ export default function ChatList({
                 key={item.id}
                 item={item}
                 isEditing={editingId === item.id}
-                editTitle={editTitle}
+                isPending={
+                  pendingIds
+                    ? pendingIds.has(item.id)
+                    : item.title === "New Chat"
+                }
+                // Only the item being edited receives editTitle.
+                // All other items get "" → they don't re-render while the user types.
+                editTitle={editingId === item.id ? editTitle : ""}
                 onTitleChange={setEditTitle}
-                onSave={() => handleSaveRename(item.id, item.title)}
+                onSave={handleSaveRename}
                 onCancel={handleCancelRename}
-                onKeyDown={(e) => handleKeyDown(e, item.id, item.title)}
+                onKeyDown={handleKeyDownById}
                 onNavigate={handleNavigateToChat}
                 getMenuItems={getDropDownMenuItems}
                 listIcon={listIcon}
@@ -190,9 +208,11 @@ const ChatListItem = React.memo(
   ({
     item,
     isEditing,
+    isPending,
     editTitle,
     onTitleChange,
     onSave,
+    onCancel,
     onKeyDown,
     onNavigate,
     getMenuItems,
@@ -201,7 +221,32 @@ const ChatListItem = React.memo(
   }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-    const defaultClasses = `w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border`;
+    // Bind item-specific values inside the item itself so the parent
+    // never needs to create per-item inline closures.
+    const handleSave = useCallback(
+      () => onSave(item.id, item.title),
+      [onSave, item.id, item.title],
+    );
+
+    const handleKeyDown = useCallback(
+      (e) => onKeyDown(e, item.id, item.title),
+      [onKeyDown, item.id, item.title],
+    );
+
+    const handleNavigate = useCallback(
+      () => onNavigate(item.type, item.id),
+      [onNavigate, item.type, item.id],
+    );
+
+    // Memoize menu items — only recompute when id/title actually change.
+    const menuItems = useMemo(
+      () => getMenuItems(item),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [getMenuItems, item.id, item.title],
+    );
+
+    const defaultClasses =
+      "w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border";
     const editingClasses = isEditing
       ? "border-neutral-500 bg-neutral-900/50"
       : "hover:bg-neutral-800 border-transparent";
@@ -221,26 +266,47 @@ const ChatListItem = React.memo(
             type="text"
             value={editTitle}
             onChange={(e) => onTitleChange(e.target.value)}
-            onKeyDown={onKeyDown}
-            onBlur={onSave}
+            onKeyDown={handleKeyDown}
+            onBlur={handleSave}
             autoFocus
             className="w-full bg-transparent text-gray-200 py-2 px-3 border-transparent outline-none"
           />
         ) : (
           <>
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => onNavigate(item.type, item.id)}
+            <button
+              onClick={handleNavigate}
               className="truncate py-2 pl-3 w-full flex items-center gap-1 text-left hover:text-gray-100 cursor-pointer"
             >
               {listIcon && listIcon}
-              <span className="truncate"> {item.title}</span>
-            </motion.button>
+              <AnimatePresence mode="wait" initial={false}>
+                {isPending ? (
+                  <motion.span
+                    key={item.id + "-pending"}
+                    className="truncate"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <ProcessingIndicator message={"Creating New Chat"} />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key={item.id + "-title"}
+                    className="truncate"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    {item.title}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
 
             <DropdownMenu
-              dropdownList={getMenuItems(item)}
+              dropdownList={menuItems}
               triggerClassName="p-2"
               contentSide="right"
               onOpenChange={setIsDropdownOpen}
@@ -256,6 +322,34 @@ const ChatListItem = React.memo(
       </li>
     );
   },
+  arePropsEqual,
 );
 
 ChatListItem.displayName = "ChatListItem";
+
+// Custom comparator — only re-render if the fields ChatListItem actually USES changed.
+// Firestore creates new object references on every snapshot even for unchanged docs,
+// so without this every snapshot re-renders every item unnecessarily.
+function arePropsEqual(prev, next) {
+  if (prev.isEditing !== next.isEditing) return false;
+  if (prev.isPending !== next.isPending) return false;
+  if (prev.editTitle !== next.editTitle) return false;
+  if (prev.listItemClasses !== next.listItemClasses) return false;
+  if (prev.listIcon !== next.listIcon) return false;
+
+  if (prev.onTitleChange !== next.onTitleChange) return false;
+  if (prev.onSave !== next.onSave) return false;
+  if (prev.onCancel !== next.onCancel) return false;
+  if (prev.onKeyDown !== next.onKeyDown) return false;
+  if (prev.onNavigate !== next.onNavigate) return false;
+  if (prev.getMenuItems !== next.getMenuItems) return false;
+
+  // Compare only the fields actually rendered/used.
+  // Firestore adds metadata fields (updatedAt, etc.) that change on every write
+  // but are irrelevant to what ChatListItem displays.
+  if (prev.item.id !== next.item.id) return false;
+  if (prev.item.title !== next.item.title) return false;
+  if (prev.item.type !== next.item.type) return false;
+
+  return true;
+}

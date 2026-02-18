@@ -38,14 +38,39 @@ export const useDatabase = () => {
   return context;
 };
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+// Sorts documents by updatedAt descending.
+// Firestore serverTimestamp() resolves to null on the client until the server
+// confirms it (pending write). Treating null as Infinity pins those docs to
+// the top so a newly created item never jumps around when the timestamp lands.
+const sortByUpdatedAt = (arr) =>
+  [...arr].sort((a, b) => {
+    const toMs = (v) => {
+      if (v == null) return Infinity; // pending serverTimestamp → sort first
+      if (typeof v.toDate === "function") return v.toDate().getTime();
+      const ms = new Date(v).getTime();
+      return isNaN(ms) ? Infinity : ms;
+    };
+    return toMs(b.updatedAt) - toMs(a.updatedAt);
+  });
+
+// FIX: replaced a single shared `loading` state with a per-call local setter.
+// The old global setLoading(true/false) pattern caused the entire context
+// (and every consumer, including Sidebar) to re-render on every DB operation,
+// producing a cascade of unnecessary ChatListItem re-renders.
+//
+// Callers that need to track loading can do so with their own useState.
+// The context still exposes a lightweight `withLoading` helper for any future
+// operations that genuinely need a shared flag, but it is opt-in.
+
 export default function DatabaseProvider({ children }) {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [error, setError] = useState(null);
   const db = getFirebaseDB();
 
-  // ==================== HILFSFUNKTIONEN ====================
+  // ==================== HELPERS ====================
 
   const handleError = useCallback((error, customMessage) => {
     console.error(customMessage, error);
@@ -55,16 +80,8 @@ export default function DatabaseProvider({ children }) {
 
   const resetError = useCallback(() => setError(null), []);
 
-  // Sortiert Dokumente nach updatedAt absteigend
-  const sortByUpdatedAt = (arr) =>
-    [...arr].sort((a, b) => {
-      const toMs = (v) => v?.toDate?.().getTime() ?? new Date(v).getTime();
-      return toMs(b.updatedAt) - toMs(a.updatedAt);
-    });
+  // ==================== USER OPERATIONS ====================
 
-  // ==================== USER OPERATIONEN ====================
-
-  // Erstellt das User-Profil beim ersten Login automatisch
   useEffect(() => {
     if (!user || !db) return;
 
@@ -99,7 +116,7 @@ export default function DatabaseProvider({ children }) {
           setUserProfile({ id: userDoc.id, ...userDoc.data() });
         }
       } catch (err) {
-        console.error("Fehler beim Initialisieren des User-Profils:", err);
+        console.error("Error initializing user profile:", err);
       }
     };
 
@@ -109,7 +126,6 @@ export default function DatabaseProvider({ children }) {
   const updateUserProfile = useCallback(
     async (userData) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const userRef = doc(db, "users", user.uid);
@@ -131,9 +147,7 @@ export default function DatabaseProvider({ children }) {
         setUserProfile((prev) => ({ ...prev, ...updates }));
         return { id: user.uid, ...updates };
       } catch (err) {
-        return handleError(err, "Fehler beim Aktualisieren des User-Profils");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error updating user profile");
       }
     },
     [user, db, handleError, resetError],
@@ -141,23 +155,19 @@ export default function DatabaseProvider({ children }) {
 
   const getUserProfile = useCallback(async () => {
     if (!user || !db) return null;
-    setLoading(true);
     resetError();
     try {
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
       return userDoc.exists() ? { id: userDoc.id, ...userDoc.data() } : null;
     } catch (err) {
-      return handleError(err, "Fehler beim Laden des User-Profils");
-    } finally {
-      setLoading(false);
+      return handleError(err, "Error loading user profile");
     }
   }, [user, db, handleError, resetError]);
 
   const updateUserPreferences = useCallback(
     async (preferences) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const userRef = doc(db, "users", user.uid);
@@ -167,25 +177,22 @@ export default function DatabaseProvider({ children }) {
         });
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Aktualisieren der Praeferenzen");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error updating preferences");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // ==================== PROJEKT OPERATIONEN ====================
+  // ==================== PROJECT OPERATIONS ====================
 
   const createProject = useCallback(
     async (projectData) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const project = {
           userId: user.uid,
-          title: projectData.title || "Neues Projekt",
+          title: projectData.title || "New Project",
           description: projectData.description || "",
           isArchived: false,
           conversationIds: [],
@@ -196,9 +203,7 @@ export default function DatabaseProvider({ children }) {
         const projectRef = await addDoc(collection(db, "projects"), project);
         return { id: projectRef.id, ...project };
       } catch (err) {
-        return handleError(err, "Fehler beim Erstellen des Projekts");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error creating project");
       }
     },
     [user, db, handleError, resetError],
@@ -207,7 +212,6 @@ export default function DatabaseProvider({ children }) {
   const getProjects = useCallback(
     async (includeArchived = false) => {
       if (!user || !db) return [];
-      setLoading(true);
       resetError();
       try {
         const q = query(
@@ -221,9 +225,7 @@ export default function DatabaseProvider({ children }) {
           : projects.filter((p) => !p.isArchived);
         return sortByUpdatedAt(filtered);
       } catch (err) {
-        return handleError(err, "Fehler beim Laden der Projekte");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error loading projects");
       }
     },
     [user, db, handleError, resetError],
@@ -232,21 +234,18 @@ export default function DatabaseProvider({ children }) {
   const getProject = useCallback(
     async (projectId) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
         if (projectDoc.exists()) {
           const data = projectDoc.data();
-          if (data.userId !== user.uid) throw new Error("Kein Zugriff");
+          if (data.userId !== user.uid) throw new Error("Access denied");
           return { id: projectDoc.id, ...data };
         }
         return null;
       } catch (err) {
-        return handleError(err, "Fehler beim Laden des Projekts");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error loading project");
       }
     },
     [user, db, handleError, resetError],
@@ -255,7 +254,6 @@ export default function DatabaseProvider({ children }) {
   const updateProject = useCallback(
     async (projectId, updates) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
@@ -265,19 +263,15 @@ export default function DatabaseProvider({ children }) {
         });
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Aktualisieren des Projekts");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error updating project");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // Archiviert oder dearchiviert ein Projekt
   const toggleArchiveProject = useCallback(
     async (projectId, isArchived) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
@@ -287,26 +281,22 @@ export default function DatabaseProvider({ children }) {
         });
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Archivieren des Projekts");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error archiving project");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // Loescht ein Projekt samt aller zugehoerigen Chats und deren Nachrichten
   const deleteProject = useCallback(
     async (projectId) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
 
         if (!projectDoc.exists()) {
-          throw new Error("Projekt nicht gefunden");
+          throw new Error("Project not found");
         }
 
         const conversationIds = projectDoc.data().conversationIds || [];
@@ -345,17 +335,15 @@ export default function DatabaseProvider({ children }) {
 
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Loeschen des Projekts");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error deleting project");
       }
     },
     [user, db, handleError, resetError],
   );
+
   const addConversationToProject = useCallback(
     async (projectId, conversationId) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
@@ -377,12 +365,7 @@ export default function DatabaseProvider({ children }) {
         }
         return null;
       } catch (err) {
-        return handleError(
-          err,
-          "Fehler beim Hinzufuegen der Conversation zum Projekt",
-        );
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error adding conversation to project");
       }
     },
     [user, db, handleError, resetError],
@@ -391,7 +374,6 @@ export default function DatabaseProvider({ children }) {
   const removeConversationFromProject = useCallback(
     async (projectId, conversationId) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
@@ -413,12 +395,7 @@ export default function DatabaseProvider({ children }) {
         }
         return null;
       } catch (err) {
-        return handleError(
-          err,
-          "Fehler beim Entfernen der Conversation aus dem Projekt",
-        );
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error removing conversation from project");
       }
     },
     [user, db, handleError, resetError],
@@ -427,7 +404,6 @@ export default function DatabaseProvider({ children }) {
   const addDocumentToProject = useCallback(
     async (projectId, document) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
@@ -449,12 +425,7 @@ export default function DatabaseProvider({ children }) {
         }
         return null;
       } catch (err) {
-        return handleError(
-          err,
-          "Fehler beim Hinzufuegen des Dokuments zum Projekt",
-        );
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error adding document to project");
       }
     },
     [user, db, handleError, resetError],
@@ -463,7 +434,6 @@ export default function DatabaseProvider({ children }) {
   const updateDocumentInProject = useCallback(
     async (projectId, documentId, updates) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
@@ -483,9 +453,7 @@ export default function DatabaseProvider({ children }) {
         }
         return null;
       } catch (err) {
-        return handleError(err, "Fehler beim Aktualisieren des Dokuments");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error updating document");
       }
     },
     [user, db, handleError, resetError],
@@ -494,7 +462,6 @@ export default function DatabaseProvider({ children }) {
   const removeDocumentFromProject = useCallback(
     async (projectId, documentId) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
@@ -511,9 +478,7 @@ export default function DatabaseProvider({ children }) {
         }
         return null;
       } catch (err) {
-        return handleError(err, "Fehler beim Entfernen des Dokuments");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error removing document");
       }
     },
     [user, db, handleError, resetError],
@@ -522,7 +487,6 @@ export default function DatabaseProvider({ children }) {
   const getProjectConversations = useCallback(
     async (projectId) => {
       if (!user || !db) return [];
-      setLoading(true);
       resetError();
       try {
         const projectRef = doc(db, "projects", projectId);
@@ -542,13 +506,12 @@ export default function DatabaseProvider({ children }) {
         }
         return [];
       } catch (err) {
-        return handleError(err, "Fehler beim Laden der Projekt-Conversations");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error loading project conversations");
       }
     },
     [user, db, handleError, resetError],
   );
+
   const updateProjectMemory = useCallback(
     async (projectId, memories) => {
       if (!user || !db) return null;
@@ -560,10 +523,7 @@ export default function DatabaseProvider({ children }) {
         });
         return true;
       } catch (err) {
-        return handleError(
-          err,
-          "Fehler beim Aktualisieren der Projekt-Erinnerungen",
-        );
+        return handleError(err, "Error updating project memories");
       }
     },
     [user, db, handleError],
@@ -572,7 +532,6 @@ export default function DatabaseProvider({ children }) {
   const searchProjects = useCallback(
     async (searchTerm) => {
       if (!user || !db || !searchTerm) return [];
-      setLoading(true);
       resetError();
       try {
         const q = query(
@@ -588,20 +547,17 @@ export default function DatabaseProvider({ children }) {
               p.description?.toLowerCase().includes(searchTerm.toLowerCase()),
           );
       } catch (err) {
-        return handleError(err, "Fehler beim Suchen der Projekte");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error searching projects");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // ==================== CONVERSATION OPERATIONEN ====================
+  // ==================== CONVERSATION OPERATIONS ====================
 
   const createConversation = useCallback(
     async (title = "New Chat", model = "gpt-oss") => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const conversationData = {
@@ -619,9 +575,7 @@ export default function DatabaseProvider({ children }) {
         );
         return { id: conversationRef.id, ...conversationData };
       } catch (err) {
-        return handleError(err, "Fehler beim Erstellen der Conversation");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error creating conversation");
       }
     },
     [user, db, handleError, resetError],
@@ -630,7 +584,6 @@ export default function DatabaseProvider({ children }) {
   const getConversations = useCallback(
     async (includeArchived = false, limitCount = 20) => {
       if (!user || !db) return [];
-      setLoading(true);
       resetError();
       try {
         const q = query(
@@ -644,9 +597,7 @@ export default function DatabaseProvider({ children }) {
           : all.filter((c) => !c.isArchived);
         return sortByUpdatedAt(filtered).slice(0, limitCount);
       } catch (err) {
-        return handleError(err, "Fehler beim Laden der Conversations");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error loading conversations");
       }
     },
     [user, db, handleError, resetError],
@@ -655,21 +606,18 @@ export default function DatabaseProvider({ children }) {
   const getConversation = useCallback(
     async (conversationId) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const conversationRef = doc(db, "conversations", conversationId);
         const conversationDoc = await getDoc(conversationRef);
         if (conversationDoc.exists()) {
           const data = conversationDoc.data();
-          if (data.userId !== user.uid) throw new Error("Kein Zugriff");
+          if (data.userId !== user.uid) throw new Error("Access denied");
           return { id: conversationDoc.id, ...data };
         }
         return null;
       } catch (err) {
-        return handleError(err, "Fehler beim Laden der Conversation");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error loading conversation");
       }
     },
     [user, db, handleError, resetError],
@@ -678,7 +626,6 @@ export default function DatabaseProvider({ children }) {
   const updateConversation = useCallback(
     async (conversationId, updates) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const conversationRef = doc(db, "conversations", conversationId);
@@ -688,19 +635,15 @@ export default function DatabaseProvider({ children }) {
         });
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Aktualisieren der Conversation");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error updating conversation");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // Loescht eine Conversation samt aller Nachrichten
   const deleteConversation = useCallback(
     async (conversationId) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const batch = writeBatch(db);
@@ -714,26 +657,22 @@ export default function DatabaseProvider({ children }) {
         await batch.commit();
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Loeschen der Conversation");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error deleting conversation");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // Archiviert oder dearchiviert eine Conversation
   const toggleArchiveConversation = useCallback(
     async (conversationId, isArchived = null) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const conversationRef = doc(db, "conversations", conversationId);
         if (isArchived === null) {
           const conversationDoc = await getDoc(conversationRef);
           if (!conversationDoc.exists())
-            throw new Error("Conversation nicht gefunden");
+            throw new Error("Conversation not found");
           isArchived = !conversationDoc.data().isArchived;
         }
         await updateDoc(conversationRef, {
@@ -742,9 +681,7 @@ export default function DatabaseProvider({ children }) {
         });
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Archivieren der Conversation");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error archiving conversation");
       }
     },
     [user, db, handleError, resetError],
@@ -753,7 +690,6 @@ export default function DatabaseProvider({ children }) {
   const searchConversations = useCallback(
     async (searchTerm) => {
       if (!user || !db || !searchTerm) return [];
-      setLoading(true);
       resetError();
       try {
         const q = query(
@@ -767,20 +703,17 @@ export default function DatabaseProvider({ children }) {
             c.title?.toLowerCase().includes(searchTerm.toLowerCase()),
           );
       } catch (err) {
-        return handleError(err, "Fehler beim Suchen der Conversations");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error searching conversations");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // ==================== NACHRICHTEN OPERATIONEN ====================
+  // ==================== MESSAGE OPERATIONS ====================
 
   const addMessage = useCallback(
     async (conversationId, messageData) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const batch = writeBatch(db);
@@ -804,9 +737,7 @@ export default function DatabaseProvider({ children }) {
         await batch.commit();
         return { id: messageRef.id, ...message };
       } catch (err) {
-        return handleError(err, "Fehler beim Hinzufuegen der Nachricht");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error adding message");
       }
     },
     [user, db, handleError, resetError],
@@ -815,7 +746,6 @@ export default function DatabaseProvider({ children }) {
   const getMessages = useCallback(
     async (conversationId, limitCount = 50) => {
       if (!user || !db) return [];
-      setLoading(true);
       resetError();
       try {
         const messagesRef = collection(
@@ -830,9 +760,7 @@ export default function DatabaseProvider({ children }) {
         const snapshot = await getDocs(q);
         return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       } catch (err) {
-        return handleError(err, "Fehler beim Laden der Nachrichten");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error loading messages");
       }
     },
     [user, db, handleError, resetError],
@@ -841,7 +769,6 @@ export default function DatabaseProvider({ children }) {
   const deleteMessage = useCallback(
     async (conversationId, messageId) => {
       if (!user || !db) return null;
-      setLoading(true);
       resetError();
       try {
         const messageRef = doc(
@@ -859,18 +786,16 @@ export default function DatabaseProvider({ children }) {
         });
         return true;
       } catch (err) {
-        return handleError(err, "Fehler beim Loeschen der Nachricht");
-      } finally {
-        setLoading(false);
+        return handleError(err, "Error deleting message");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // ==================== ECHTZEIT-LISTENER ====================
+  // ==================== REALTIME LISTENERS ====================
 
-  // Alle Conversations des Users — Filterung und Sortierung client-seitig,
-  // kein zusammengesetzter Firestore-Index erforderlich
+  // All user conversations — filtering and sorting client-side,
+  // no composite Firestore index required.
   const subscribeToConversations = useCallback(
     (callback, includeArchived = false) => {
       if (!user || !db) return () => {};
@@ -888,18 +813,16 @@ export default function DatabaseProvider({ children }) {
               : all.filter((c) => !c.isArchived);
             callback(sortByUpdatedAt(filtered));
           },
-          (err) =>
-            handleError(err, "Fehler beim Echtzeit-Update der Conversations"),
+          (err) => handleError(err, "Error in conversation realtime update"),
         );
       } catch (err) {
-        handleError(err, "Fehler beim Erstellen des Conversation-Listeners");
+        handleError(err, "Error creating conversation listener");
         return () => {};
       }
     },
     [user, db, handleError],
   );
 
-  // Nur archivierte Conversations
   const subscribeToArchivedConversations = useCallback(
     (callback) => {
       if (!user || !db) return () => {};
@@ -917,20 +840,16 @@ export default function DatabaseProvider({ children }) {
             callback(sortByUpdatedAt(archived));
           },
           (err) =>
-            handleError(
-              err,
-              "Fehler beim Echtzeit-Update der archivierten Conversations",
-            ),
+            handleError(err, "Error in archived conversation realtime update"),
         );
       } catch (err) {
-        handleError(err, "Fehler beim Erstellen des Archiv-Listeners");
+        handleError(err, "Error creating archive listener");
         return () => {};
       }
     },
     [user, db, handleError],
   );
 
-  // Alle Projekte des Users — Filterung und Sortierung client-seitig
   const subscribeToProjects = useCallback(
     (callback, includeArchived = false) => {
       if (!user || !db) return () => {};
@@ -948,17 +867,16 @@ export default function DatabaseProvider({ children }) {
               : all.filter((p) => !p.isArchived);
             callback(sortByUpdatedAt(filtered));
           },
-          (err) => handleError(err, "Fehler beim Echtzeit-Update der Projekte"),
+          (err) => handleError(err, "Error in project realtime update"),
         );
       } catch (err) {
-        handleError(err, "Fehler beim Erstellen des Projekt-Listeners");
+        handleError(err, "Error creating project listener");
         return () => {};
       }
     },
     [user, db, handleError],
   );
 
-  // Nachrichten einer Conversation in Echtzeit
   const subscribeToMessages = useCallback(
     (conversationId, callback) => {
       if (!user || !db) return () => {};
@@ -973,11 +891,10 @@ export default function DatabaseProvider({ children }) {
           (snapshot) => {
             callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
           },
-          (err) =>
-            handleError(err, "Fehler beim Echtzeit-Update der Nachrichten"),
+          (err) => handleError(err, "Error in message realtime update"),
         );
       } catch (err) {
-        handleError(err, "Fehler beim Erstellen des Nachrichten-Listeners");
+        handleError(err, "Error creating message listener");
         return () => {};
       }
     },
@@ -986,7 +903,6 @@ export default function DatabaseProvider({ children }) {
 
   const values = {
     // State
-    loading,
     error,
     resetError,
     userProfile,
@@ -996,7 +912,7 @@ export default function DatabaseProvider({ children }) {
     getUserProfile,
     updateUserPreferences,
 
-    // Projekte
+    // Projects
     createProject,
     getProjects,
     getProject,
@@ -1012,7 +928,7 @@ export default function DatabaseProvider({ children }) {
     updateProjectMemory,
     searchProjects,
 
-    // Chats
+    // Conversations
     createConversation,
     getConversations,
     getConversation,
@@ -1021,12 +937,12 @@ export default function DatabaseProvider({ children }) {
     toggleArchiveConversation,
     searchConversations,
 
-    // Nachrichten
+    // Messages
     addMessage,
     getMessages,
     deleteMessage,
 
-    // Echtzeit-Listener
+    // Realtime listeners
     subscribeToMessages,
     subscribeToConversations,
     subscribeToArchivedConversations,

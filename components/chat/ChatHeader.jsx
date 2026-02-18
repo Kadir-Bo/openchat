@@ -70,7 +70,7 @@ export default function ChatHeader({ conversation = null }) {
             menuItem.action();
           }}
         >
-          <h3 className="max-w-50 truncate">{title}</h3>
+          <h3 className="max-w-50 truncate ml-2">{title}</h3>
           <button
             type="button"
             className="h-8 w-8 flex items-center justify-center outline-none cursor-pointer"

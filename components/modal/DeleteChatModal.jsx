@@ -1,10 +1,16 @@
+"use client";
+
 import { useDatabase, useModal } from "@/context";
 import React from "react";
 import { PrimaryButton } from "@/components";
+import { useParams, useRouter } from "next/navigation";
 
 export default function DeleteChatModal({ title, id }) {
   const { loading, deleteConversation } = useDatabase();
   const { openMessage, closeModal } = useModal();
+  const params = useParams();
+  const router = useRouter();
+
   const handleDeleteChat = async () => {
     try {
       const result = await deleteConversation(id);
@@ -12,6 +18,10 @@ export default function DeleteChatModal({ title, id }) {
       if (result) {
         openMessage("Chat deleted successfully!", "success");
         closeModal();
+
+        if (params?.chatId === id) {
+          router.push("/chat");
+        }
       } else {
         openMessage("Failed to delete Chat", "error");
       }
@@ -20,9 +30,11 @@ export default function DeleteChatModal({ title, id }) {
       openMessage("An error occurred while deleting the Chat", "error");
     }
   };
+
   const handleCancel = () => {
     closeModal();
   };
+
   return (
     <div>
       <h2 className="text-xl font-semibold text-white mb-1">Delete Chat</h2>

@@ -12,11 +12,11 @@ export async function POST(req) {
     } = body;
 
     // ====== DEBUG LOGS ======
-    console.log("🔷 API Route received request");
-    console.log("📊 Body:", JSON.stringify(body, null, 2));
-    console.log("📨 Messages:", messages);
-    console.log("📝 Message count:", messages?.length);
-    console.log("🤖 Model:", model);
+    // console.log("🔷 API Route received request");
+    // console.log("📊 Body:", JSON.stringify(body, null, 2));
+    // console.log("📨 Messages:", messages);
+    // console.log("📝 Message count:", messages?.length);
+    // console.log("🤖 Model:", model);
     // ====== ENDE DEBUG ======
 
     if (!Array.isArray(messages) || messages.length === 0) {

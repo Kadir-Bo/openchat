@@ -5,7 +5,7 @@ const DELETE_SPEED = 22; // ms per character while deleting
 const PAUSE_AFTER = 1800; // ms to hold the completed phrase
 const PAUSE_BEFORE = 400; // ms to pause on empty string before next phrase
 
-export default function useTypewriter(phrases) {
+export function useTypewriter(phrases) {
   const [displayed, setDisplayed] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [index, setIndex] = useState(0);

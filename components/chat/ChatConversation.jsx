@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth, useChat, useDatabase } from "@/context";
 import { MessageBubble, ProcessingIndicator } from "@/components";
 import { formatUsername } from "@/lib";
-import useTypewriter from "@/hooks/useTypewriter";
+import { useTypewriter } from "@/hooks";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants

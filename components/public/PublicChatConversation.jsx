@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { MessageBubble, ProcessingIndicator } from "@/components";
 import { useChat } from "@/context";
-import useTypewriter from "@/hooks/useTypewriter";
+import { useTypewriter } from "@/hooks";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants

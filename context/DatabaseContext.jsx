@@ -2,52 +2,63 @@
 
 import {
   createContext,
-  useContext,
-  useState,
   useCallback,
+  useContext,
   useEffect,
+  useState,
 } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { getFirebaseDB } from "@/lib/firebase/config";
 import {
-  collection,
-  doc,
   addDoc,
+  collection,
+  deleteDoc,
+  doc,
   getDoc,
   getDocs,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
   limit,
   onSnapshot,
-  writeBatch,
+  orderBy,
+  query,
   serverTimestamp,
+  setDoc,
   Timestamp,
+  updateDoc,
+  where,
+  writeBatch,
 } from "firebase/firestore";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Context
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const DatabaseContext = createContext(null);
 
 export const useDatabase = () => {
   const context = useContext(DatabaseContext);
-  if (!context) {
+  if (!context)
     throw new Error("useDatabase must be used within a DatabaseProvider");
-  }
   return context;
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Sorts documents by updatedAt descending.
-// Firestore serverTimestamp() resolves to null on the client until the server
-// confirms it (pending write). Treating null as Infinity pins those docs to
-// the top so a newly created item never jumps around when the timestamp lands.
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
+const BATCH_SIZE = 499;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pure helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Sorts by updatedAt descending. Pending serverTimestamp() resolves to null
+// on the client until confirmed — treating null as Infinity keeps newly
+// created items at the top instead of jumping around.
 const sortByUpdatedAt = (arr) =>
   [...arr].sort((a, b) => {
     const toMs = (v) => {
-      if (v == null) return Infinity; // pending serverTimestamp → sort first
+      if (v == null) return Infinity;
       if (typeof v.toDate === "function") return v.toDate().getTime();
       const ms = new Date(v).getTime();
       return isNaN(ms) ? Infinity : ms;
@@ -55,14 +66,17 @@ const sortByUpdatedAt = (arr) =>
     return toMs(b.updatedAt) - toMs(a.updatedAt);
   });
 
-// FIX: replaced a single shared `loading` state with a per-call local setter.
-// The old global setLoading(true/false) pattern caused the entire context
-// (and every consumer, including Sidebar) to re-render on every DB operation,
-// producing a cascade of unnecessary ChatListItem re-renders.
-//
-// Callers that need to track loading can do so with their own useState.
-// The context still exposes a lightweight `withLoading` helper for any future
-// operations that genuinely need a shared flag, but it is opt-in.
+const batchDelete = async (db, refs) => {
+  for (let i = 0; i < refs.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    refs.slice(i, i + BATCH_SIZE).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Provider
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function DatabaseProvider({ children }) {
   const { user } = useAuth();
@@ -70,35 +84,35 @@ export default function DatabaseProvider({ children }) {
   const [error, setError] = useState(null);
   const db = getFirebaseDB();
 
-  // ==================== HELPERS ====================
-
-  const handleError = useCallback((error, customMessage) => {
-    console.error(customMessage, error);
-    setError(error.message || customMessage);
+  const handleError = useCallback((err, message) => {
+    console.error(message, err);
+    setError(err.message || message);
     return null;
   }, []);
 
   const resetError = useCallback(() => setError(null), []);
 
-  // ==================== USER OPERATIONS ====================
+  // ─────────────────────────────────────────────────────────────────────────
+  // User
+  // ─────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!user || !db) return;
 
-    const initUserProfile = async () => {
+    const init = async () => {
       try {
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
 
         if (!userDoc.exists()) {
-          const newProfile = {
+          const profile = {
             email: user.email,
             displayName: user.displayName || null,
             photoURL: user.photoURL || null,
             preferences: {
               theme: "dark",
-              defaultModel: "openai/gpt-oss-120b",
-              language: "de",
+              defaultModel: DEFAULT_MODEL,
+              language: "en",
               modelPreferences: "",
             },
             memories: [],
@@ -109,18 +123,18 @@ export default function DatabaseProvider({ children }) {
             createdAt: serverTimestamp(),
             lastActive: serverTimestamp(),
           };
-          await setDoc(userRef, newProfile);
-          setUserProfile({ id: user.uid, ...newProfile });
+          await setDoc(userRef, profile);
+          setUserProfile({ id: user.uid, ...profile });
         } else {
           await updateDoc(userRef, { lastActive: serverTimestamp() });
           setUserProfile({ id: userDoc.id, ...userDoc.data() });
         }
       } catch (err) {
-        console.error("Error initializing user profile:", err);
+        console.error("Failed to initialize user profile:", err);
       }
     };
 
-    initUserProfile();
+    init();
   }, [user, db]);
 
   const updateUserProfile = useCallback(
@@ -128,7 +142,6 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        const userRef = doc(db, "users", user.uid);
         const updates = {
           ...(userData.displayName !== undefined && {
             displayName: userData.displayName,
@@ -136,18 +149,20 @@ export default function DatabaseProvider({ children }) {
           ...(userData.photoURL !== undefined && {
             photoURL: userData.photoURL,
           }),
-          ...(userData.preferences && { preferences: userData.preferences }),
+          ...(userData.preferences !== undefined && {
+            preferences: userData.preferences,
+          }),
           ...(userData.memories !== undefined && {
             memories: userData.memories,
           }),
           lastActive: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
-        await updateDoc(userRef, updates);
+        await updateDoc(doc(db, "users", user.uid), updates);
         setUserProfile((prev) => ({ ...prev, ...updates }));
         return { id: user.uid, ...updates };
       } catch (err) {
-        return handleError(err, "Error updating user profile");
+        return handleError(err, "Failed to update user profile");
       }
     },
     [user, db, handleError, resetError],
@@ -157,11 +172,10 @@ export default function DatabaseProvider({ children }) {
     if (!user || !db) return null;
     resetError();
     try {
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
+      const userDoc = await getDoc(doc(db, "users", user.uid));
       return userDoc.exists() ? { id: userDoc.id, ...userDoc.data() } : null;
     } catch (err) {
-      return handleError(err, "Error loading user profile");
+      return handleError(err, "Failed to load user profile");
     }
   }, [user, db, handleError, resetError]);
 
@@ -170,20 +184,21 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, {
+        await updateDoc(doc(db, "users", user.uid), {
           preferences,
           lastActive: serverTimestamp(),
         });
         return true;
       } catch (err) {
-        return handleError(err, "Error updating preferences");
+        return handleError(err, "Failed to update preferences");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // ==================== PROJECT OPERATIONS ====================
+  // ─────────────────────────────────────────────────────────────────────────
+  // Projects
+  // ─────────────────────────────────────────────────────────────────────────
 
   const createProject = useCallback(
     async (projectData) => {
@@ -200,10 +215,10 @@ export default function DatabaseProvider({ children }) {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
-        const projectRef = await addDoc(collection(db, "projects"), project);
-        return { id: projectRef.id, ...project };
+        const ref = await addDoc(collection(db, "projects"), project);
+        return { id: ref.id, ...project };
       } catch (err) {
-        return handleError(err, "Error creating project");
+        return handleError(err, "Failed to create project");
       }
     },
     [user, db, handleError, resetError],
@@ -214,18 +229,16 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return [];
       resetError();
       try {
-        const q = query(
-          collection(db, "projects"),
-          where("userId", "==", user.uid),
+        const snapshot = await getDocs(
+          query(collection(db, "projects"), where("userId", "==", user.uid)),
         );
-        const snapshot = await getDocs(q);
         const projects = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
         const filtered = includeArchived
           ? projects
           : projects.filter((p) => !p.isArchived);
         return sortByUpdatedAt(filtered);
       } catch (err) {
-        return handleError(err, "Error loading projects");
+        return handleError(err, "Failed to load projects");
       }
     },
     [user, db, handleError, resetError],
@@ -236,16 +249,13 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        const projectRef = doc(db, "projects", projectId);
-        const projectDoc = await getDoc(projectRef);
-        if (projectDoc.exists()) {
-          const data = projectDoc.data();
-          if (data.userId !== user.uid) throw new Error("Access denied");
-          return { id: projectDoc.id, ...data };
-        }
-        return null;
+        const projectDoc = await getDoc(doc(db, "projects", projectId));
+        if (!projectDoc.exists()) return null;
+        const data = projectDoc.data();
+        if (data.userId !== user.uid) throw new Error("Access denied");
+        return { id: projectDoc.id, ...data };
       } catch (err) {
-        return handleError(err, "Error loading project");
+        return handleError(err, "Failed to load project");
       }
     },
     [user, db, handleError, resetError],
@@ -256,14 +266,13 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        const projectRef = doc(db, "projects", projectId);
-        await updateDoc(projectRef, {
+        await updateDoc(doc(db, "projects", projectId), {
           ...updates,
           updatedAt: serverTimestamp(),
         });
         return true;
       } catch (err) {
-        return handleError(err, "Error updating project");
+        return handleError(err, "Failed to update project");
       }
     },
     [user, db, handleError, resetError],
@@ -274,14 +283,13 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        const projectRef = doc(db, "projects", projectId);
-        await updateDoc(projectRef, {
+        await updateDoc(doc(db, "projects", projectId), {
           isArchived: Boolean(isArchived),
           updatedAt: serverTimestamp(),
         });
         return true;
       } catch (err) {
-        return handleError(err, "Error archiving project");
+        return handleError(err, "Failed to archive project");
       }
     },
     [user, db, handleError, resetError],
@@ -294,48 +302,32 @@ export default function DatabaseProvider({ children }) {
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-
-        if (!projectDoc.exists()) {
-          throw new Error("Project not found");
-        }
+        if (!projectDoc.exists()) throw new Error("Project not found");
 
         const conversationIds = projectDoc.data().conversationIds || [];
 
-        // Step 1: delete all messages FIRST — while parent conversations still
-        // exist so the Rule's get(conversation).userId check can succeed
+        // Delete all messages first (while parent conversations still exist
+        // so Firestore security rules can verify ownership).
         for (const convId of conversationIds) {
-          const messagesSnapshot = await getDocs(
+          const msgSnap = await getDocs(
             collection(db, `conversations/${convId}/messages`),
           );
-          if (!messagesSnapshot.empty) {
-            const BATCH_SIZE = 499;
-            const docs = messagesSnapshot.docs;
-            for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-              const batch = writeBatch(db);
-              docs.slice(i, i + BATCH_SIZE).forEach((d) => batch.delete(d.ref));
-              await batch.commit();
-            }
-          }
+          if (!msgSnap.empty)
+            await batchDelete(
+              db,
+              msgSnap.docs.map((d) => d.ref),
+            );
         }
 
-        // Step 2: delete conversations + project AFTER all messages are gone
-        const refsToDelete = [
+        // Then delete conversations + project.
+        await batchDelete(db, [
           ...conversationIds.map((id) => doc(db, "conversations", id)),
           projectRef,
-        ];
-
-        const BATCH_SIZE = 499;
-        for (let i = 0; i < refsToDelete.length; i += BATCH_SIZE) {
-          const batch = writeBatch(db);
-          refsToDelete
-            .slice(i, i + BATCH_SIZE)
-            .forEach((ref) => batch.delete(ref));
-          await batch.commit();
-        }
+        ]);
 
         return true;
       } catch (err) {
-        return handleError(err, "Error deleting project");
+        return handleError(err, "Failed to delete project");
       }
     },
     [user, db, handleError, resetError],
@@ -348,24 +340,22 @@ export default function DatabaseProvider({ children }) {
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-        if (projectDoc.exists()) {
-          const currentIds = projectDoc.data().conversationIds || [];
-          if (!currentIds.includes(conversationId)) {
-            await updateDoc(projectRef, {
-              conversationIds: [...currentIds, conversationId],
-              updatedAt: serverTimestamp(),
-            });
-          }
-          const conversationRef = doc(db, "conversations", conversationId);
-          await updateDoc(conversationRef, {
-            projectId,
+        if (!projectDoc.exists()) return null;
+
+        const currentIds = projectDoc.data().conversationIds || [];
+        if (!currentIds.includes(conversationId)) {
+          await updateDoc(projectRef, {
+            conversationIds: [...currentIds, conversationId],
             updatedAt: serverTimestamp(),
           });
-          return true;
         }
-        return null;
+        await updateDoc(doc(db, "conversations", conversationId), {
+          projectId,
+          updatedAt: serverTimestamp(),
+        });
+        return true;
       } catch (err) {
-        return handleError(err, "Error adding conversation to project");
+        return handleError(err, "Failed to add conversation to project");
       }
     },
     [user, db, handleError, resetError],
@@ -378,24 +368,21 @@ export default function DatabaseProvider({ children }) {
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-        if (projectDoc.exists()) {
-          const updatedIds = (projectDoc.data().conversationIds || []).filter(
+        if (!projectDoc.exists()) return null;
+
+        await updateDoc(projectRef, {
+          conversationIds: (projectDoc.data().conversationIds || []).filter(
             (id) => id !== conversationId,
-          );
-          await updateDoc(projectRef, {
-            conversationIds: updatedIds,
-            updatedAt: serverTimestamp(),
-          });
-          const conversationRef = doc(db, "conversations", conversationId);
-          await updateDoc(conversationRef, {
-            projectId: null,
-            updatedAt: serverTimestamp(),
-          });
-          return true;
-        }
-        return null;
+          ),
+          updatedAt: serverTimestamp(),
+        });
+        await updateDoc(doc(db, "conversations", conversationId), {
+          projectId: null,
+          updatedAt: serverTimestamp(),
+        });
+        return true;
       } catch (err) {
-        return handleError(err, "Error removing conversation from project");
+        return handleError(err, "Failed to remove conversation from project");
       }
     },
     [user, db, handleError, resetError],
@@ -408,24 +395,23 @@ export default function DatabaseProvider({ children }) {
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-        if (projectDoc.exists()) {
-          const newDocument = {
-            id: doc(collection(db, "temp")).id,
-            title: document.title,
-            type: document.type,
-            content: document.content,
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
-          };
-          await updateDoc(projectRef, {
-            documents: [...(projectDoc.data().documents || []), newDocument],
-            updatedAt: serverTimestamp(),
-          });
-          return newDocument;
-        }
-        return null;
+        if (!projectDoc.exists()) return null;
+
+        const newDoc = {
+          id: doc(collection(db, "temp")).id,
+          title: document.title,
+          type: document.type,
+          content: document.content,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        };
+        await updateDoc(projectRef, {
+          documents: [...(projectDoc.data().documents || []), newDoc],
+          updatedAt: serverTimestamp(),
+        });
+        return newDoc;
       } catch (err) {
-        return handleError(err, "Error adding document to project");
+        return handleError(err, "Failed to add document to project");
       }
     },
     [user, db, handleError, resetError],
@@ -438,22 +424,19 @@ export default function DatabaseProvider({ children }) {
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-        if (projectDoc.exists()) {
-          const updatedDocuments = (projectDoc.data().documents || []).map(
-            (d) =>
-              d.id === documentId
-                ? { ...d, ...updates, updatedAt: Timestamp.now() }
-                : d,
-          );
-          await updateDoc(projectRef, {
-            documents: updatedDocuments,
-            updatedAt: serverTimestamp(),
-          });
-          return true;
-        }
-        return null;
+        if (!projectDoc.exists()) return null;
+
+        await updateDoc(projectRef, {
+          documents: (projectDoc.data().documents || []).map((d) =>
+            d.id === documentId
+              ? { ...d, ...updates, updatedAt: Timestamp.now() }
+              : d,
+          ),
+          updatedAt: serverTimestamp(),
+        });
+        return true;
       } catch (err) {
-        return handleError(err, "Error updating document");
+        return handleError(err, "Failed to update document");
       }
     },
     [user, db, handleError, resetError],
@@ -466,19 +449,17 @@ export default function DatabaseProvider({ children }) {
       try {
         const projectRef = doc(db, "projects", projectId);
         const projectDoc = await getDoc(projectRef);
-        if (projectDoc.exists()) {
-          const updatedDocuments = (projectDoc.data().documents || []).filter(
+        if (!projectDoc.exists()) return null;
+
+        await updateDoc(projectRef, {
+          documents: (projectDoc.data().documents || []).filter(
             (d) => d.id !== documentId,
-          );
-          await updateDoc(projectRef, {
-            documents: updatedDocuments,
-            updatedAt: serverTimestamp(),
-          });
-          return true;
-        }
-        return null;
+          ),
+          updatedAt: serverTimestamp(),
+        });
+        return true;
       } catch (err) {
-        return handleError(err, "Error removing document");
+        return handleError(err, "Failed to remove document");
       }
     },
     [user, db, handleError, resetError],
@@ -489,24 +470,21 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return [];
       resetError();
       try {
-        const projectRef = doc(db, "projects", projectId);
-        const projectDoc = await getDoc(projectRef);
-        if (projectDoc.exists()) {
-          const conversationIds = projectDoc.data().conversationIds || [];
-          if (conversationIds.length === 0) return [];
-          const conversations = await Promise.all(
-            conversationIds.map(async (convId) => {
-              const convDoc = await getDoc(doc(db, "conversations", convId));
-              return convDoc.exists()
-                ? { id: convDoc.id, ...convDoc.data() }
-                : null;
-            }),
-          );
-          return conversations.filter(Boolean);
-        }
-        return [];
+        const projectDoc = await getDoc(doc(db, "projects", projectId));
+        if (!projectDoc.exists()) return [];
+
+        const ids = projectDoc.data().conversationIds || [];
+        if (ids.length === 0) return [];
+
+        const results = await Promise.all(
+          ids.map(async (id) => {
+            const d = await getDoc(doc(db, "conversations", id));
+            return d.exists() ? { id: d.id, ...d.data() } : null;
+          }),
+        );
+        return results.filter(Boolean);
       } catch (err) {
-        return handleError(err, "Error loading project conversations");
+        return handleError(err, "Failed to load project conversations");
       }
     },
     [user, db, handleError, resetError],
@@ -516,14 +494,13 @@ export default function DatabaseProvider({ children }) {
     async (projectId, memories) => {
       if (!user || !db) return null;
       try {
-        const projectRef = doc(db, "projects", projectId);
-        await updateDoc(projectRef, {
+        await updateDoc(doc(db, "projects", projectId), {
           memories,
           updatedAt: serverTimestamp(),
         });
         return true;
       } catch (err) {
-        return handleError(err, "Error updating project memories");
+        return handleError(err, "Failed to update project memories");
       }
     },
     [user, db, handleError],
@@ -534,33 +511,34 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db || !searchTerm) return [];
       resetError();
       try {
-        const q = query(
-          collection(db, "projects"),
-          where("userId", "==", user.uid),
+        const snapshot = await getDocs(
+          query(collection(db, "projects"), where("userId", "==", user.uid)),
         );
-        const snapshot = await getDocs(q);
+        const term = searchTerm.toLowerCase();
         return snapshot.docs
           .map((d) => ({ id: d.id, ...d.data() }))
           .filter(
             (p) =>
-              p.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              p.description?.toLowerCase().includes(searchTerm.toLowerCase()),
+              p.title?.toLowerCase().includes(term) ||
+              p.description?.toLowerCase().includes(term),
           );
       } catch (err) {
-        return handleError(err, "Error searching projects");
+        return handleError(err, "Failed to search projects");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // ==================== CONVERSATION OPERATIONS ====================
+  // ─────────────────────────────────────────────────────────────────────────
+  // Conversations
+  // ─────────────────────────────────────────────────────────────────────────
 
   const createConversation = useCallback(
-    async (title = "New Chat", model = "gpt-oss") => {
+    async (title = "New Chat", model = DEFAULT_MODEL) => {
       if (!user || !db) return null;
       resetError();
       try {
-        const conversationData = {
+        const data = {
           userId: user.uid,
           title,
           model,
@@ -569,13 +547,10 @@ export default function DatabaseProvider({ children }) {
           messageCount: 0,
           isArchived: false,
         };
-        const conversationRef = await addDoc(
-          collection(db, "conversations"),
-          conversationData,
-        );
-        return { id: conversationRef.id, ...conversationData };
+        const ref = await addDoc(collection(db, "conversations"), data);
+        return { id: ref.id, ...data };
       } catch (err) {
-        return handleError(err, "Error creating conversation");
+        return handleError(err, "Failed to create conversation");
       }
     },
     [user, db, handleError, resetError],
@@ -586,18 +561,19 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return [];
       resetError();
       try {
-        const q = query(
-          collection(db, "conversations"),
-          where("userId", "==", user.uid),
+        const snapshot = await getDocs(
+          query(
+            collection(db, "conversations"),
+            where("userId", "==", user.uid),
+          ),
         );
-        const snapshot = await getDocs(q);
         const all = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
         const filtered = includeArchived
           ? all
           : all.filter((c) => !c.isArchived);
         return sortByUpdatedAt(filtered).slice(0, limitCount);
       } catch (err) {
-        return handleError(err, "Error loading conversations");
+        return handleError(err, "Failed to load conversations");
       }
     },
     [user, db, handleError, resetError],
@@ -608,16 +584,13 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        const conversationRef = doc(db, "conversations", conversationId);
-        const conversationDoc = await getDoc(conversationRef);
-        if (conversationDoc.exists()) {
-          const data = conversationDoc.data();
-          if (data.userId !== user.uid) throw new Error("Access denied");
-          return { id: conversationDoc.id, ...data };
-        }
-        return null;
+        const convDoc = await getDoc(doc(db, "conversations", conversationId));
+        if (!convDoc.exists()) return null;
+        const data = convDoc.data();
+        if (data.userId !== user.uid) throw new Error("Access denied");
+        return { id: convDoc.id, ...data };
       } catch (err) {
-        return handleError(err, "Error loading conversation");
+        return handleError(err, "Failed to load conversation");
       }
     },
     [user, db, handleError, resetError],
@@ -628,14 +601,13 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        const conversationRef = doc(db, "conversations", conversationId);
-        await updateDoc(conversationRef, {
+        await updateDoc(doc(db, "conversations", conversationId), {
           ...updates,
           updatedAt: serverTimestamp(),
         });
         return true;
       } catch (err) {
-        return handleError(err, "Error updating conversation");
+        return handleError(err, "Failed to update conversation");
       }
     },
     [user, db, handleError, resetError],
@@ -647,17 +619,15 @@ export default function DatabaseProvider({ children }) {
       resetError();
       try {
         const batch = writeBatch(db);
-        const messagesRef = collection(
-          db,
-          `conversations/${conversationId}/messages`,
+        const msgSnap = await getDocs(
+          collection(db, `conversations/${conversationId}/messages`),
         );
-        const messagesSnapshot = await getDocs(messagesRef);
-        messagesSnapshot.forEach((d) => batch.delete(d.ref));
+        msgSnap.forEach((d) => batch.delete(d.ref));
         batch.delete(doc(db, "conversations", conversationId));
         await batch.commit();
         return true;
       } catch (err) {
-        return handleError(err, "Error deleting conversation");
+        return handleError(err, "Failed to delete conversation");
       }
     },
     [user, db, handleError, resetError],
@@ -668,20 +638,16 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        const conversationRef = doc(db, "conversations", conversationId);
+        const convRef = doc(db, "conversations", conversationId);
         if (isArchived === null) {
-          const conversationDoc = await getDoc(conversationRef);
-          if (!conversationDoc.exists())
-            throw new Error("Conversation not found");
-          isArchived = !conversationDoc.data().isArchived;
+          const convDoc = await getDoc(convRef);
+          if (!convDoc.exists()) throw new Error("Conversation not found");
+          isArchived = !convDoc.data().isArchived;
         }
-        await updateDoc(conversationRef, {
-          isArchived,
-          updatedAt: serverTimestamp(),
-        });
+        await updateDoc(convRef, { isArchived, updatedAt: serverTimestamp() });
         return true;
       } catch (err) {
-        return handleError(err, "Error archiving conversation");
+        return handleError(err, "Failed to archive conversation");
       }
     },
     [user, db, handleError, resetError],
@@ -692,24 +658,26 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db || !searchTerm) return [];
       resetError();
       try {
-        const q = query(
-          collection(db, "conversations"),
-          where("userId", "==", user.uid),
+        const snapshot = await getDocs(
+          query(
+            collection(db, "conversations"),
+            where("userId", "==", user.uid),
+          ),
         );
-        const snapshot = await getDocs(q);
+        const term = searchTerm.toLowerCase();
         return snapshot.docs
           .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((c) =>
-            c.title?.toLowerCase().includes(searchTerm.toLowerCase()),
-          );
+          .filter((c) => c.title?.toLowerCase().includes(term));
       } catch (err) {
-        return handleError(err, "Error searching conversations");
+        return handleError(err, "Failed to search conversations");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // ==================== MESSAGE OPERATIONS ====================
+  // ─────────────────────────────────────────────────────────────────────────
+  // Messages
+  // ─────────────────────────────────────────────────────────────────────────
 
   const addMessage = useCallback(
     async (conversationId, messageData) => {
@@ -717,15 +685,13 @@ export default function DatabaseProvider({ children }) {
       resetError();
       try {
         const batch = writeBatch(db);
-        const messagesRef = collection(
-          db,
-          `conversations/${conversationId}/messages`,
+        const messageRef = doc(
+          collection(db, `conversations/${conversationId}/messages`),
         );
-        const messageRef = doc(messagesRef);
         const message = {
           role: messageData.role,
           content: messageData.content,
-          model: messageData.model || "gpt-oss",
+          model: messageData.model || DEFAULT_MODEL,
           timestamp: serverTimestamp(),
           metadata: messageData.metadata || {},
         };
@@ -737,7 +703,7 @@ export default function DatabaseProvider({ children }) {
         await batch.commit();
         return { id: messageRef.id, ...message };
       } catch (err) {
-        return handleError(err, "Error adding message");
+        return handleError(err, "Failed to add message");
       }
     },
     [user, db, handleError, resetError],
@@ -748,19 +714,16 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return [];
       resetError();
       try {
-        const messagesRef = collection(
-          db,
-          `conversations/${conversationId}/messages`,
+        const snapshot = await getDocs(
+          query(
+            collection(db, `conversations/${conversationId}/messages`),
+            orderBy("timestamp", "asc"),
+            limit(limitCount),
+          ),
         );
-        const q = query(
-          messagesRef,
-          orderBy("timestamp", "asc"),
-          limit(limitCount),
-        );
-        const snapshot = await getDocs(q);
         return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       } catch (err) {
-        return handleError(err, "Error loading messages");
+        return handleError(err, "Failed to load messages");
       }
     },
     [user, db, handleError, resetError],
@@ -771,41 +734,36 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        const messageRef = doc(
-          db,
-          `conversations/${conversationId}/messages`,
-          messageId,
+        await deleteDoc(
+          doc(db, `conversations/${conversationId}/messages`, messageId),
         );
-        await deleteDoc(messageRef);
-        const conversationRef = doc(db, "conversations", conversationId);
-        const conversationDoc = await getDoc(conversationRef);
-        const currentCount = conversationDoc.data()?.messageCount || 0;
-        await updateDoc(conversationRef, {
-          messageCount: Math.max(0, currentCount - 1),
+        const convRef = doc(db, "conversations", conversationId);
+        const convDoc = await getDoc(convRef);
+        await updateDoc(convRef, {
+          messageCount: Math.max(0, (convDoc.data()?.messageCount || 0) - 1),
           updatedAt: serverTimestamp(),
         });
         return true;
       } catch (err) {
-        return handleError(err, "Error deleting message");
+        return handleError(err, "Failed to delete message");
       }
     },
     [user, db, handleError, resetError],
   );
 
-  // ==================== REALTIME LISTENERS ====================
+  // ─────────────────────────────────────────────────────────────────────────
+  // Realtime listeners
+  // ─────────────────────────────────────────────────────────────────────────
 
-  // All user conversations — filtering and sorting client-side,
-  // no composite Firestore index required.
   const subscribeToConversations = useCallback(
     (callback, includeArchived = false) => {
       if (!user || !db) return () => {};
       try {
-        const q = query(
-          collection(db, "conversations"),
-          where("userId", "==", user.uid),
-        );
         return onSnapshot(
-          q,
+          query(
+            collection(db, "conversations"),
+            where("userId", "==", user.uid),
+          ),
           (snapshot) => {
             const all = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
             const filtered = includeArchived
@@ -813,10 +771,10 @@ export default function DatabaseProvider({ children }) {
               : all.filter((c) => !c.isArchived);
             callback(sortByUpdatedAt(filtered));
           },
-          (err) => handleError(err, "Error in conversation realtime update"),
+          (err) => handleError(err, "Conversation listener error"),
         );
       } catch (err) {
-        handleError(err, "Error creating conversation listener");
+        handleError(err, "Failed to create conversation listener");
         return () => {};
       }
     },
@@ -827,49 +785,43 @@ export default function DatabaseProvider({ children }) {
     (callback) => {
       if (!user || !db) return () => {};
       try {
-        const q = query(
-          collection(db, "conversations"),
-          where("userId", "==", user.uid),
-        );
         return onSnapshot(
-          q,
+          query(
+            collection(db, "conversations"),
+            where("userId", "==", user.uid),
+          ),
           (snapshot) => {
             const archived = snapshot.docs
               .map((d) => ({ id: d.id, ...d.data() }))
               .filter((c) => c.isArchived === true);
             callback(sortByUpdatedAt(archived));
           },
-          (err) =>
-            handleError(err, "Error in archived conversation realtime update"),
+          (err) => handleError(err, "Archived conversation listener error"),
         );
       } catch (err) {
-        handleError(err, "Error creating archive listener");
+        handleError(err, "Failed to create archive listener");
         return () => {};
       }
     },
     [user, db, handleError],
   );
 
-  // Single-document real-time listener — used by ChatIDPage to keep the
-  // header title in sync after a rename without a full page reload.
   const subscribeToConversation = useCallback(
     (conversationId, callback) => {
       if (!user || !db) return () => {};
       try {
-        const conversationRef = doc(db, "conversations", conversationId);
         return onSnapshot(
-          conversationRef,
+          doc(db, "conversations", conversationId),
           (snapshot) => {
-            if (snapshot.exists()) {
-              const data = snapshot.data();
-              if (data.userId !== user.uid) return;
-              callback({ id: snapshot.id, ...data });
-            }
+            if (!snapshot.exists()) return;
+            const data = snapshot.data();
+            if (data.userId !== user.uid) return;
+            callback({ id: snapshot.id, ...data });
           },
-          (err) => handleError(err, "Error in conversation realtime update"),
+          (err) => handleError(err, "Single conversation listener error"),
         );
       } catch (err) {
-        handleError(err, "Error creating conversation listener");
+        handleError(err, "Failed to create conversation listener");
         return () => {};
       }
     },
@@ -880,12 +832,8 @@ export default function DatabaseProvider({ children }) {
     (callback, includeArchived = false) => {
       if (!user || !db) return () => {};
       try {
-        const q = query(
-          collection(db, "projects"),
-          where("userId", "==", user.uid),
-        );
         return onSnapshot(
-          q,
+          query(collection(db, "projects"), where("userId", "==", user.uid)),
           (snapshot) => {
             const all = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
             const filtered = includeArchived
@@ -893,10 +841,10 @@ export default function DatabaseProvider({ children }) {
               : all.filter((p) => !p.isArchived);
             callback(sortByUpdatedAt(filtered));
           },
-          (err) => handleError(err, "Error in project realtime update"),
+          (err) => handleError(err, "Project listener error"),
         );
       } catch (err) {
-        handleError(err, "Error creating project listener");
+        handleError(err, "Failed to create project listener");
         return () => {};
       }
     },
@@ -907,77 +855,78 @@ export default function DatabaseProvider({ children }) {
     (conversationId, callback) => {
       if (!user || !db) return () => {};
       try {
-        const messagesRef = collection(
-          db,
-          `conversations/${conversationId}/messages`,
-        );
-        const q = query(messagesRef, orderBy("timestamp", "asc"));
         return onSnapshot(
-          q,
-          (snapshot) => {
-            callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
-          },
-          (err) => handleError(err, "Error in message realtime update"),
+          query(
+            collection(db, `conversations/${conversationId}/messages`),
+            orderBy("timestamp", "asc"),
+          ),
+          (snapshot) =>
+            callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))),
+          (err) => handleError(err, "Message listener error"),
         );
       } catch (err) {
-        handleError(err, "Error creating message listener");
+        handleError(err, "Failed to create message listener");
         return () => {};
       }
     },
     [user, db, handleError],
   );
 
-  const values = {
-    // State
-    error,
-    resetError,
-    userProfile,
-
-    // User
-    updateUserProfile,
-    getUserProfile,
-    updateUserPreferences,
-
-    // Projects
-    createProject,
-    getProjects,
-    getProject,
-    updateProject,
-    toggleArchiveProject,
-    deleteProject,
-    addConversationToProject,
-    removeConversationFromProject,
-    addDocumentToProject,
-    updateDocumentInProject,
-    removeDocumentFromProject,
-    getProjectConversations,
-    updateProjectMemory,
-    searchProjects,
-
-    // Conversations
-    createConversation,
-    getConversations,
-    getConversation,
-    updateConversation,
-    deleteConversation,
-    toggleArchiveConversation,
-    searchConversations,
-
-    // Messages
-    addMessage,
-    getMessages,
-    deleteMessage,
-
-    // Realtime listeners
-    subscribeToMessages,
-    subscribeToConversation,
-    subscribeToConversations,
-    subscribeToArchivedConversations,
-    subscribeToProjects,
-  };
+  // ─────────────────────────────────────────────────────────────────────────
+  // Context value
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <DatabaseContext.Provider value={values}>
+    <DatabaseContext.Provider
+      value={{
+        // State
+        error,
+        resetError,
+        userProfile,
+
+        // User
+        updateUserProfile,
+        getUserProfile,
+        updateUserPreferences,
+
+        // Projects
+        createProject,
+        getProjects,
+        getProject,
+        updateProject,
+        toggleArchiveProject,
+        deleteProject,
+        addConversationToProject,
+        removeConversationFromProject,
+        addDocumentToProject,
+        updateDocumentInProject,
+        removeDocumentFromProject,
+        getProjectConversations,
+        updateProjectMemory,
+        searchProjects,
+
+        // Conversations
+        createConversation,
+        getConversations,
+        getConversation,
+        updateConversation,
+        deleteConversation,
+        toggleArchiveConversation,
+        searchConversations,
+
+        // Messages
+        addMessage,
+        getMessages,
+        deleteMessage,
+
+        // Realtime listeners
+        subscribeToMessages,
+        subscribeToConversation,
+        subscribeToConversations,
+        subscribeToArchivedConversations,
+        subscribeToProjects,
+      }}
+    >
       {children}
     </DatabaseContext.Provider>
   );

@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "react-feather";
+import { Input, PrimaryButton } from "@/components";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, error } = useAuth();
+  const { signIn, error, user } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e) => {
@@ -19,7 +20,6 @@ export default function SignInPage() {
 
     try {
       await signIn(email, password);
-      router.push("/chat");
     } catch (err) {
       console.error("Login error:", err);
     } finally {
@@ -27,55 +27,48 @@ export default function SignInPage() {
     }
   };
 
+  useEffect(() => {
+    if (user) router.push("/chat");
+  }, [user]);
+
   return (
     <div className="w-full max-w-sm">
-      <div className="p-6 shadow-lg shadow-neutral-800/5 border border-neutral-900 rounded-lg bg-neutral-800/5">
+      <div className="p-6 border border-neutral-900 rounded-lg bg-neutral-800/5">
         <h2 className="text-2xl font-semibold mb-6 text-center">Sign In</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4 px-6">
-          <div>
-            <label className="block text-gray-400 text-xs font-medium tracking-wider mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-neutral-800 rounded-lg outline-none focus:ring focus:ring-blue-500/20"
-              autoComplete="email"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-400 text-xs font-medium tracking-wider mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-neutral-800 rounded-lg outline-none focus:ring focus:ring-blue-500/20"
-              autoComplete="current-password"
-              required
-            />
-          </div>
-
+          <Input
+            label="Email"
+            value={email}
+            type="email"
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+            placeholder="Example@mail.com"
+          />
+          <Input
+            label="Password"
+            value={password}
+            type="password"
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            placeholder="Password"
+            required
+          />
           {error && <div className="text-red-500 text-sm">{error}</div>}
 
-          <button
+          <PrimaryButton
+            text={loading ? "Signing in..." : "Sign In"}
+            className="justify-center hover:ring-2 hover:ring-blue-600/20 "
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white rounded-lg py-2.5 hover:bg-blue-700 disabled:opacity-50 mt-4"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
+          />
         </form>
 
         <div className="mt-4 text-center text-sm">
           <Link
             href="/reset-password"
-            className="text-blue-600 hover:underline"
+            className="text-blue-400/50 hover:underline"
           >
             Forgot password?
           </Link>
@@ -83,18 +76,18 @@ export default function SignInPage() {
 
         <div className="mt-4 text-center text-sm text-gray-600">
           Don&apos;t have an account?{" "}
-          <Link href="/sign-up" className="text-blue-600 hover:underline">
+          <Link href="/sign-up" className="text-blue-400/50 hover:underline">
             Sign up
           </Link>
         </div>
       </div>
-      <Link
+
+      <PrimaryButton
+        text="return home"
         href={"/"}
-        className="flex justify-center items-center gap-px mt-3 text-sm text-gray-500"
-      >
-        <ArrowLeft size={16} />
-        return home
-      </Link>
+        icon={<ArrowLeft size={16} />}
+        className="border-none shadow-none justify-center text-neutral-500/80 hover:text-neutral-500 hover:bg-transparent"
+      />
     </div>
   );
 }

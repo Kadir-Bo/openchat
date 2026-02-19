@@ -15,10 +15,12 @@ export default function Input({
   containerClassName = "",
   inputClassName = "",
   labelClassName = "",
+  required = false,
   onChange = () => null,
   onKeyDown = () => null,
   onBlur = () => null,
   onFocus = () => null,
+  ...props
 }) {
   const lockedClasses = locked && "opacity-50 cursor-not-allowed";
 
@@ -54,11 +56,13 @@ export default function Input({
         onKeyDown={onKeyDown}
         onBlur={onBlur}
         onFocus={onFocus}
+        required={required}
         className={twMerge(
           "border w-full px-3 py-2 rounded-lg border-neutral-700 bg-transparent outline-none focus:ring-1 focus:ring-blue-500/30 placeholder:text-neutral-500 disabled:cursor-not-allowed",
           inputClassName,
           lockedClasses,
         )}
+        {...props}
       />
     </div>
   );

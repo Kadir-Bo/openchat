@@ -1,16 +1,45 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+
 import { useAuth, useChat, useDatabase } from "@/context";
-import { Loader } from "react-feather";
 import { MessageBubble, ProcessingIndicator } from "@/components";
 import { formatUsername } from "@/lib";
+import useTypewriter from "@/hooks/useTypewriter";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Typewriter animation — public / logged-out empty state
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EXAMPLE_TASKS = [
+  "Write a cover letter",
+  "Explain quantum entanglement",
+  "Brainstorm startup ideas",
+  "Refactor this Python script",
+  "Draft a cold outreach email",
+  "Summarize this research paper",
+  "Generate a logo concept brief",
+  "Plan a 7-day trip to Japan",
+  "Come up with a product tagline",
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ChatConversation({ onConversationLoad = null }) {
-  const params = useParams();
-  const conversationId = params?.chatId;
+  const { chatId: conversationId } = useParams() ?? {};
   const router = useRouter();
+
+  const { user } = useAuth();
+
   const {
     subscribeToMessages,
     getConversation,
@@ -23,16 +52,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
     updateProjectMemory,
     userProfile,
   } = useDatabase();
-  const { username } = useAuth();
-  const [messages, setMessages] = useState([]);
-  const [conversation, setConversation] = useState(null);
-  const [project, setProject] = useState(null);
-  const [loading, setLoading] = useState(!!conversationId);
-  const messagesEndRef = useRef(null);
-
-  // When true, incoming Firestore snapshots are ignored so we control the
-  // messages state ourselves during optimistic updates.
-  const suppressListenerRef = useRef(false);
 
   const {
     currentStreamResponse,
@@ -42,101 +61,104 @@ export default function ChatConversation({ onConversationLoad = null }) {
     isLoading,
   } = useChat();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
-  };
+  const [messages, setMessages] = useState([]);
+  const [conversation, setConversation] = useState(null);
+  const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(!!conversationId);
+  const text = useTypewriter(EXAMPLE_TASKS);
+
+  const messagesEndRef = useRef(null);
+  // When true, incoming Firestore snapshots are ignored so we control the
+  // messages state ourselves during optimistic updates.
+  const suppressListenerRef = useRef(false);
+
+  // ── Scroll ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
   }, [messages, currentStreamResponse, processingMessage]);
+
+  // ── Load conversation + project ──────────────────────────────────────────
 
   useEffect(() => {
     if (!conversationId) return;
 
-    const loadConversation = async () => {
+    const load = async () => {
       setLoading(true);
       try {
         const conv = await getConversation(conversationId);
-        setConversation(conv);
-
         if (!conv) {
           router.push("/chat");
           return;
         }
 
-        if (conv.projectId) {
-          const proj = await getProject(conv.projectId);
-          setProject(proj);
-          if (onConversationLoad) {
-            onConversationLoad({ conversation: conv, project: proj });
-          }
-        } else {
-          setProject(null);
-          if (onConversationLoad) {
-            onConversationLoad({ conversation: conv, project: null });
-          }
-        }
-      } catch (error) {
-        console.error("Error loading conversation:", error);
+        setConversation(conv);
+
+        const proj = conv.projectId ? await getProject(conv.projectId) : null;
+        setProject(proj);
+        onConversationLoad?.({ conversation: conv, project: proj });
+      } catch (err) {
+        console.error("Failed to load conversation:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadConversation();
+    load();
   }, [conversationId, getConversation, getProject, router]);
+
+  // ── Realtime message listener ────────────────────────────────────────────
 
   useEffect(() => {
     if (!conversationId) return;
 
-    const unsubscribe = subscribeToMessages(conversationId, (newMessages) => {
-      // While we're doing an optimistic update, ignore Firestore snapshots.
+    const unsubscribe = subscribeToMessages(conversationId, (incoming) => {
       if (suppressListenerRef.current) return;
-      setMessages(newMessages);
+      setMessages(incoming);
     });
 
     return () => unsubscribe();
   }, [conversationId, subscribeToMessages]);
 
+  // ── Shared context args (passed to both regen + edit) ────────────────────
+
+  const sharedArgs = {
+    conversationId,
+    model: conversation?.model || DEFAULT_MODEL,
+    deleteMessage,
+    addMessage,
+    getMessages,
+    updateConversation,
+    updateUserProfile,
+    updateProjectMemory,
+    userProfile,
+    projectId: conversation?.projectId || null,
+    project,
+  };
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
   const handleRegenerate = useCallback(
     async (messageId) => {
       if (isLoading) return;
 
-      const messageIndex = messages.findIndex((m) => m.id === messageId);
-      if (messageIndex === -1) return;
+      const index = messages.findIndex((m) => m.id === messageId);
+      if (index === -1) return;
 
-      const targetMessage = messages[messageIndex];
-
-      // ASSISTANT message: keep everything before the assistant bubble.
-      //   The user message before it stays visible and in Firestore.
-      //   Only the assistant reply gets removed.
-      // USER message: keep the user message itself + everything before it.
-      //   Only messages AFTER the user message are removed.
-      //   The user message stays visible — no re-save needed.
-      const keepUpTo =
-        targetMessage.role === "user" ? messageIndex + 1 : messageIndex;
+      // Assistant message → keep everything before it (user message stays).
+      // User message      → keep itself + everything before it.
+      const keepUpTo = messages[index].role === "user" ? index + 1 : index;
       const keptMessages = messages.slice(0, keepUpTo);
       const messagesToDelete = messages.slice(keepUpTo);
 
-      // Optimistic update — instant, no flicker
       suppressListenerRef.current = true;
       setMessages(keptMessages);
 
       try {
         await regenerateResponse({
+          ...sharedArgs,
           messageId,
-          conversationId,
           messages,
-          model: conversation?.model || "openai/gpt-oss-120b",
-          deleteMessage,
-          addMessage,
-          getMessages,
-          updateConversation,
-          updateUserProfile,
-          updateProjectMemory,
-          userProfile,
-          projectId: conversation?.projectId || null,
-          project,
           _keptMessages: keptMessages,
           _messagesToDelete: messagesToDelete,
         });
@@ -144,53 +166,29 @@ export default function ChatConversation({ onConversationLoad = null }) {
         suppressListenerRef.current = false;
       }
     },
-    [
-      isLoading,
-      messages,
-      conversationId,
-      conversation,
-      project,
-      userProfile,
-      regenerateResponse,
-      deleteMessage,
-      addMessage,
-      getMessages,
-      updateConversation,
-      updateUserProfile,
-      updateProjectMemory,
-    ],
+    [isLoading, messages, sharedArgs, regenerateResponse],
   );
 
   const handleEdit = useCallback(
     async (messageId, newContent) => {
       if (isLoading) return;
 
-      const messageIndex = messages.findIndex((m) => m.id === messageId);
-      if (messageIndex === -1) return;
+      const index = messages.findIndex((m) => m.id === messageId);
+      if (index === -1) return;
 
       // Keep everything strictly before the edited message.
-      const keptMessages = messages.slice(0, messageIndex);
-      const messagesToDelete = messages.slice(messageIndex);
+      const keptMessages = messages.slice(0, index);
+      const messagesToDelete = messages.slice(index);
 
       suppressListenerRef.current = true;
       setMessages(keptMessages);
 
       try {
         await editAndResend({
+          ...sharedArgs,
           messageId,
           newContent,
-          conversationId,
           messages,
-          model: conversation?.model || "openai/gpt-oss-120b",
-          deleteMessage,
-          addMessage,
-          getMessages,
-          updateConversation,
-          updateUserProfile,
-          updateProjectMemory,
-          userProfile,
-          projectId: conversation?.projectId || null,
-          project,
           _keptMessages: keptMessages,
           _messagesToDelete: messagesToDelete,
         });
@@ -198,46 +196,29 @@ export default function ChatConversation({ onConversationLoad = null }) {
         suppressListenerRef.current = false;
       }
     },
-    [
-      isLoading,
-      messages,
-      conversationId,
-      conversation,
-      project,
-      userProfile,
-      editAndResend,
-      deleteMessage,
-      addMessage,
-      getMessages,
-      updateConversation,
-      updateUserProfile,
-      updateProjectMemory,
-    ],
+    [isLoading, messages, sharedArgs, editAndResend],
   );
 
-  const lastMessage = messages[messages.length - 1];
+  // ── Derived display state ─────────────────────────────────────────────────
+
+  const lastMessage = messages.at(-1);
   const isStreamingComplete = lastMessage?.role === "assistant";
   const shouldShowStream =
-    currentStreamResponse &&
-    currentStreamResponse.trim().length > 0 &&
-    !isStreamingComplete;
-
+    !!currentStreamResponse?.trim() && !isStreamingComplete;
   const showIndicator = !!processingMessage;
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader className="animate-spin text-neutral-400" size={32} />
-      </div>
-    );
+    return;
   }
 
   if (!conversationId) {
     return (
-      <div className="flex-1 flex items-center justify-center w-full">
+      <div className="flex items-center justify-center w-full mb-12">
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-neutral-300 mb-2">
-            Welcome back {formatUsername(username)}
+            Welcome back, {user.displayName || formatUsername(user.email)}
           </h2>
           <p className="text-neutral-500">
             Start a conversation by typing a message below
@@ -249,7 +230,7 @@ export default function ChatConversation({ onConversationLoad = null }) {
 
   return (
     <div className="flex-1 w-full overflow-y-auto py-8 px-4">
-      <div className="space-y-3 max-w-5xl mx-auto">
+      <div className="space-y-3 max-w-220 mx-auto">
         {messages.map((message) => (
           <MessageBubble
             key={message.id}
@@ -259,7 +240,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
           />
         ))}
 
-        {/* Streaming response bubble */}
         {shouldShowStream && (
           <MessageBubble
             message={{
@@ -270,7 +250,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
           />
         )}
 
-        {/* Processing indicator */}
         {showIndicator && (
           <div className="flex justify-start px-1">
             <ProcessingIndicator message={processingMessage} />

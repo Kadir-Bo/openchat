@@ -1,98 +1,50 @@
 "use client";
 
-import { createContext, useContext, useState, useRef } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import {
-  generateTitleFromResponse,
-  streamResponse,
   buildContextMessages,
-  buildSystemPromptWithMemories,
-  trimMessagesToTokenLimit,
   buildMemoryExtractionPrompt,
   buildSummaryPrompt,
+  buildSystemPromptWithMemories,
   extractProjectMemoryFromConversation,
+  generateTitleFromResponse,
+  streamResponse,
+  trimMessagesToTokenLimit,
 } from "@/lib";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Context
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const ChatContext = createContext(null);
 
 export const useChat = () => {
   const context = useContext(ChatContext);
-  if (!context) {
-    throw new Error("useChat must be used within an ChatProvider");
-  }
+  if (!context) throw new Error("useChat must be used within a ChatProvider");
   return context;
 };
 
-const extractMemoryFromConversation = async (
-  userMessage,
-  assistantResponse,
-  existingMemories = [],
-  streamResponseFn,
-) => {
-  try {
-    const result = await streamResponseFn(
-      [
-        {
-          role: "system",
-          content: buildMemoryExtractionPrompt(existingMemories),
-        },
-        {
-          role: "user",
-          content: `User said: "${userMessage}"\n\nAssistant responded: "${assistantResponse.substring(0, 500)}"`,
-        },
-      ],
-      "openai/gpt-oss-120b",
-      null,
-      false,
-      50,
-      null,
-    );
-    const cleaned = result.replace(/```json|```/g, "").trim();
-    return JSON.parse(cleaned);
-  } catch {
-    return { action: "none" };
-  }
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
 
-const generateAndSaveConversationSummary = async (
-  chatId,
-  messages,
-  userMessage,
-  assistantResponse,
-  updateConversation,
-  streamResponseFn,
-) => {
-  try {
-    const transcript = [
-      ...messages.map(
-        (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`,
-      ),
-      `User: ${userMessage}`,
-      `Assistant: ${assistantResponse}`,
-    ]
-      .join("\n\n")
-      .substring(0, 8000);
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
+const MIN_INDICATOR_MS = 1200;
+const MAX_CONTEXT_MSGS = 10;
+const MAX_TOKENS = 100000;
 
-    const summary = await streamResponseFn(
-      [
-        { role: "system", content: buildSummaryPrompt() },
-        { role: "user", content: transcript },
-      ],
-      "openai/gpt-oss-120b",
-      null,
-      false,
-      50,
-      null,
-    );
+// ─────────────────────────────────────────────────────────────────────────────
+// Pure helpers  (no React state, safe to call anywhere)
+// ─────────────────────────────────────────────────────────────────────────────
 
-    await updateConversation(chatId, {
-      summary: summary.trim(),
-      summaryUpdatedAt: new Date().toISOString(),
-    });
-  } catch (err) {
-    console.warn("Summary generation failed:", err);
-  }
-};
+/** Build a trimmed messages array ready for the API. */
+const buildApiMessages = (history, userMessage, systemPrompt) =>
+  trimMessagesToTokenLimit(
+    buildContextMessages(history, userMessage, MAX_CONTEXT_MSGS, systemPrompt),
+    MAX_TOKENS,
+  );
 
+/** Fetch summaries of sibling conversations in the same project. */
 const fetchSiblingConversationSummaries = async (
   projectId,
   currentChatId,
@@ -108,10 +60,141 @@ const fetchSiblingConversationSummaries = async (
   }
 };
 
-// Minimum time in ms the processing indicator stays visible
-const MIN_INDICATOR_MS = 1200;
+/** Fire-and-forget: generate + persist a conversation summary. */
+const generateAndSaveConversationSummary = (
+  chatId,
+  messages,
+  userMessage,
+  assistantResponse,
+  updateConversation,
+) => {
+  const transcript = [
+    ...messages.map(
+      (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`,
+    ),
+    `User: ${userMessage}`,
+    `Assistant: ${assistantResponse}`,
+  ]
+    .join("\n\n")
+    .substring(0, 8000);
 
-// ==================== CHAT PROVIDER ====================
+  streamResponse(
+    [
+      { role: "system", content: buildSummaryPrompt() },
+      { role: "user", content: transcript },
+    ],
+    DEFAULT_MODEL,
+  )
+    .then((summary) =>
+      updateConversation(chatId, {
+        summary: summary.trim(),
+        summaryUpdatedAt: new Date().toISOString(),
+      }),
+    )
+    .catch((err) => console.warn("Summary generation failed:", err));
+};
+
+/** Fire-and-forget: extract a memory entry from the latest exchange. */
+const extractAndSaveUserMemory = (
+  userMessage,
+  assistantResponse,
+  existingMemories,
+  updateUserProfile,
+) => {
+  const prompt = buildMemoryExtractionPrompt(existingMemories);
+
+  streamResponse(
+    [
+      { role: "system", content: prompt },
+      {
+        role: "user",
+        content: `User said: "${userMessage}"\n\nAssistant responded: "${assistantResponse.substring(0, 500)}"`,
+      },
+    ],
+    DEFAULT_MODEL,
+  )
+    .then((raw) => {
+      const result = JSON.parse(raw.replace(/```json|```/g, "").trim());
+
+      if (result.action === "add" && result.memory) {
+        return updateUserProfile({
+          memories: [
+            ...existingMemories,
+            {
+              id: crypto.randomUUID(),
+              text: result.memory,
+              createdAt: new Date().toISOString(),
+              source: "auto",
+            },
+          ],
+        });
+      }
+
+      if (result.action === "update" && result.id && result.memory) {
+        return updateUserProfile({
+          memories: existingMemories.map((m) =>
+            m.id === result.id
+              ? {
+                  ...m,
+                  text: result.memory,
+                  updatedAt: new Date().toISOString(),
+                }
+              : m,
+          ),
+        });
+      }
+    })
+    .catch((err) => console.warn("User memory extraction failed:", err));
+};
+
+/** Fire-and-forget: extract a memory entry for the project. */
+const extractAndSaveProjectMemory = (
+  userMessage,
+  assistantResponse,
+  projectId,
+  existingMemories,
+  updateProjectMemory,
+) => {
+  extractProjectMemoryFromConversation(
+    userMessage,
+    assistantResponse,
+    existingMemories,
+    streamResponse,
+  )
+    .then((result) => {
+      if (result.action === "add" && result.memory) {
+        return updateProjectMemory(projectId, [
+          ...existingMemories,
+          {
+            id: crypto.randomUUID(),
+            text: result.memory,
+            createdAt: new Date().toISOString(),
+            source: "auto",
+          },
+        ]);
+      }
+
+      if (result.action === "update" && result.id && result.memory) {
+        return updateProjectMemory(
+          projectId,
+          existingMemories.map((m) =>
+            m.id === result.id
+              ? {
+                  ...m,
+                  text: result.memory,
+                  updatedAt: new Date().toISOString(),
+                }
+              : m,
+          ),
+        );
+      }
+    })
+    .catch((err) => console.warn("Project memory extraction failed:", err));
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Provider
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ChatProvider({ children }) {
   const [currentStreamResponse, setCurrentStreamResponse] = useState("");
@@ -120,55 +203,58 @@ export default function ChatProvider({ children }) {
   const [processingMessage, setProcessingMessage] = useState("");
 
   const abortControllerRef = useRef(null);
-  // Tracks when the current indicator was shown so we can enforce a minimum duration
   const indicatorShownAtRef = useRef(null);
 
-  const updateStreamResponse = (chunk) => setCurrentStreamResponse(chunk || "");
-  const setLoadingState = (loading) => setIsLoading(loading);
+  // ── Attachment helpers ───────────────────────────────────────────────────
 
-  const addAttachment = (newAttachment) =>
-    setAttachments((prev) => [...prev, newAttachment]);
+  const addAttachment = (a) => setAttachments((prev) => [...prev, a]);
   const removeAttachment = (id) =>
-    setAttachments((prev) => prev.filter((att) => att.id !== id));
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
   const clearAttachments = () => setAttachments([]);
 
-  /** Show the processing indicator. Records the timestamp so we can enforce
-   *  a minimum display duration when hiding it. */
+  // ── Indicator helpers ────────────────────────────────────────────────────
+
   const showIndicator = (text) => {
     indicatorShownAtRef.current = Date.now();
     setProcessingMessage(text);
   };
 
-  /** Hide the indicator, but wait until at least MIN_INDICATOR_MS has passed
-   *  since it was shown. This prevents a jarring flash. */
   const hideIndicator = () => {
-    const shownAt = indicatorShownAtRef.current;
-    if (!shownAt) {
-      setProcessingMessage("");
-      return;
-    }
-    const elapsed = Date.now() - shownAt;
+    const elapsed = Date.now() - (indicatorShownAtRef.current ?? Date.now());
     const remaining = MIN_INDICATOR_MS - elapsed;
-    if (remaining <= 0) {
+
+    const clear = () => {
       setProcessingMessage("");
       indicatorShownAtRef.current = null;
-    } else {
-      setTimeout(() => {
-        setProcessingMessage("");
-        indicatorShownAtRef.current = null;
-      }, remaining);
-    }
+    };
+
+    remaining > 0 ? setTimeout(clear, remaining) : clear();
   };
 
-  // ==================== NACHRICHT SENDEN ====================
+  // ── Stream helpers ───────────────────────────────────────────────────────
+
+  const resetStreamState = () => {
+    setCurrentStreamResponse("");
+    setIsLoading(false);
+    abortControllerRef.current = null;
+  };
+
+  const startStream = () => {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    setIsLoading(true);
+    return controller;
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // sendMessage
+  // ─────────────────────────────────────────────────────────────────────────
 
   const sendMessage = async ({
     message,
     conversationId,
-    model = "openai/gpt-oss-120b",
+    model = DEFAULT_MODEL,
     reasoning = false,
-    onSuccess,
-    onError,
     createConversation,
     updateConversation,
     addMessage,
@@ -181,53 +267,36 @@ export default function ChatProvider({ children }) {
     projectId,
     project = null,
     router,
+    onSuccess,
+    onError,
   }) => {
-    if (!message?.trim() && attachments.length === 0) return;
-    if (isLoading) return;
+    if ((!message?.trim() && attachments.length === 0) || isLoading) return;
 
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    let messageText = message.trim();
-
-    const messageAttachments = attachments.map((att) => ({
-      id: att.id,
-      type: att.type,
-      name: att.name,
-      content: att.content,
-      preview: att.preview,
-    }));
-
-    if (attachments.length > 0) {
-      attachments.forEach((att) => {
-        if (att.type === "code")
-          messageText += `\n\n\`\`\`\n${att.content}\n\`\`\``;
-        else if (att.type === "text") messageText += `\n\n${att.content}`;
-      });
-    }
-
-    let projectWithSummaries = project;
-    if (
-      projectId &&
-      getProjectConversations &&
-      conversationId &&
-      project?.conversationIds?.length > 1
-    ) {
-      const conversationSummaries = await fetchSiblingConversationSummaries(
-        projectId,
-        conversationId,
-        getProjectConversations,
-      );
-      if (conversationSummaries.length > 0) {
-        projectWithSummaries = { ...project, conversationSummaries };
-      }
-    }
-
-    clearAttachments();
-    setIsLoading(true);
+    const controller = startStream();
     if (reasoning) showIndicator("Einen Moment – ich denke nach …");
 
+    // ── Build message text (inline attachment content) ─────────────────────
+    let messageText = message.trim();
+    const messageAttachments = attachments.map(
+      ({ id, type, name, content, preview }) => ({
+        id,
+        type,
+        name,
+        content,
+        preview,
+      }),
+    );
+
+    attachments.forEach((att) => {
+      if (att.type === "code")
+        messageText += `\n\n\`\`\`\n${att.content}\n\`\`\``;
+      else if (att.type === "text") messageText += `\n\n${att.content}`;
+    });
+
+    clearAttachments();
+
     try {
+      // ── Resolve / create conversation ────────────────────────────────────
       let chatId = conversationId;
 
       if (!chatId) {
@@ -239,24 +308,33 @@ export default function ChatProvider({ children }) {
         router?.push(`/chat/${chatId}`);
       }
 
-      let existingMessages = [];
-      if (conversationId) {
-        existingMessages = await getMessages(chatId, 20);
+      // ── Inject sibling summaries into project context ────────────────────
+      let projectContext = project;
+      if (projectId && conversationId && project?.conversationIds?.length > 1) {
+        const summaries = await fetchSiblingConversationSummaries(
+          projectId,
+          conversationId,
+          getProjectConversations,
+        );
+        if (summaries.length > 0) {
+          projectContext = { ...project, conversationSummaries: summaries };
+        }
       }
 
+      // ── Build API payload ────────────────────────────────────────────────
+      const existingMessages = conversationId
+        ? await getMessages(chatId, 20)
+        : [];
       const systemPrompt = buildSystemPromptWithMemories(
         userProfile?.memories || [],
         userProfile?.preferences?.modelPreferences || "",
-        projectWithSummaries,
+        projectContext,
       );
-
-      const contextMessages = buildContextMessages(
+      const apiMessages = buildApiMessages(
         existingMessages,
         messageText,
-        10,
         systemPrompt,
       );
-      const trimmedMessages = trimMessagesToTokenLimit(contextMessages, 100000);
 
       await addMessage(chatId, {
         role: "user",
@@ -265,319 +343,213 @@ export default function ChatProvider({ children }) {
         attachments: messageAttachments,
       });
 
-      let accumulatedResponse = "";
-
+      // ── Stream ───────────────────────────────────────────────────────────
+      let accumulated = "";
       const finalResponse = await streamResponse(
-        trimmedMessages,
+        apiMessages,
         model,
-        (chunk, accumulated) => {
-          accumulatedResponse = accumulated;
-          updateStreamResponse(accumulated);
+        (chunk, full) => {
+          accumulated = full;
+          setCurrentStreamResponse(full);
           if (reasoning) hideIndicator();
         },
         reasoning,
         50,
-        abortController.signal,
+        controller.signal,
       );
 
-      if (!abortController.signal.aborted) {
-        const responseToSave = finalResponse || accumulatedResponse;
+      if (controller.signal.aborted) return;
 
-        if (!responseToSave?.trim())
-          throw new Error("Leere Antwort vom Model erhalten");
+      const responseText = finalResponse || accumulated;
+      if (!responseText?.trim()) throw new Error("Empty response from model");
 
-        await addMessage(chatId, {
-          role: "assistant",
-          content: responseToSave,
-          model,
-        });
+      await addMessage(chatId, {
+        role: "assistant",
+        content: responseText,
+        model,
+      });
 
-        if (!conversationId) {
-          try {
-            const title = await generateTitleFromResponse(
-              messageText,
-              responseToSave,
-              streamResponse,
-            );
-            await updateConversation(chatId, { title });
-          } catch {
-            await updateConversation(chatId, {
-              title: messageText.substring(0, 30) + "...",
-            });
-          }
-        }
+      // ── Title generation (new conversations only) ────────────────────────
+      if (!conversationId) {
+        const title = await generateTitleFromResponse(
+          messageText,
+          responseText,
+          streamResponse,
+        ).catch(() => messageText.substring(0, 30) + "...");
+        await updateConversation(chatId, { title });
+      }
 
-        onSuccess?.(chatId, responseToSave);
+      onSuccess?.(chatId, responseText);
 
-        if (projectId) {
-          setTimeout(() => {
+      // ── Fire-and-forget background tasks ────────────────────────────────
+      if (projectId) {
+        setTimeout(
+          () =>
             generateAndSaveConversationSummary(
               chatId,
               existingMessages,
               messageText,
-              responseToSave,
+              responseText,
               updateConversation,
-              streamResponse,
-            );
-          }, 0);
-        }
+            ),
+          0,
+        );
+      }
 
-        if (updateUserProfile && !projectId) {
-          const currentMemories = userProfile?.memories || [];
-          setTimeout(() => {
-            extractMemoryFromConversation(
+      if (updateUserProfile && !projectId) {
+        setTimeout(
+          () =>
+            extractAndSaveUserMemory(
               messageText,
-              responseToSave,
-              currentMemories,
-              streamResponse,
-            )
-              .then(async (result) => {
-                if (result.action === "add" && result.memory) {
-                  await updateUserProfile({
-                    memories: [
-                      ...currentMemories,
-                      {
-                        id: crypto.randomUUID(),
-                        text: result.memory,
-                        createdAt: new Date().toISOString(),
-                        source: "auto",
-                      },
-                    ],
-                  });
-                } else if (
-                  result.action === "update" &&
-                  result.id &&
-                  result.memory
-                ) {
-                  await updateUserProfile({
-                    memories: currentMemories.map((m) =>
-                      m.id === result.id
-                        ? {
-                            ...m,
-                            text: result.memory,
-                            updatedAt: new Date().toISOString(),
-                          }
-                        : m,
-                    ),
-                  });
-                }
-              })
-              .catch((err) =>
-                console.warn("User memory extraction failed:", err),
-              );
-          }, 0);
-        }
+              responseText,
+              userProfile?.memories || [],
+              updateUserProfile,
+            ),
+          0,
+        );
+      }
 
-        if (projectId && updateProjectMemory && project) {
-          const currentProjectMemories = project?.memories || [];
-          setTimeout(() => {
-            extractProjectMemoryFromConversation(
+      if (projectId && updateProjectMemory && project) {
+        setTimeout(
+          () =>
+            extractAndSaveProjectMemory(
               messageText,
-              responseToSave,
-              currentProjectMemories,
-              streamResponse,
-            )
-              .then(async (result) => {
-                if (result.action === "add" && result.memory) {
-                  await updateProjectMemory(projectId, [
-                    ...currentProjectMemories,
-                    {
-                      id: crypto.randomUUID(),
-                      text: result.memory,
-                      createdAt: new Date().toISOString(),
-                      source: "auto",
-                    },
-                  ]);
-                } else if (
-                  result.action === "update" &&
-                  result.id &&
-                  result.memory
-                ) {
-                  await updateProjectMemory(
-                    projectId,
-                    currentProjectMemories.map((m) =>
-                      m.id === result.id
-                        ? {
-                            ...m,
-                            text: result.memory,
-                            updatedAt: new Date().toISOString(),
-                          }
-                        : m,
-                    ),
-                  );
-                }
-              })
-              .catch((err) =>
-                console.warn("Project memory extraction failed:", err),
-              );
-          }, 0);
-        }
+              responseText,
+              projectId,
+              project?.memories || [],
+              updateProjectMemory,
+            ),
+          0,
+        );
       }
     } catch (error) {
       if (error.name !== "AbortError") {
-        console.error("Fehler beim Senden der Nachricht:", error);
+        console.error("sendMessage failed:", error);
         onError?.(error);
       }
     } finally {
-      setIsLoading(false);
+      resetStreamState();
       hideIndicator();
-      updateStreamResponse("");
-      abortControllerRef.current = null;
     }
   };
 
-  // ==================== REGENERATE RESPONSE ====================
+  // ─────────────────────────────────────────────────────────────────────────
+  // regenerateResponse
+  // ─────────────────────────────────────────────────────────────────────────
 
   const regenerateResponse = async ({
-    messageId,
     conversationId,
     messages,
-    model = "openai/gpt-oss-120b",
+    model = DEFAULT_MODEL,
     reasoning = false,
-    onSuccess,
-    onError,
     deleteMessage,
     addMessage,
-    getMessages,
-    updateConversation,
-    updateUserProfile,
-    updateProjectMemory,
     userProfile,
-    projectId,
     project = null,
     _keptMessages,
     _messagesToDelete,
+    onSuccess,
+    onError,
   }) => {
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    setIsLoading(true);
-    showIndicator("Regenerating Response…");
+    const controller = startStream();
+    showIndicator("Regenerating response…");
 
     try {
-      const messageIndex = messages.findIndex((m) => m.id === messageId);
-      if (messageIndex === -1) throw new Error("Message not found");
+      const keptMessages = _keptMessages ?? messages;
+      const messagesToDelete = _messagesToDelete ?? [];
 
-      const targetMessage = messages[messageIndex];
-      const keptMessages = _keptMessages ?? messages.slice(0, messageIndex);
-      const messagesToDelete =
-        _messagesToDelete ?? messages.slice(messageIndex);
+      // Delete old messages in the background — UI is already updated optimistically
+      Promise.all(
+        messagesToDelete.map((m) => deleteMessage(conversationId, m.id)),
+      ).catch((err) => console.warn("Background delete failed:", err));
 
-      // For BOTH assistant and user regen, keptMessages always ends with the
-      // user message that should be replied to (see ChatConversation slice logic).
-      // We split out the last user message as the "new turn" for buildContextMessages.
+      // The last user message in keptMessages is the prompt to reply to
       const lastUserIdx = [...keptMessages]
         .map((m) => m.role)
         .lastIndexOf("user");
-      if (lastUserIdx === -1)
-        throw new Error("No user message found in kept messages");
+      if (lastUserIdx === -1) throw new Error("No user message found");
 
       const userMessageContent = keptMessages[lastUserIdx].content;
-      const historyMessages = keptMessages.slice(0, lastUserIdx);
-
-      // Fire-and-forget deletes — UI is already updated optimistically
-      Promise.all(
-        messagesToDelete.map((msg) => deleteMessage(conversationId, msg.id)),
-      ).catch((err) => console.warn("Background delete failed:", err));
+      const history = keptMessages.slice(0, lastUserIdx);
 
       const systemPrompt = buildSystemPromptWithMemories(
         userProfile?.memories || [],
         userProfile?.preferences?.modelPreferences || "",
         project,
       );
-
-      const contextMessages = buildContextMessages(
-        historyMessages,
+      const apiMessages = buildApiMessages(
+        history,
         userMessageContent,
-        10,
         systemPrompt,
       );
-      const trimmedMessages = trimMessagesToTokenLimit(contextMessages, 100000);
 
-      // The user message is already in Firestore (kept). Never re-add it.
-
-      let accumulatedResponse = "";
       hideIndicator();
 
+      let accumulated = "";
       const finalResponse = await streamResponse(
-        trimmedMessages,
+        apiMessages,
         model,
-        (chunk, accumulated) => {
-          accumulatedResponse = accumulated;
-          updateStreamResponse(accumulated);
+        (chunk, full) => {
+          accumulated = full;
+          setCurrentStreamResponse(full);
         },
         reasoning,
         50,
-        abortController.signal,
+        controller.signal,
       );
 
-      if (!abortController.signal.aborted) {
-        const responseToSave = finalResponse || accumulatedResponse;
-        if (!responseToSave?.trim())
-          throw new Error("Empty response from model");
+      if (controller.signal.aborted) return;
 
-        await addMessage(conversationId, {
-          role: "assistant",
-          content: responseToSave,
-          model,
-        });
-        onSuccess?.(conversationId, responseToSave);
-      }
+      const responseText = finalResponse || accumulated;
+      if (!responseText?.trim()) throw new Error("Empty response from model");
+
+      await addMessage(conversationId, {
+        role: "assistant",
+        content: responseText,
+        model,
+      });
+      onSuccess?.(conversationId, responseText);
     } catch (error) {
       if (error.name !== "AbortError") {
-        console.error("Fehler beim Regenerieren:", error);
+        console.error("regenerateResponse failed:", error);
         onError?.(error);
       }
     } finally {
-      setIsLoading(false);
+      resetStreamState();
       hideIndicator();
-      updateStreamResponse("");
-      abortControllerRef.current = null;
     }
   };
 
-  // ==================== EDIT USER MESSAGE ====================
+  // ─────────────────────────────────────────────────────────────────────────
+  // editAndResend
+  // ─────────────────────────────────────────────────────────────────────────
 
   const editAndResend = async ({
-    messageId,
     newContent,
     conversationId,
     messages,
-    model = "openai/gpt-oss-120b",
+    model = DEFAULT_MODEL,
     reasoning = false,
-    onSuccess,
-    onError,
     deleteMessage,
     addMessage,
-    getMessages,
-    updateConversation,
-    updateUserProfile,
-    updateProjectMemory,
     userProfile,
-    projectId,
     project = null,
     _keptMessages,
     _messagesToDelete,
+    onSuccess,
+    onError,
   }) => {
     if (!newContent?.trim()) return;
 
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    setIsLoading(true);
-    showIndicator("Regenerating Response…");
+    const controller = startStream();
+    showIndicator("Regenerating response…");
 
     try {
-      const messageIndex = messages.findIndex((m) => m.id === messageId);
-      if (messageIndex === -1) throw new Error("Message not found");
+      const keptMessages = _keptMessages ?? [];
+      const messagesToDelete = _messagesToDelete ?? messages;
 
-      const keptMessages = _keptMessages ?? messages.slice(0, messageIndex);
-      const messagesToDelete =
-        _messagesToDelete ?? messages.slice(messageIndex);
-
-      // Fire-and-forget deletes
       Promise.all(
-        messagesToDelete.map((msg) => deleteMessage(conversationId, msg.id)),
+        messagesToDelete.map((m) => deleteMessage(conversationId, m.id)),
       ).catch((err) => console.warn("Background delete failed:", err));
 
       const systemPrompt = buildSystemPromptWithMemories(
@@ -585,87 +557,89 @@ export default function ChatProvider({ children }) {
         userProfile?.preferences?.modelPreferences || "",
         project,
       );
-      const contextMessages = buildContextMessages(
+      const apiMessages = buildApiMessages(
         keptMessages,
         newContent.trim(),
-        10,
         systemPrompt,
       );
-      const trimmedMessages = trimMessagesToTokenLimit(contextMessages, 100000);
 
-      // Save the edited user message
       await addMessage(conversationId, {
         role: "user",
         content: newContent.trim(),
         model,
       });
 
-      let accumulatedResponse = "";
       hideIndicator();
 
+      let accumulated = "";
       const finalResponse = await streamResponse(
-        trimmedMessages,
+        apiMessages,
         model,
-        (chunk, accumulated) => {
-          accumulatedResponse = accumulated;
-          updateStreamResponse(accumulated);
+        (chunk, full) => {
+          accumulated = full;
+          setCurrentStreamResponse(full);
         },
         reasoning,
         50,
-        abortController.signal,
+        controller.signal,
       );
 
-      if (!abortController.signal.aborted) {
-        const responseToSave = finalResponse || accumulatedResponse;
-        if (!responseToSave?.trim())
-          throw new Error("Empty response from model");
+      if (controller.signal.aborted) return;
 
-        await addMessage(conversationId, {
-          role: "assistant",
-          content: responseToSave,
-          model,
-        });
-        onSuccess?.(conversationId, responseToSave);
-      }
+      const responseText = finalResponse || accumulated;
+      if (!responseText?.trim()) throw new Error("Empty response from model");
+
+      await addMessage(conversationId, {
+        role: "assistant",
+        content: responseText,
+        model,
+      });
+      onSuccess?.(conversationId, responseText);
     } catch (error) {
       if (error.name !== "AbortError") {
-        console.error("Fehler beim Bearbeiten:", error);
+        console.error("editAndResend failed:", error);
         onError?.(error);
       }
     } finally {
-      setIsLoading(false);
+      resetStreamState();
       hideIndicator();
-      updateStreamResponse("");
-      abortControllerRef.current = null;
     }
   };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // stopGeneration
+  // ─────────────────────────────────────────────────────────────────────────
 
   const stopGeneration = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setIsLoading(false);
-      hideIndicator();
-      updateStreamResponse("");
-      abortControllerRef.current = null;
-    }
+    abortControllerRef.current?.abort();
+    resetStreamState();
+    hideIndicator();
   };
 
-  const values = {
-    currentStreamResponse,
-    updateStreamResponse,
-    attachments,
-    addAttachment,
-    removeAttachment,
-    clearAttachments,
-    isLoading,
-    setLoadingState,
-    processingMessage,
-    setProcessingMessage,
-    sendMessage,
-    regenerateResponse,
-    editAndResend,
-    stopGeneration,
-  };
+  // ─────────────────────────────────────────────────────────────────────────
+  // Context value
+  // ─────────────────────────────────────────────────────────────────────────
 
-  return <ChatContext.Provider value={values}>{children}</ChatContext.Provider>;
+  return (
+    <ChatContext.Provider
+      value={{
+        currentStreamResponse,
+        setCurrentStreamResponse,
+        attachments,
+        addAttachment,
+        removeAttachment,
+        clearAttachments,
+        isLoading,
+        setLoadingState: setIsLoading,
+        processingMessage,
+        setProcessingMessage,
+        sendMessage,
+        regenerateResponse,
+        editAndResend,
+        stopGeneration,
+      }}
+    >
+      {children}
+    </ChatContext.Provider>
+  );
 }

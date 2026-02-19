@@ -90,7 +90,7 @@ export default function ProjectIDPage() {
 
   if (isInitialLoading) {
     return (
-      <div className="max-w-5xl mx-auto min-h-screen flex items-center justify-center">
+      <div className="max-w-220 mx-auto min-h-screen flex items-center justify-center">
         <p className="text-neutral-400">Loading project...</p>
       </div>
     );
@@ -99,7 +99,7 @@ export default function ProjectIDPage() {
   if (!currentProject) return null;
 
   return (
-    <div className="max-w-5xl mx-auto min-h-screen flex flex-col items-start justify-start gap-8 py-8">
+    <div className="max-w-220 mx-auto min-h-screen flex flex-col items-start justify-start gap-8 py-8">
       <PrimaryButton
         text="All Projects"
         href={"/projects"}
@@ -131,12 +131,13 @@ export default function ProjectIDPage() {
             className="pb-0 no-scrollbar overflow-y-scroll"
             textAreaGrowHeight={160}
             placeholder="Create a new Chat"
-            extrasButtonClassName="hidden"
+            attachmentButtonClassName="hidden"
             sendButtonClassName="ml-auto"
             textareaClassName="px-5"
             textareaExpandedClassName="py-2 px-3"
             project_id={currentProject.id}
             project={currentProject}
+            indicator={false}
           />
 
           <div className="flex flex-col gap-2">

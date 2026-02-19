@@ -34,25 +34,25 @@ export default function AttachmentThumbnail({
   const getIcon = () => {
     switch (type) {
       case "code":
-        return <Code size={14} className="text-blue-400" />;
+        return <Code size={10} className="text-blue-400" />;
       case "image":
-        return <ImageIcon size={14} className="text-green-400" />;
+        return <ImageIcon size={10} className="text-green-400" />;
       case "document":
-        return <File size={14} className="text-purple-400" />;
+        return <File size={10} className="text-purple-400" />;
       case "text":
-        return <FileText size={14} className="text-yellow-400" />;
+        return <FileText size={10} className="text-yellow-400" />;
       default:
-        return <File size={14} className="text-neutral-400" />;
+        return <File size={10} className="text-neutral-400" />;
     }
   };
 
   // Render the content directly instead of as a nested component
   const thumbnailContent = (
     <div
-      className={`relative bg-neutral-900 border border-neutral-800 rounded-xl w-42 overflow-hidden ${className}`}
+      className={`relative bg-neutral-900 border border-neutral-800 rounded-xl w-30 overflow-hidden ${className}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-2 border-b border-neutral-800">
+      <div className="flex items-center justify-between px-2 py-1 border-b border-neutral-800">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {getIcon()}
           <span className="text-xs text-neutral-300 truncate font-medium">
@@ -98,7 +98,7 @@ function CodePreview({ content }) {
   const hasMore = lines.length > 4;
 
   return (
-    <div className="relative bg-neutral-950 rounded p-2 max-h-24 overflow-hidden">
+    <div className="relative bg-neutral-950 rounded p-2 h-20 overflow-hidden">
       <pre className="text-[10px] font-mono text-neutral-400 overflow-hidden">
         <code className="whitespace-pre-wrap break-all">
           {preview}
@@ -116,7 +116,7 @@ function CodePreview({ content }) {
 // Image Preview Component
 function ImagePreview({ preview, name }) {
   return (
-    <div className="relative w-full h-32 bg-neutral-950 rounded overflow-hidden">
+    <div className="relative w-full h-20 bg-neutral-950 rounded overflow-hidden">
       <Image
         src={preview}
         alt={name || "Uploaded image"}
@@ -150,7 +150,7 @@ function TextPreview({ content, name }) {
   const hasMore = content.length > 150;
 
   return (
-    <div className="relative bg-neutral-950 rounded p-2 max-h-24 overflow-hidden">
+    <div className="relative bg-neutral-950 rounded p-2 max-h-20 overflow-hidden">
       <p className="text-[10px] text-neutral-400 whitespace-pre-wrap wrap-break-words">
         {preview}
         {hasMore && <span className="text-neutral-600">...</span>}

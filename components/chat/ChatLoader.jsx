@@ -2,7 +2,7 @@ import React from "react";
 
 export default function ChatLoader() {
   return (
-    <div className="max-w-5xl mx-auto w-full h-full px-4 py-8">
+    <div className="max-w-220 mx-auto w-full h-full px-4 py-8">
       <div className="space-y-6 h-full overflow-y-hidden">
         {Array.from({ length: 5 }).map((_, index) => (
           <div

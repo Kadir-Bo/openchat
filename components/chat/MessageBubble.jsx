@@ -15,6 +15,8 @@ import {
   Edit2,
   X,
   Send,
+  ArrowRight,
+  ArrowUp,
 } from "react-feather";
 
 export default function MessageBubble({
@@ -153,7 +155,7 @@ export default function MessageBubble({
           )}
 
           <div
-            className={`rounded-2xl px-4 py-3 ${
+            className={`rounded-2xl p-2 ${
               isUser
                 ? "bg-neutral-200 text-neutral-950 max-w-[80%] border"
                 : "text-neutral-100"
@@ -197,7 +199,7 @@ export default function MessageBubble({
                   )}
                 </>
               ) : isEditing ? (
-                <div className="flex flex-col gap-2 min-w-[240px]">
+                <div className="flex flex-col gap-2 min-w-60">
                   <textarea
                     ref={textareaRef}
                     value={editValue}
@@ -210,17 +212,15 @@ export default function MessageBubble({
                   <div className="flex items-center gap-1 justify-end">
                     <button
                       onClick={handleEditCancel}
-                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-md text-neutral-500 hover:bg-neutral-300/50 hover:text-neutral-700 transition-colors"
+                      className="flex items-center gap-1 text-xs p-2 rounded-md text-neutral-500 hover:bg-neutral-300/50 hover:text-neutral-700 transition-colors"
                     >
                       <X size={12} />
-                      Cancel
                     </button>
                     <button
                       onClick={handleEditSubmit}
-                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-neutral-800 text-white hover:bg-neutral-700 transition-colors"
+                      className="flex items-center gap-1 text-xs p-2 rounded-md bg-neutral-800 text-white hover:bg-neutral-700 transition-colors"
                     >
-                      <Send size={12} />
-                      Send
+                      <ArrowUp size={12} />
                     </button>
                   </div>
                 </div>
@@ -244,7 +244,7 @@ export default function MessageBubble({
                     <PrimaryButton
                       key={action.id}
                       title={action.title}
-                      className="outline-none border-none shadow-none cursor-pointer p-2 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded-md"
+                      className="outline-none border-none min-w-0 shadow-none cursor-pointer p-2 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded-md"
                       onClick={action.onClick}
                       text={<action.icon size={14} />}
                     />
@@ -253,7 +253,7 @@ export default function MessageBubble({
                     <PrimaryButton
                       key={action.id}
                       title={action.title}
-                      className="outline-none border-none shadow-none cursor-pointer p-2 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded-md"
+                      className="outline-none border-none min-w-0 shadow-none cursor-pointer p-2 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded-md"
                       onClick={action.onClick}
                       text={<action.icon size={14} />}
                     />

@@ -39,6 +39,7 @@ export default function PrimaryButton({
     items-center
     relative
     group
+    min-w-22
   `;
 
   const filledClasses = filled

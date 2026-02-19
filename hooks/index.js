@@ -8,3 +8,5 @@ export {
 export { useSelectionHandlers } from "./useSelectionHandlers";
 
 export { useOnClickOutside } from "./useOnClickOutside";
+
+export { useTypewriter } from "./useTypewriter";

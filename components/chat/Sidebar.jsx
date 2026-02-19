@@ -171,7 +171,7 @@ export default function Sidebar() {
   const signOut = useCallback(async () => {
     const result = await logout();
     if (result) {
-      router.push("/");
+      router.push("/sign-in");
     }
   }, [logout, router]);
 

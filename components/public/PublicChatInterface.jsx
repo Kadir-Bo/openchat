@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { twMerge } from "tailwind-merge";
 import { ArrowUp, Plus, Square } from "react-feather";
@@ -11,22 +10,39 @@ import {
   AttachmentThumbnail,
   ChatFooterMessage,
 } from "@/components";
-import { useChat, useDatabase } from "@/context";
+import { useChat } from "@/context";
 import {
   usePasteHandler,
   useFileSelectHandler,
   useKeyboardHandler,
-  useSendMessageHandler,
 } from "@/hooks";
 import {
   getContainerVariant,
   getTextAreaVariant,
   ACCEPTED_FILE_TYPES,
+  buildContextMessages,
+  buildSystemPromptWithMemories,
+  trimMessagesToTokenLimit,
 } from "@/lib";
 
-export default function ChatInterface({
-  project_id,
-  project = null,
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MAX_CONTEXT_MSGS = 10;
+const MAX_TOKENS = 100000;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function PublicChatInterface({
+  messages = [],
+  onMessages,
+  onBeforeSend, // () => boolean — false cancels send
+  onAfterSend, // async (history, userContent) => void
+  model = "openai/gpt-oss-120b",
+  systemPrompt = "",
   className = "",
   containerClassName = "",
   textareaClassName = "",
@@ -41,9 +57,6 @@ export default function ChatInterface({
   autofocus = true,
   indicator = true,
 }) {
-  const router = useRouter();
-  const { chatId: conversationId = null } = useParams() ?? {};
-
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -54,34 +67,27 @@ export default function ChatInterface({
     attachments,
     addAttachment,
     removeAttachment,
+    clearAttachments,
     isLoading,
-    sendMessage,
     stopGeneration,
   } = useChat();
 
-  const {
-    createConversation,
-    updateConversation,
-    addMessage,
-    addConversationToProject,
-    getMessages,
-    getProjectConversations,
-    updateUserProfile,
-    updateProjectMemory,
-    userProfile,
-  } = useDatabase();
+  // ── Input helpers ─────────────────────────────────────────────────────────
 
   const resetInput = useCallback(() => {
     setLocalUserInput("");
     setIsExpanded(false);
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.focus();
+    }
   }, []);
 
   const checkExpanded = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     const lineHeight = parseInt(getComputedStyle(el).lineHeight, 10);
-    const paddingY = 24; // py-3 = 12px top + 12px bottom
+    const paddingY = 24;
     setIsExpanded(el.scrollHeight > lineHeight + paddingY);
   }, []);
 
@@ -91,9 +97,7 @@ export default function ChatInterface({
     if (!value) setIsExpanded(false);
   }, []);
 
-  const handleInput = useCallback(() => {
-    checkExpanded();
-  }, [checkExpanded]);
+  const handleInput = useCallback(() => checkExpanded(), [checkExpanded]);
 
   const handlePaste = usePasteHandler(
     textareaRef,
@@ -101,36 +105,71 @@ export default function ChatInterface({
     setLocalUserInput,
     addAttachment,
   );
-
   const handleFileSelect = useFileSelectHandler(addAttachment);
 
-  const send = useSendMessageHandler(
-    sendMessage,
-    attachments,
-    conversationId,
-    createConversation,
-    updateConversation,
-    addMessage,
-    getMessages,
-    addConversationToProject,
-    getProjectConversations,
-    updateUserProfile,
-    updateProjectMemory,
-    userProfile,
-    project_id,
-    project,
-    router,
-    textareaRef,
-  );
+  // ── Send ──────────────────────────────────────────────────────────────────
 
-  const handleSend = useCallback(() => {
-    if (!localUserInput.trim() && attachments.length === 0) return;
-    const message = localUserInput;
+  const handleSend = useCallback(async () => {
+    const text = localUserInput.trim();
+    if (!text && attachments.length === 0) return;
+    if (isLoading) return;
+
+    // Allow parent to cancel (e.g. limit reached)
+    if (onBeforeSend && onBeforeSend() === false) return;
+
+    // Build message text (inline attachment content)
+    let messageText = text;
+    attachments.forEach((att) => {
+      if (att.type === "code")
+        messageText += `\n\n\`\`\`\n${att.content}\n\`\`\``;
+      else if (att.type === "text") messageText += `\n\n${att.content}`;
+    });
+
+    clearAttachments();
     resetInput();
-    send(message);
-  }, [localUserInput, attachments.length, resetInput, send]);
+
+    // Optimistically append user message
+    const userMsg = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: messageText,
+    };
+    onMessages?.((prev) => [...prev, userMsg]);
+
+    if (onAfterSend) {
+      // Delegate streaming to parent (PublicChatPage)
+      const builtSystemPrompt =
+        systemPrompt || buildSystemPromptWithMemories([], "", null);
+      const history = trimMessagesToTokenLimit(
+        buildContextMessages(
+          messages,
+          messageText,
+          MAX_CONTEXT_MSGS,
+          builtSystemPrompt,
+        ),
+        MAX_TOKENS,
+      );
+      // Pass the raw history + content so the parent can build its own payload
+      await onAfterSend(messages, messageText);
+    }
+
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }, [
+    localUserInput,
+    attachments,
+    isLoading,
+    messages,
+    systemPrompt,
+    clearAttachments,
+    resetInput,
+    onMessages,
+    onBeforeSend,
+    onAfterSend,
+  ]);
 
   const handleKeyDown = useKeyboardHandler(handleSend, setLocalUserInput);
+
+  // ── Framer Motion variants ────────────────────────────────────────────────
 
   const containerVariant = useMemo(
     () => getContainerVariant(textAreaGrowHeight),
@@ -140,6 +179,8 @@ export default function ChatInterface({
     () => getTextAreaVariant(buttonContainerHeight),
     [buttonContainerHeight],
   );
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <motion.div
@@ -263,6 +304,7 @@ export default function ChatInterface({
           )}
         </div>
       </motion.div>
+
       {indicator && <ChatFooterMessage />}
     </motion.div>
   );

@@ -1,7 +1,8 @@
-import React from "react";
-import { DeleteChatModal, RenameChatModal, DropdownMenu } from "@/components";
+"use client";
+
 import { Archive, ChevronDown, Edit2, Folder, Trash } from "react-feather";
-import { useModal, useDatabase } from "@/context";
+import { DeleteChatModal, DropdownMenu, RenameChatModal } from "@/components";
+import { useDatabase, useModal } from "@/context";
 
 export default function ChatHeader({ conversation = null, project = null }) {
   const { openModal, openMessage } = useModal();
@@ -11,79 +12,43 @@ export default function ChatHeader({ conversation = null, project = null }) {
 
   const { title, description, id, projectId } = conversation;
 
-  const handleRenameChat = () => {
-    return openModal(
+  const handleRename = () =>
+    openModal(
       <RenameChatModal title={title} description={description} id={id} />,
     );
-  };
-
-  const handleArchiveChat = async () => {
+  const handleDelete = () =>
+    openModal(<DeleteChatModal title={title} id={id} />);
+  const handleArchive = async () => {
     const result = await toggleArchiveConversation(id, true);
-    if (result) {
-      openMessage("Chat archived", "success");
-    }
+    if (result) openMessage("Chat archived", "success");
   };
 
-  const handleDeleteChat = () => {
-    return openModal(<DeleteChatModal title={title} id={id} />);
-  };
-
-  const ChatDropDownMenu = [
-    {
-      id: "rename-chat",
-      label: "Umbenennen",
-      icon: Edit2,
-      action: () => handleRenameChat(),
-    },
-    {
-      id: "archive-chat",
-      label: "Archivieren",
-      icon: Archive,
-      action: () => handleArchiveChat(),
-    },
-    {
-      id: "delete-chat",
-      label: "Löschen",
-      icon: Trash,
-      action: () => handleDeleteChat(),
-    },
-  ];
-  const PrjojectDropDownMenu = [
-    {
-      id: "overview",
-      label: `${project.title} Project sadasdsaaaaaaaaaaaaaaaasdsd`,
-      icon: Folder,
-      seperator: true,
-      action: () => handleRenameChat(),
-    },
-    {
-      id: "rename-chat",
-      label: "Umbenennen",
-      icon: Edit2,
-      action: () => handleRenameChat(),
-    },
-    {
-      id: "archive-chat",
-      label: "Archivieren",
-      icon: Archive,
-      action: () => handleArchiveChat(),
-    },
-    {
-      id: "delete-chat",
-      label: "Löschen",
-      icon: Trash,
-      action: () => handleDeleteChat(),
-    },
+  const baseItems = [
+    { id: "rename", label: "Rename", icon: Edit2, action: handleRename },
+    { id: "archive", label: "Archive", icon: Archive, action: handleArchive },
+    { id: "delete", label: "Delete", icon: Trash, action: handleDelete },
   ];
 
-  const DROPDOWN_LIST = projectId ? PrjojectDropDownMenu : ChatDropDownMenu;
+  const dropdownItems =
+    projectId && project
+      ? [
+          {
+            id: "project-overview",
+            label: project.title,
+            icon: Folder,
+            separator: true,
+            action: handleRename,
+          },
+          ...baseItems,
+        ]
+      : baseItems;
 
   return (
     <div className="w-full relative flex flex-col">
       <div className="absolute left-4 top-4 text-sm flex items-center justify-center text-neutral-400 border border-neutral-700 bg-neutral-950 z-50 rounded-xl">
         <DropdownMenu
           triggerClassName="flex items-center cursor-pointer px-2 py-1 relative z-10"
-          dropdownList={DROPDOWN_LIST}
+          dropdownList={dropdownItems}
           onClick={(e, menuItem) => {
             e.stopPropagation();
             menuItem.action();

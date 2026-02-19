@@ -13,6 +13,11 @@ export { default as ProcessingIndicator } from "./chat/ProcessingIndicator";
 export { default as FilesPanel } from "./chat/FilesPanel";
 export { default as InstructionsPanel } from "./chat/InstructionsPanel";
 export { default as StackedProjectCard } from "./chat/StackedProjectCard";
+export { default as ChatFooterMessage } from "./chat/ChatFooterMessage";
+// PUBLIC COMPONENTS
+export { default as PublicHeader } from "./public/PublicHeader";
+export { default as PublicChatInterface } from "./public/PublicChatInterface";
+export { default as PublicChatConversation } from "./public/PublicChatConversation";
 // PROJECT COMPONENTS
 export { default as ProjectCard } from "./project/ProjectCard";
 export { default as ProjectTitle } from "./project/ProjectTitle";
@@ -22,6 +27,7 @@ export { default as PrimaryButton } from "./buttons/PrimaryButton";
 export { default as Searchbar } from "./ui/Searchbar";
 export { default as Message } from "./ui/Message";
 export { default as MemoryItem } from "./ui/MemoryItem";
+export { default as MessageLimitAlert } from "./ui/MessageLimitAlert";
 // DROPDOWN COMPONENTS
 export {
   DropdownItem,

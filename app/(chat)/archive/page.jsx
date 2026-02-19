@@ -200,7 +200,7 @@ export default function ArchivePage() {
   const hasItems = isChats ? chats.length > 0 : archivedProjects.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col max-w-5xl mx-auto py-8 gap-6 w-full">
+    <div className="flex-1 flex flex-col max-w-220 mx-auto py-8 gap-6 w-full">
       <header className="flex items-center justify-between">
         <h1 className="text-3xl font-light">Archive</h1>
         <PrimaryButton

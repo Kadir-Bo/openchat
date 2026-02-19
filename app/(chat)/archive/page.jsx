@@ -8,56 +8,22 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ArrowLeft, Plus, Trash2 } from "react-feather";
+import { ArrowLeft } from "react-feather";
 import {
-  PrimaryButton,
   ChatCard,
-  ProjectCard,
-  Searchbar,
-  Select,
-  SelectionStatus,
+  StackedProjectCard,
+  PageShell,
+  DeleteButtons,
+  EmptyState,
+  PrimaryButton,
 } from "@/components";
 import { useSelectionHandlers } from "@/hooks";
 import { useRouter } from "next/navigation";
-
-const FILTER_OPTIONS = [
-  { id: "recent", value: "activity", label: "Recent activity" },
-  { id: "name", value: "name", label: "Name" },
-  { id: "date", value: "date", label: "Date created" },
-];
-
-const fuzzyMatch = (str, pattern) => {
-  if (!pattern) return { match: true, score: 0 };
-  if (!str) return { match: false, score: 0 };
-
-  const lowerStr = str.toLowerCase();
-  const lowerPattern = pattern.toLowerCase();
-
-  if (lowerStr.includes(lowerPattern)) return { match: true, score: 1000 };
-
-  let patternIdx = 0;
-  let strIdx = 0;
-  let score = 0;
-  let consecutiveMatches = 0;
-
-  while (strIdx < lowerStr.length && patternIdx < lowerPattern.length) {
-    if (lowerStr[strIdx] === lowerPattern[patternIdx]) {
-      score += 1;
-      consecutiveMatches++;
-      if (consecutiveMatches > 1) score += consecutiveMatches * 2;
-      if (strIdx === 0 || lowerStr[strIdx - 1] === " ") score += 5;
-      patternIdx++;
-    } else {
-      consecutiveMatches = 0;
-    }
-    strIdx++;
-  }
-
-  const match = patternIdx === lowerPattern.length;
-  if (match) score = score * (1 + score / lowerStr.length);
-
-  return { match, score: match ? score : 0 };
-};
+import {
+  fuzzyFilterChats,
+  filterProjects,
+  groupConversationsByProject,
+} from "@/lib";
 
 export default function ArchivePage() {
   const {
@@ -70,37 +36,30 @@ export default function ArchivePage() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState("chats");
-  const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].value);
+  const [sortBy, setSortBy] = useState("activity");
   const [searchQuery, setSearchQuery] = useState("");
-
   const [chats, setChats] = useState([]);
   const [chatsLoading, setChatsLoading] = useState(true);
-
   const [allProjects, setAllProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
 
   const chatListRef = useRef([]);
   const projectListRef = useRef([]);
 
-  // Subscribe to archived conversations
   useEffect(() => {
-    const unsubscribe = subscribeToArchivedConversations((data) => {
+    return subscribeToArchivedConversations((data) => {
       setChats(data);
       setChatsLoading(false);
     });
-    return () => unsubscribe?.();
   }, [subscribeToArchivedConversations]);
 
-  // Single project subscription — filters applied client-side to reuse the
   useEffect(() => {
-    const unsubscribe = subscribeToProjects((data) => {
+    return subscribeToProjects((data) => {
       setAllProjects(data);
       setProjectsLoading(false);
     }, true);
-    return () => unsubscribe?.();
   }, [subscribeToProjects]);
 
-  // Derive active and archived project lists from the single subscription
   const archivedProjects = useMemo(
     () => allProjects.filter((p) => p.isArchived),
     [allProjects],
@@ -114,31 +73,14 @@ export default function ArchivePage() {
     [allProjects],
   );
 
-  // Clear search when switching tabs
-  useEffect(() => {
-    setSearchQuery("");
-  }, [activeTab]);
-
-  // Escape clears selection
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") {
-        chatHandlers.clearSelection();
-        projectHandlers.clearSelection();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const conversationsByProject = useMemo(
+    () => groupConversationsByProject(chats, activeProjectsById),
+    [chats, activeProjectsById],
+  );
 
   const filteredChats = useMemo(() => {
     const list = searchQuery.trim()
-      ? chats
-          .map((c) => ({ c, ...fuzzyMatch(c.title || "", searchQuery) }))
-          .filter(({ match }) => match)
-          .sort((a, b) => b.score - a.score)
-          .map(({ c }) => c)
+      ? fuzzyFilterChats(chats, searchQuery)
       : [...chats].sort((a, b) => {
           if (sortBy === "name")
             return (a.title || "").localeCompare(b.title || "");
@@ -151,21 +93,7 @@ export default function ArchivePage() {
   }, [chats, searchQuery, sortBy]);
 
   const filteredProjects = useMemo(() => {
-    const list = searchQuery.trim()
-      ? archivedProjects.filter((p) =>
-          [p.title, p.description]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()),
-        )
-      : [...archivedProjects].sort((a, b) => {
-          if (sortBy === "name")
-            return (a.title || "").localeCompare(b.title || "");
-          const key = sortBy === "date" ? "createdAt" : "updatedAt";
-          const toDate = (v) => v?.toDate?.() ?? new Date(v);
-          return toDate(b[key]) - toDate(a[key]);
-        });
+    const list = filterProjects(archivedProjects, searchQuery, sortBy);
     projectListRef.current = list;
     return list;
   }, [archivedProjects, searchQuery, sortBy]);
@@ -191,134 +119,86 @@ export default function ArchivePage() {
     projectHandlers.clearSelection();
   }, [projectHandlers, toggleArchiveProject]);
 
-  const handleActiveTab = (tab) => {
+  useEffect(() => {
+    setSearchQuery("");
+  }, [activeTab]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        chatHandlers.clearSelection();
+        projectHandlers.clearSelection();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isChats = activeTab === "chats";
+  const selectedCount = isChats
+    ? chatHandlers.selectedIds.size
+    : projectHandlers.selectedIds.size;
+  const isLoading = isChats ? chatsLoading : projectsLoading;
+  const hasItems = isChats ? chats.length > 0 : archivedProjects.length > 0;
+
+  const handleTabChange = (tab) => {
     setActiveTab(tab);
     chatHandlers.clearSelection();
     projectHandlers.clearSelection();
   };
 
-  const isChats = activeTab === "chats";
-  const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
-  const selectedCount = isChats
-    ? chatHandlers.selectedIds.size
-    : projectHandlers.selectedIds.size;
-  const isLoading = isChats ? chatsLoading : projectsLoading;
-  const currentList = isChats ? filteredChats : filteredProjects;
-  const hasItems = isChats ? chats.length > 0 : archivedProjects.length > 0;
-
   return (
-    <div className="flex-1 flex flex-col max-w-220 mx-auto py-8 gap-6 w-full">
-      <header className="flex items-center justify-between">
-        <h1 className="text-3xl font-light">Archive</h1>
-        <PrimaryButton
-          text="New Chat"
-          icon={<Plus size={17} />}
-          className="w-max justify-center text-sm min-w-32"
-          href="/chat"
-          filled
-        />
-      </header>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-neutral-800">
-        {["chats", "projects"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => handleActiveTab(tab)}
-            className={`px-4 py-2 text-sm capitalize transition-colors duration-150 border-b-2 -mb-px ${
-              activeTab === tab
-                ? "border-neutral-300 text-neutral-100"
-                : "border-transparent text-neutral-500 hover:text-neutral-300"
-            }`}
-          >
-            {tab}
-            <span className="ml-2 text-xs text-neutral-600">
-              {tab === "chats" ? chats.length : archivedProjects.length}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex justify-end items-center gap-3">
-        <span className="text-neutral-400 text-sm">Sort by:</span>
-        <Select
-          id="archive-sort"
-          name="sort"
-          label=""
-          value={activeSort?.label || "Sort by"}
-          list={FILTER_OPTIONS}
-          onChange={(e) => setSortBy(e.target.value)}
-          containerClassName="w-auto min-w-40"
-          labelClassName="hidden"
-          buttonClassName="text-sm px-3 min-w-32"
-        />
-      </div>
-
-      <Searchbar
-        onSearch={(q) => setSearchQuery(q)}
-        placeholder={`Search ${isChats ? "archived chats" : "archived projects"}`}
-      />
-
-      {/* Action bar */}
-      <div className="flex items-center justify-between">
-        <SelectionStatus
+    <PageShell
+      title="Archive"
+      tabs={[
+        { key: "chats", label: "Chats", count: chats.length },
+        { key: "projects", label: "Projects", count: archivedProjects.length },
+      ]}
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+      sortBy={sortBy}
+      onSortChange={setSortBy}
+      searchQuery={searchQuery}
+      onSearch={setSearchQuery}
+      searchPlaceholder={`Search archived ${isChats ? "chats" : "projects"}`}
+      selectedCount={selectedCount}
+      hasItems={hasItems}
+      itemType={isChats ? "chat" : "project"}
+      actions={
+        <DeleteButtons
           selectedCount={selectedCount}
           itemType={isChats ? "chat" : "project"}
           hasItems={hasItems}
+          onDeleteSelected={
+            isChats
+              ? chatHandlers.handleDeleteSelected
+              : projectHandlers.handleDeleteSelected
+          }
+          onDeleteAll={() =>
+            isChats
+              ? chatHandlers.handleDeleteAll(filteredChats)
+              : projectHandlers.handleDeleteAll(filteredProjects)
+          }
+          extraActions={
+            !isChats &&
+            selectedCount > 0 && (
+              <PrimaryButton
+                text={`Unarchive ${selectedCount}`}
+                className="w-max text-sm px-4"
+                onClick={handleUnarchiveSelected}
+              />
+            )
+          }
         />
-
-        <div className="flex items-center gap-2">
-          {!isChats && selectedCount > 0 && (
-            <PrimaryButton
-              text={`Unarchive ${selectedCount}`}
-              className="w-max text-sm px-4"
-              onClick={handleUnarchiveSelected}
-            />
-          )}
-
-          {selectedCount > 0 && (
-            <PrimaryButton
-              text={`Delete ${selectedCount} ${
-                isChats
-                  ? selectedCount === 1
-                    ? "chat"
-                    : "chats"
-                  : selectedCount === 1
-                    ? "project"
-                    : "projects"
-              }`}
-              icon={<Trash2 size={14} />}
-              className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
-              onClick={
-                isChats
-                  ? chatHandlers.handleDeleteSelected
-                  : projectHandlers.handleDeleteSelected
-              }
-            />
-          )}
-
-          {selectedCount === 0 && hasItems && (
-            <PrimaryButton
-              text={`Delete all ${isChats ? "chats" : "projects"}`}
-              icon={<Trash2 size={14} />}
-              className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
-              onClick={() =>
-                isChats
-                  ? chatHandlers.handleDeleteAll(filteredChats)
-                  : projectHandlers.handleDeleteAll(filteredProjects)
-              }
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
+      }
+    >
       {isLoading ? (
         <p className="text-center py-12 text-neutral-400">
           Loading archived {isChats ? "chats" : "projects"}...
         </p>
-      ) : currentList.length > 0 ? (
-        isChats ? (
+      ) : isChats ? (
+        filteredChats.length > 0 ? (
           <div className="flex flex-col gap-2">
             {filteredChats.map((conversation) => (
               <ChatCard
@@ -335,38 +215,35 @@ export default function ArchivePage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-4">
-            {filteredProjects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                sort={sortBy}
-                isSelected={projectHandlers.selectedIds.has(project.id)}
-                onCardClick={projectHandlers.handleCardClick}
-              />
-            ))}
-          </div>
+          <EmptyState
+            searchQuery={searchQuery}
+            itemType="archived chat"
+            href="/chats"
+            hrefLabel="Go to Chats"
+            icon={<ArrowLeft size={15} />}
+          />
         )
-      ) : (
-        <div className="text-center py-12 text-neutral-400">
-          {searchQuery ? (
-            <>
-              No archived {isChats ? "chats" : "projects"} found matching &quot;
-              {searchQuery}&quot;
-            </>
-          ) : (
-            <div className="flex flex-col items-center gap-4">
-              <p>No archived {isChats ? "chats" : "projects"}</p>
-              <PrimaryButton
-                text={isChats ? "Go to Chats" : "Go to Projects"}
-                className="w-max justify-center text-sm px-4"
-                href={isChats ? "/chats" : "/projects"}
-                icon={<ArrowLeft size={15} />}
-              />
-            </div>
-          )}
+      ) : filteredProjects.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          {filteredProjects.map((project) => (
+            <StackedProjectCard
+              key={project.id}
+              project={project}
+              conversations={conversationsByProject[project.id] ?? []}
+              isSelected={projectHandlers.selectedIds.has(project.id)}
+              onCardClick={projectHandlers.handleCardClick}
+            />
+          ))}
         </div>
+      ) : (
+        <EmptyState
+          searchQuery={searchQuery}
+          itemType="archived project"
+          href="/projects"
+          hrefLabel="Go to Projects"
+          icon={<ArrowLeft size={15} />}
+        />
       )}
-    </div>
+    </PageShell>
   );
 }

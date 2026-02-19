@@ -9,14 +9,7 @@ import {
   ChatCard,
   DropdownMenu,
 } from "@/components";
-import {
-  Archive,
-  ChevronDown,
-  Edit2,
-  ExternalLink,
-  Folder,
-  Trash,
-} from "react-feather";
+import { Archive, ChevronDown, Edit2, Folder, Trash } from "react-feather";
 import { twMerge } from "tailwind-merge";
 import { useRouter } from "next/navigation";
 
@@ -25,6 +18,7 @@ export default function StackedProjectCard({
   conversations = [],
   isSelected = false,
   onCardClick = () => null,
+  onChatClick = () => null,
 }) {
   const { title, description, id, isArchived } = project;
   const { toggleArchiveProject } = useDatabase();
@@ -206,7 +200,9 @@ export default function StackedProjectCard({
             >
               <div
                 className="flex flex-col gap-1.5 px-3 pb-3"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey) e.stopPropagation();
+                }}
               >
                 <div className="h-px bg-neutral-800/60 mb-1" />
                 {conversations.map((conversation, index) => (
@@ -218,10 +214,15 @@ export default function StackedProjectCard({
                   >
                     <ChatCard
                       conversation={conversation}
-                      project={null}
-                      onCardClick={() =>
-                        handleNavigateToPage("chat", conversation.id)
-                      }
+                      onCardClick={(e, id) => {
+                        if (e.metaKey || e.ctrlKey) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onChatClick(e, id);
+                        } else {
+                          handleNavigateToPage("chat", conversation.id);
+                        }
+                      }}
                       className="border-neutral-500/10 bg-neutral-900/40 hover:bg-neutral-900/80"
                     />
                   </motion.div>

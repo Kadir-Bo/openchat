@@ -87,9 +87,14 @@ export default function ChatsPage() {
       searchQuery,
       sortBy,
     });
-    chatListRef.current = items
-      .filter((i) => i.type === "chat")
-      .map((i) => i.item);
+
+    chatListRef.current = [
+      ...items.filter((i) => i.type === "chat").map((i) => i.item),
+      ...items
+        .filter((i) => i.type === "project")
+        .flatMap((i) => conversationsByProject[i.item.id] ?? []),
+    ];
+
     return items;
   }, [
     visibleConversations,
@@ -200,6 +205,7 @@ export default function ChatsPage() {
                   conversations={conversationsByProject[item.id] ?? []}
                   isSelected={projectHandlers.selectedIds.has(item.id)}
                   onCardClick={projectHandlers.handleCardClick}
+                  onChatClick={chatHandlers.handleCardClick}
                 />
               ) : (
                 <ChatCard
@@ -229,6 +235,7 @@ export default function ChatsPage() {
               conversations={conversationsByProject[project.id] ?? []}
               isSelected={projectHandlers.selectedIds.has(project.id)}
               onCardClick={projectHandlers.handleCardClick}
+              onChatClick={chatHandlers.handleCardClick}
             />
           ))}
         </div>

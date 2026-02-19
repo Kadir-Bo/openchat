@@ -5,7 +5,7 @@ import { formatDate } from "@/lib";
 import { useDatabase, useModal } from "@/context";
 import {
   DropdownMenu,
-  DeleteProjectsModal,
+  DeleteProjectModal,
   RenameProjectsModal,
 } from "@/components";
 import { Archive, Check, Edit2, Trash } from "react-feather";
@@ -53,7 +53,7 @@ export default function ProjectCard({
       id: "delete-project",
       label: "Löschen",
       icon: Trash,
-      action: () => openModal(<DeleteProjectsModal title={title} id={id} />),
+      action: () => openModal(<DeleteProjectModal title={title} id={id} />),
     },
   ];
 

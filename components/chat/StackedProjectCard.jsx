@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDatabase, useModal } from "@/context";
 import {
-  DeleteProjectsModal,
+  DeleteProjectModal,
   RenameProjectsModal,
   ChatCard,
   DropdownMenu,
@@ -66,7 +66,7 @@ export default function StackedProjectCard({
       id: "delete-project",
       label: "Löschen",
       icon: Trash,
-      action: () => openModal(<DeleteProjectsModal title={title} id={id} />),
+      action: () => openModal(<DeleteProjectModal title={title} id={id} />),
     },
   ];
 

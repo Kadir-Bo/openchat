@@ -130,18 +130,12 @@ export default function ProjectsPage() {
     lastClickedIndexRef.current = null;
   }, [deleteProject]);
 
-  const handleDeleteAll = useCallback(async () => {
-    await Promise.all(projects.map((p) => deleteProject(p.id)));
-  }, [projects, deleteProject]);
-
   const selectedCount = selectedIds.size;
   const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
   const hasProjects = projects.length > 0;
 
   if (isInitialLoading) {
-    return (
-      <p className="text-center py-12 text-neutral-400">Loading projects...</p>
-    );
+    return null;
   }
 
   return (
@@ -177,7 +171,7 @@ export default function ProjectsPage() {
         placeholder="Search Projects"
       />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between h-10">
         <span className="text-xs text-neutral-600">
           {selectedCount > 0
             ? `${selectedCount} ${selectedCount === 1 ? "project" : "projects"} selected — Esc to cancel`
@@ -200,15 +194,6 @@ export default function ProjectsPage() {
               onClick={handleDeleteSelected}
             />
           </div>
-        )}
-
-        {selectedCount === 0 && hasProjects && (
-          <PrimaryButton
-            text="Delete all projects"
-            icon={<Trash2 size={14} />}
-            className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
-            onClick={handleDeleteAll}
-          />
         )}
       </div>
 
@@ -234,9 +219,8 @@ export default function ProjectsPage() {
               <PrimaryButton
                 text="Create your first project"
                 icon={<Plus size={17} />}
-                className="w-max justify-center text-sm"
+                className="w-max justify-center text-sm px-4 shadow-none"
                 href="/projects/create"
-                filled
               />
             </div>
           )}

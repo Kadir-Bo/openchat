@@ -9,7 +9,13 @@ import React, {
   useState,
 } from "react";
 import { Plus, Trash2 } from "react-feather";
-import { PrimaryButton, ProjectCard, Searchbar, Select } from "@/components";
+import {
+  PrimaryButton,
+  ProjectCard,
+  Searchbar,
+  Select,
+  SelectionStatus,
+} from "@/components";
 import { useRouter } from "next/navigation";
 
 const FILTER_OPTIONS = [
@@ -172,13 +178,11 @@ export default function ProjectsPage() {
       />
 
       <div className="flex items-center justify-between h-10">
-        <span className="text-xs text-neutral-600">
-          {selectedCount > 0
-            ? `${selectedCount} ${selectedCount === 1 ? "project" : "projects"} selected — Esc to cancel`
-            : hasProjects
-              ? "⌘ / Ctrl + click to select"
-              : ""}
-        </span>
+        <SelectionStatus
+          selectedCount={selectedCount}
+          itemType={selectedCount === 1 ? "project" : "project"}
+          hasItems={hasProjects}
+        />
 
         {selectedCount > 0 && (
           <div className="flex items-center gap-2">

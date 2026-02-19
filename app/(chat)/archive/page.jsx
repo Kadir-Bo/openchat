@@ -15,6 +15,7 @@ import {
   ProjectCard,
   Searchbar,
   Select,
+  SelectionStatus,
 } from "@/components";
 import { useSelectionHandlers } from "@/hooks";
 import { useRouter } from "next/navigation";
@@ -254,21 +255,11 @@ export default function ArchivePage() {
 
       {/* Action bar */}
       <div className="flex items-center justify-between">
-        <span className="text-xs text-neutral-600">
-          {selectedCount > 0
-            ? `${selectedCount} ${
-                isChats
-                  ? selectedCount === 1
-                    ? "chat"
-                    : "chats"
-                  : selectedCount === 1
-                    ? "project"
-                    : "projects"
-              } selected — Esc to cancel`
-            : hasItems
-              ? "⌘ / Ctrl + click to select"
-              : ""}
-        </span>
+        <SelectionStatus
+          selectedCount={selectedCount}
+          itemType={isChats ? "chat" : "project"}
+          hasItems={hasItems}
+        />
 
         <div className="flex items-center gap-2">
           {!isChats && selectedCount > 0 && (

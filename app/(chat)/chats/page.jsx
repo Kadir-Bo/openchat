@@ -10,6 +10,7 @@ import {
   Select,
   ProjectCard,
   StackedProjectCard,
+  SelectionStatus,
 } from "@/components";
 import { useRouter } from "next/navigation";
 import { useSelectionHandlers } from "@/hooks";
@@ -318,21 +319,11 @@ export default function ChatsPage() {
 
       {/* Action bar */}
       <div className="flex items-center justify-between">
-        <span className="text-xs text-neutral-600">
-          {selectedCount > 0
-            ? `${selectedCount} ${
-                isChats
-                  ? selectedCount === 1
-                    ? "chat"
-                    : "chats"
-                  : selectedCount === 1
-                    ? "project"
-                    : "projects"
-              } selected — Esc to cancel`
-            : hasItems
-              ? "⌘ / Ctrl + click to select"
-              : ""}
-        </span>
+        <SelectionStatus
+          selectedCount={selectedCount}
+          itemType={isChats ? "chat" : "project"}
+          hasItems={hasItems}
+        />
         <div className="flex items-center gap-2">
           {selectedCount > 0 && (
             <PrimaryButton

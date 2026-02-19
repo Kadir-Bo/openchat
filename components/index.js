@@ -14,20 +14,26 @@ export { default as FilesPanel } from "./chat/FilesPanel";
 export { default as InstructionsPanel } from "./chat/InstructionsPanel";
 export { default as StackedProjectCard } from "./chat/StackedProjectCard";
 export { default as ChatFooterMessage } from "./chat/ChatFooterMessage";
+
 // PUBLIC COMPONENTS
 export { default as PublicHeader } from "./public/PublicHeader";
 export { default as PublicChatInterface } from "./public/PublicChatInterface";
 export { default as PublicChatConversation } from "./public/PublicChatConversation";
+
 // PROJECT COMPONENTS
 export { default as ProjectCard } from "./project/ProjectCard";
 export { default as ProjectTitle } from "./project/ProjectTitle";
+
 // BUTTON COMPONENTS
 export { default as PrimaryButton } from "./buttons/PrimaryButton";
+
 // UI COMPONENTS
 export { default as Searchbar } from "./ui/Searchbar";
 export { default as Message } from "./ui/Message";
 export { default as MemoryItem } from "./ui/MemoryItem";
 export { default as MessageLimitAlert } from "./ui/MessageLimitAlert";
+export { default as SelectionStatus } from "./ui/SelectionStatus";
+
 // DROPDOWN COMPONENTS
 export {
   DropdownItem,
@@ -37,12 +43,14 @@ export {
 export { default as DropdownContent } from "./dropdown/DropdownContent";
 export { default as DropdownTrigger } from "./dropdown/DropdownTrigger";
 export { default as DropdownMenu } from "./dropdown/DropdownMenu";
+
 // MODAl COMPONENTS
 export { default as RenameProjectsModal } from "./modal/RenameProjectsModal";
 export { default as DeleteProjectModal } from "./modal/DeleteProjectModal";
 export { default as DeleteChatModal } from "./modal/DeleteChatModal";
 export { default as RenameChatModal } from "./modal/RenameChatModal";
 export { default as DeleteAccountModal } from "./modal/DeleteAccountModal";
+
 // INPUT COMPONENTS
 export { default as Input } from "./input/Input";
 export { default as Textarea } from "./input/Textarea";

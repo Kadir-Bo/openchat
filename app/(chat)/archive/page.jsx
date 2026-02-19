@@ -20,7 +20,7 @@ import {
 import { useSelectionHandlers } from "@/hooks";
 import { useRouter } from "next/navigation";
 import {
-  fuzzyFilterChats,
+  buildChatTabItems,
   filterProjects,
   groupConversationsByProject,
 } from "@/lib";
@@ -65,32 +65,29 @@ export default function ArchivePage() {
     [allProjects],
   );
 
-  const activeProjectsById = useMemo(
-    () =>
-      Object.fromEntries(
-        allProjects.filter((p) => !p.isArchived).map((p) => [p.id, p]),
-      ),
+  const allProjectsById = useMemo(
+    () => Object.fromEntries(allProjects.map((p) => [p.id, p])),
     [allProjects],
   );
 
   const conversationsByProject = useMemo(
-    () => groupConversationsByProject(chats, activeProjectsById),
-    [chats, activeProjectsById],
+    () => groupConversationsByProject(chats, null),
+    [chats],
   );
 
-  const filteredChats = useMemo(() => {
-    const list = searchQuery.trim()
-      ? fuzzyFilterChats(chats, searchQuery)
-      : [...chats].sort((a, b) => {
-          if (sortBy === "name")
-            return (a.title || "").localeCompare(b.title || "");
-          const key = sortBy === "date" ? "createdAt" : "updatedAt";
-          const toDate = (v) => v?.toDate?.() ?? new Date(v);
-          return toDate(b[key]) - toDate(a[key]);
-        });
-    chatListRef.current = list;
-    return list;
-  }, [chats, searchQuery, sortBy]);
+  const chatTabItems = useMemo(() => {
+    const items = buildChatTabItems({
+      conversations: chats,
+      projectsById: allProjectsById,
+      conversationsByProject,
+      searchQuery,
+      sortBy,
+    });
+    chatListRef.current = items
+      .filter((i) => i.type === "chat")
+      .map((i) => i.item);
+    return items;
+  }, [chats, allProjectsById, conversationsByProject, searchQuery, sortBy]);
 
   const filteredProjects = useMemo(() => {
     const list = filterProjects(archivedProjects, searchQuery, sortBy);
@@ -140,7 +137,9 @@ export default function ArchivePage() {
     ? chatHandlers.selectedIds.size
     : projectHandlers.selectedIds.size;
   const isLoading = isChats ? chatsLoading : projectsLoading;
-  const hasItems = isChats ? chats.length > 0 : archivedProjects.length > 0;
+  const hasItems = isChats
+    ? chatTabItems.length > 0
+    : archivedProjects.length > 0;
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -177,7 +176,7 @@ export default function ArchivePage() {
           }
           onDeleteAll={() =>
             isChats
-              ? chatHandlers.handleDeleteAll(filteredChats)
+              ? chatHandlers.handleDeleteAll(chatListRef.current)
               : projectHandlers.handleDeleteAll(filteredProjects)
           }
           extraActions={
@@ -198,21 +197,27 @@ export default function ArchivePage() {
           Loading archived {isChats ? "chats" : "projects"}...
         </p>
       ) : isChats ? (
-        filteredChats.length > 0 ? (
+        chatTabItems.length > 0 ? (
           <div className="flex flex-col gap-2">
-            {filteredChats.map((conversation) => (
-              <ChatCard
-                key={conversation.id}
-                conversation={conversation}
-                isSelected={chatHandlers.selectedIds.has(conversation.id)}
-                onCardClick={chatHandlers.handleCardClick}
-                project={
-                  conversation.projectId
-                    ? (activeProjectsById[conversation.projectId] ?? null)
-                    : null
-                }
-              />
-            ))}
+            {chatTabItems.map(({ type, item }) =>
+              type === "project" ? (
+                <StackedProjectCard
+                  key={item.id}
+                  project={item}
+                  conversations={conversationsByProject[item.id] ?? []}
+                  isSelected={projectHandlers.selectedIds.has(item.id)}
+                  onCardClick={projectHandlers.handleCardClick}
+                />
+              ) : (
+                <ChatCard
+                  key={item.id}
+                  conversation={item}
+                  isSelected={chatHandlers.selectedIds.has(item.id)}
+                  onCardClick={chatHandlers.handleCardClick}
+                  project={null}
+                />
+              ),
+            )}
           </div>
         ) : (
           <EmptyState

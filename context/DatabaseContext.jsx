@@ -283,10 +283,30 @@ export default function DatabaseProvider({ children }) {
       if (!user || !db) return null;
       resetError();
       try {
-        await updateDoc(doc(db, "projects", projectId), {
+        const projectRef = doc(db, "projects", projectId);
+        const projectDoc = await getDoc(projectRef);
+        if (!projectDoc.exists()) throw new Error("Project not found");
+
+        const conversationIds = projectDoc.data().conversationIds || [];
+
+        // Archive/unarchive all conversations in the project
+        if (conversationIds.length > 0) {
+          const batch = writeBatch(db);
+          conversationIds.forEach((convId) => {
+            batch.update(doc(db, "conversations", convId), {
+              isArchived: Boolean(isArchived),
+              updatedAt: serverTimestamp(),
+            });
+          });
+          await batch.commit();
+        }
+
+        // Then update the project itself
+        await updateDoc(projectRef, {
           isArchived: Boolean(isArchived),
           updatedAt: serverTimestamp(),
         });
+
         return true;
       } catch (err) {
         return handleError(err, "Failed to archive project");

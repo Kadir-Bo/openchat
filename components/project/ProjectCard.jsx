@@ -18,7 +18,7 @@ export default function ProjectCard({
   isSelected = false,
   onCardClick = () => null,
 }) {
-  const { title, description, updatedAt, createdAt, id } = project;
+  const { title, description, updatedAt, createdAt, id, isArchived } = project;
   const { toggleArchiveProject } = useDatabase();
   const { openModal, openMessage } = useModal();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -45,7 +45,7 @@ export default function ProjectCard({
     },
     {
       id: "archive-project",
-      label: "Archivieren",
+      label: isArchived ? "Dearchivieren" : "Archivieren",
       icon: Archive,
       action: handleArchiveProject,
     },

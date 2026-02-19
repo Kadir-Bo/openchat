@@ -13,7 +13,7 @@ export default function ChatCard({
   onCardClick = () => null,
   project = null,
 }) {
-  const { title, id } = conversation;
+  const { title, id, isArchived } = conversation;
   const { toggleArchiveConversation } = useDatabase();
   const { openModal, openMessage } = useModal();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -35,7 +35,7 @@ export default function ChatCard({
     },
     {
       id: "archive-chat",
-      label: "Archivieren",
+      label: isArchived ? "Dearchivieren" : "Archivieren",
       icon: Archive,
       action: () => handleArchiveChat(conversation.id),
     },

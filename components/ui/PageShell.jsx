@@ -70,7 +70,11 @@ export default function PageShell({
         />
       </div>
 
-      <Searchbar onSearch={onSearch} placeholder={searchPlaceholder} />
+      <Searchbar
+        key={activeTab}
+        onSearch={onSearch}
+        placeholder={searchPlaceholder}
+      />
 
       <div className="flex items-center justify-between">
         <SelectionStatus

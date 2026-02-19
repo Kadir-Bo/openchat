@@ -197,7 +197,7 @@ export default function ChatInterface({
           {/* Attach button */}
           <PrimaryButton
             className={twMerge(
-              "min-w-12 w-max h-12 justify-center ml-2 rounded-full",
+              "w-max min-w-10 h-10 justify-center ml-2 rounded-full",
               buttonClassName,
               attachmentButtonClassName,
             )}
@@ -235,7 +235,7 @@ export default function ChatInterface({
           {isLoading ? (
             <PrimaryButton
               className={twMerge(
-                "min-w-12 w-max h-12 justify-center mr-2 rounded-full bg-transparent border-neutral-600 hover:bg-transparent",
+                "w-max min-w-10 h-10 justify-center mr-2 rounded-full bg-transparent border-neutral-600 hover:bg-transparent",
                 buttonClassName,
                 sendButtonClassName,
               )}
@@ -252,7 +252,7 @@ export default function ChatInterface({
           ) : (
             <PrimaryButton
               className={twMerge(
-                "min-w-12 w-max h-12 justify-center mr-2 rounded-full hover:bg-neutral-100 hover:text-neutral-950",
+                "w-max min-w-10 h-10 justify-center mr-2 rounded-full hover:bg-neutral-100 hover:text-neutral-950",
                 buttonClassName,
                 sendButtonClassName,
               )}

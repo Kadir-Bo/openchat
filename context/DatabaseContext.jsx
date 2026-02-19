@@ -289,19 +289,28 @@ export default function DatabaseProvider({ children }) {
 
         const conversationIds = projectDoc.data().conversationIds || [];
 
-        // Archive/unarchive all conversations in the project
         if (conversationIds.length > 0) {
-          const batch = writeBatch(db);
-          conversationIds.forEach((convId) => {
-            batch.update(doc(db, "conversations", convId), {
-              isArchived: Boolean(isArchived),
-              updatedAt: serverTimestamp(),
+          // Verify each conversation exists before batching
+          const convDocs = await Promise.all(
+            conversationIds.map((id) => getDoc(doc(db, "conversations", id))),
+          );
+
+          const existingRefs = convDocs
+            .filter((d) => d.exists() && d.data().userId === user.uid)
+            .map((d) => d.ref);
+
+          if (existingRefs.length > 0) {
+            const batch = writeBatch(db);
+            existingRefs.forEach((ref) => {
+              batch.update(ref, {
+                isArchived: Boolean(isArchived),
+                updatedAt: serverTimestamp(),
+              });
             });
-          });
-          await batch.commit();
+            await batch.commit();
+          }
         }
 
-        // Then update the project itself
         await updateDoc(projectRef, {
           isArchived: Boolean(isArchived),
           updatedAt: serverTimestamp(),
@@ -326,24 +335,29 @@ export default function DatabaseProvider({ children }) {
 
         const conversationIds = projectDoc.data().conversationIds || [];
 
-        // Delete all messages first (while parent conversations still exist
-        // so Firestore security rules can verify ownership).
-        for (const convId of conversationIds) {
+        // Only process conversations that exist and belong to this user
+        const convDocs = await Promise.all(
+          conversationIds.map((id) => getDoc(doc(db, "conversations", id))),
+        );
+        const existingConvs = convDocs.filter(
+          (d) => d.exists() && d.data().userId === user.uid,
+        );
+
+        // Delete messages for each existing conversation
+        for (const convDoc of existingConvs) {
           const msgSnap = await getDocs(
-            collection(db, `conversations/${convId}/messages`),
+            collection(db, `conversations/${convDoc.id}/messages`),
           );
-          if (!msgSnap.empty)
+          if (!msgSnap.empty) {
             await batchDelete(
               db,
               msgSnap.docs.map((d) => d.ref),
             );
+          }
         }
 
-        // Then delete conversations + project.
-        await batchDelete(db, [
-          ...conversationIds.map((id) => doc(db, "conversations", id)),
-          projectRef,
-        ]);
+        // Delete existing conversations + project
+        await batchDelete(db, [...existingConvs.map((d) => d.ref), projectRef]);
 
         return true;
       } catch (err) {

@@ -191,6 +191,12 @@ export default function ArchivePage() {
     projectHandlers.clearSelection();
   }, [projectHandlers, toggleArchiveProject]);
 
+  const handleActiveTab = (tab) => {
+    setActiveTab(tab);
+    chatHandlers.clearSelection();
+    projectHandlers.clearSelection();
+  };
+
   const isChats = activeTab === "chats";
   const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
   const selectedCount = isChats
@@ -218,7 +224,7 @@ export default function ArchivePage() {
         {["chats", "projects"].map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => handleActiveTab(tab)}
             className={`px-4 py-2 text-sm capitalize transition-colors duration-150 border-b-2 -mb-px ${
               activeTab === tab
                 ? "border-neutral-300 text-neutral-100"

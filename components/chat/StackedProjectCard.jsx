@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useDatabase, useModal } from "@/context";
 import {
   DeleteProjectModal,
-  RenameProjectsModal,
+  RenameProjectModal,
   ChatCard,
   DropdownMenu,
 } from "@/components";
@@ -49,7 +49,7 @@ export default function StackedProjectCard({
       icon: Edit2,
       action: () =>
         openModal(
-          <RenameProjectsModal
+          <RenameProjectModal
             title={title}
             description={description}
             id={id}

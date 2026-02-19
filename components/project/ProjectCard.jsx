@@ -6,7 +6,7 @@ import { useDatabase, useModal } from "@/context";
 import {
   DropdownMenu,
   DeleteProjectModal,
-  RenameProjectsModal,
+  RenameProjectModal,
 } from "@/components";
 import { Archive, Check, Edit2, Trash } from "react-feather";
 import { useRouter } from "next/navigation";
@@ -36,7 +36,7 @@ export default function ProjectCard({
       icon: Edit2,
       action: () =>
         openModal(
-          <RenameProjectsModal
+          <RenameProjectModal
             title={title}
             description={description}
             id={id}

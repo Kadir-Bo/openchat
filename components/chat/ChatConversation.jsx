@@ -2,21 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 import { useAuth, useChat, useDatabase } from "@/context";
-import { MessageBubble, ProcessingIndicator } from "@/components";
-import { formatUsername } from "@/lib";
-import { useTypewriter } from "@/hooks";
+import {
+  EmptyStateConversation,
+  MessageBubble,
+  ProcessingIndicator,
+} from "@/components";
+import { PhraseCarousel } from "@/components";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Typewriter animation — public / logged-out empty state
-// ─────────────────────────────────────────────────────────────────────────────
 
 const EXAMPLE_TASKS = [
   "Write a cover letter",
@@ -29,6 +29,18 @@ const EXAMPLE_TASKS = [
   "Plan a 7-day trip to Japan",
   "Come up with a product tagline",
 ];
+
+const HIGHLIGHT_WORDS = new Set([
+  "cover letter",
+  "quantum entanglement",
+  "startup ideas",
+  "Python",
+  "cold outreach",
+  "research paper",
+  "logo",
+  "Japan",
+  "tagline",
+]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
@@ -65,11 +77,8 @@ export default function ChatConversation({ onConversationLoad = null }) {
   const [conversation, setConversation] = useState(null);
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(!!conversationId);
-  const text = useTypewriter(EXAMPLE_TASKS);
 
   const messagesEndRef = useRef(null);
-  // When true, incoming Firestore snapshots are ignored so we control the
-  // messages state ourselves during optimistic updates.
   const suppressListenerRef = useRef(false);
 
   // ── Scroll ───────────────────────────────────────────────────────────────
@@ -120,7 +129,7 @@ export default function ChatConversation({ onConversationLoad = null }) {
     return () => unsubscribe();
   }, [conversationId, subscribeToMessages]);
 
-  // ── Shared context args (passed to both regen + edit) ────────────────────
+  // ── Shared context args ───────────────────────────────────────────────────
 
   const sharedArgs = {
     conversationId,
@@ -145,8 +154,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
       const index = messages.findIndex((m) => m.id === messageId);
       if (index === -1) return;
 
-      // Assistant message → keep everything before it (user message stays).
-      // User message      → keep itself + everything before it.
       const keepUpTo = messages[index].role === "user" ? index + 1 : index;
       const keptMessages = messages.slice(0, keepUpTo);
       const messagesToDelete = messages.slice(keepUpTo);
@@ -176,7 +183,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
       const index = messages.findIndex((m) => m.id === messageId);
       if (index === -1) return;
 
-      // Keep everything strictly before the edited message.
       const keptMessages = messages.slice(0, index);
       const messagesToDelete = messages.slice(index);
 
@@ -209,23 +215,10 @@ export default function ChatConversation({ onConversationLoad = null }) {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  if (loading) {
-    return;
-  }
+  if (loading) return null;
 
   if (!conversationId) {
-    return (
-      <div className="flex items-center justify-center w-full mb-12">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold text-neutral-300 mb-2">
-            Welcome back, {user.displayName || formatUsername(user.email)}
-          </h2>
-          <p className="text-neutral-500">
-            Start a conversation by typing a message below
-          </p>
-        </div>
-      </div>
-    );
+    return <EmptyStateConversation />;
   }
 
   return (

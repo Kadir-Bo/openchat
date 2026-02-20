@@ -1,7 +1,7 @@
-import { ArrowLeft, Plus } from "react-feather";
+import { Plus } from "react-feather";
 import { PrimaryButton } from "@/components";
 
-export default function EmptyState({
+export default function EmptyStateSearch({
   searchQuery,
   itemType,
   href,

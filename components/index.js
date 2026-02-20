@@ -36,7 +36,8 @@ export { default as MemoryItem } from "./ui/MemoryItem";
 export { default as MessageLimitAlert } from "./ui/MessageLimitAlert";
 export { default as SelectionStatus } from "./ui/SelectionStatus";
 export { default as PageShell } from "./ui/PageShell";
-export { default as EmptyState } from "./ui/EmptyState";
+export { default as EmptyStateSearch } from "./ui/EmptyStateSearch";
+export { default as EmptyStateConversation } from "./ui/EmptyStateConversation";
 
 // DROPDOWN COMPONENTS
 export {
@@ -62,4 +63,6 @@ export { default as Select } from "./input/Select";
 export { default as ThemeSelect } from "./input/ThemeSelect";
 
 // Animation Debug
+
+export { default as PhraseCarousel } from "./animation/PhraseCarousel";
 export { default as AnimationController } from "./animation/debug/AnimationController";

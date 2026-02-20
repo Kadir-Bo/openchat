@@ -5,7 +5,7 @@ export default function LogoButton() {
   return (
     <Link
       href={"/"}
-      className="text-2xl font-serif font-light tracking-[-1.5px] py-3 px-2 "
+      className="text-2xl font-serif font-light tracking-[-1.5px] py-3 px-2"
     >
       openchat
     </Link>

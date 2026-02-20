@@ -3,5 +3,5 @@ export { useSelectionHandlers } from "./useSelectionHandlers";
 export { useFileSelectHandler } from "./useFileSelectHandler";
 export { useKeyboardHandler } from "./useKeyboardHandler";
 export { useOnClickOutside } from "./useOnClickOutside";
-export { useTypewriter } from "./useTypewriter";
+export { usePhraseCarousel } from "./usePhraseCarousel";
 export { usePasteHandler } from "./usePasteHandler";

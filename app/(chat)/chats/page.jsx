@@ -8,7 +8,7 @@ import {
   StackedProjectCard,
   PageShell,
   DeleteButtons,
-  EmptyState,
+  EmptyStateSearch,
 } from "@/components";
 import { useSelectionHandlers } from "@/hooks";
 import {
@@ -219,7 +219,7 @@ export default function ChatsPage() {
             )}
           </div>
         ) : (
-          <EmptyState
+          <EmptyStateSearch
             searchQuery={searchQuery}
             itemType="chat"
             href="/chat"
@@ -240,7 +240,7 @@ export default function ChatsPage() {
           ))}
         </div>
       ) : (
-        <EmptyState
+        <EmptyStateSearch
           searchQuery={searchQuery}
           itemType="project"
           href="/projects/new"

@@ -14,7 +14,7 @@ import {
   StackedProjectCard,
   PageShell,
   DeleteButtons,
-  EmptyState,
+  EmptyStateSearch,
   PrimaryButton,
 } from "@/components";
 import { useSelectionHandlers } from "@/hooks";
@@ -220,7 +220,7 @@ export default function ArchivePage() {
             )}
           </div>
         ) : (
-          <EmptyState
+          <EmptyStateSearch
             searchQuery={searchQuery}
             itemType="archived chat"
             href="/chats"
@@ -241,7 +241,7 @@ export default function ArchivePage() {
           ))}
         </div>
       ) : (
-        <EmptyState
+        <EmptyStateSearch
           searchQuery={searchQuery}
           itemType="archived project"
           href="/projects"

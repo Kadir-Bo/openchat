@@ -268,7 +268,7 @@ export default function MessageBubble({
                   <PrimaryButton
                     key={action.id}
                     title={action.title}
-                    className="outline-none border-none min-w-0 shadow-none cursor-pointer p-2 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded-md"
+                    className="outline-none border-none min-w-0 shadow-none cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                     onClick={action.onClick}
                     text={<action.icon size={14} />}
                   />

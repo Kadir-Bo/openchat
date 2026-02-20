@@ -59,6 +59,7 @@ export default function Input({
         required={required}
         className={twMerge(
           "border w-full px-3 py-2 rounded-lg border-neutral-700 bg-transparent outline-none focus:ring-1 focus:ring-blue-500/30 placeholder:text-neutral-500 disabled:cursor-not-allowed",
+          " placeholder:text-sm md:placeholder:text-base",
           inputClassName,
           lockedClasses,
         )}

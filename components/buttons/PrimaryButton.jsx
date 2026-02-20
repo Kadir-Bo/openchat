@@ -12,6 +12,7 @@ export default function PrimaryButton({
   filled = false,
   tooltip = null,
   tooltipPosition = "top",
+  cta = null,
   ...props
 }) {
   const defaultClasses = `
@@ -27,8 +28,8 @@ export default function PrimaryButton({
     border-neutral-500/30
     hover:border-neutral-500/50
     hover:bg-neutral-900
-    py-2
-    px-1.5
+    py-2.5
+    px-2
     rounded-lg
     cursor-pointer
     shadow
@@ -56,7 +57,7 @@ export default function PrimaryButton({
     left: "right-full top-1/2 -translate-y-1/2 mr-2",
     right: "left-full top-1/2 -translate-y-1/2 ml-2",
   };
-
+  const ctaClasses = cta && `text-lg py-3 font-medium md:text-base md:py-2`;
   const tooltipElement = tooltip && (
     <span
       className={twMerge(
@@ -75,6 +76,7 @@ export default function PrimaryButton({
         defaultClasses,
         filledClasses,
         activeClasses,
+        ctaClasses,
         className,
       )}
       onClick={onClick}
@@ -90,6 +92,7 @@ export default function PrimaryButton({
         defaultClasses,
         filledClasses,
         activeClasses,
+        ctaClasses,
         className,
       )}
       onClick={onClick}

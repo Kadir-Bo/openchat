@@ -118,11 +118,11 @@ export default function ProjectIDPage() {
             <div className="flex">
               <PrimaryButton
                 text={<MoreVertical size={17} />}
-                className="outline-none border-none shadow-none cursor-pointer p-1.5 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded w-max min-w-max"
+                className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max"
               />
               <PrimaryButton
                 text={<Star size={17} />}
-                className="outline-none border-none shadow-none cursor-pointer p-1.5 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded w-max min-w-max"
+                className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max"
               />
             </div>
           </div>

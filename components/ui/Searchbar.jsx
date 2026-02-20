@@ -38,7 +38,7 @@ export default function Searchbar({
   `;
 
   const borderColor = query
-    ? "text-gray-100 border-neutral-500"
+    ? "text-neutral-100 border-neutral-500"
     : "text-neutral-500 border-neutral-700";
 
   return (
@@ -67,7 +67,7 @@ export default function Searchbar({
       {query && (
         <button
           onClick={handleClear}
-          className="outline-none p-3 pl-0 shrink-0 hover:text-gray-100 transition-colors"
+          className="outline-none p-3 pl-0 shrink-0 hover:text-neutral-100 transition-colors"
           type="button"
           aria-label="Clear search"
         >

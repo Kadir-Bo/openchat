@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
                   Confirm Reset
                 </h2>
 
-                <p className="text-sm text-center px-6 text-gray-400">
+                <p className="text-sm text-center px-6 text-neutral-400">
                   We&apos;ve sent you an email with instructions to reset your
                   password.
                 </p>
@@ -92,7 +92,7 @@ export default function ResetPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4 px-6">
                 <div>
-                  <label className="block text-gray-400 text-xs font-medium tracking-wider mb-1">
+                  <label className="block text-neutral-400 text-xs font-medium tracking-wider mb-1">
                     Email
                   </label>
                   <input
@@ -128,7 +128,7 @@ export default function ResetPasswordPage() {
                 </button>
               </form>
 
-              <div className="mt-4 text-center text-sm text-gray-600">
+              <div className="mt-4 text-center text-sm text-neutral-600">
                 Back to{" "}
                 <Link href="/sign-in" className="text-blue-600 hover:underline">
                   sign in
@@ -140,7 +140,7 @@ export default function ResetPasswordPage() {
       </div>
       <Link
         href="/"
-        className="flex justify-center items-center gap-px mt-3 text-sm text-gray-500 hover:text-gray-200 transition-all duration-75"
+        className="flex justify-center items-center gap-px mt-3 text-sm text-neutral-500 hover:text-neutral-200 transition-all duration-75"
       >
         <ArrowLeft size={16} />
         return home

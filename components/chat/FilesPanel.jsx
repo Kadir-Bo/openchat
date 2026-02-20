@@ -77,7 +77,7 @@ export default function FilesPanel({
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             tooltip="Upload file"
-            className="outline-none border-none shadow-none cursor-pointer p-1.5 text-gray-400 hover:bg-neutral-700/20 hover:text-gray-100 rounded w-max min-w-max"
+            className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max"
           />
         )}
       </div>

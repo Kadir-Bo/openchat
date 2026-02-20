@@ -27,6 +27,7 @@ export { default as ProjectTitle } from "./project/ProjectTitle";
 // BUTTON COMPONENTS
 export { default as PrimaryButton } from "./buttons/PrimaryButton";
 export { default as DeleteButtons } from "./buttons/DeleteButtons";
+export { default as LogoButton } from "./buttons/LogoButton";
 
 // UI COMPONENTS
 export { default as Searchbar } from "./ui/Searchbar";

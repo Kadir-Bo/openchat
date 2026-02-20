@@ -142,7 +142,7 @@ export default function ChatList({
     <div className="py-2.5 w-full">
       {label && (
         <button
-          className="group min-w-max w-full pl-2.5 text-sm text-gray-300/90 flex items-center gap-px ml-1 cursor-pointer hover:text-gray-200/80 transition-all duration-75"
+          className="group min-w-max w-full pl-2.5 text-sm text-neutral-300/90 flex items-center gap-px ml-1 cursor-pointer hover:text-neutral-200/80 transition-all duration-75"
           onClick={handleToggleChats}
           aria-expanded={isOpen}
           aria-label={`${isOpen ? "Minimieren" : "Erweitern"} ${label}`}
@@ -169,7 +169,7 @@ export default function ChatList({
             {button && <li>{button}</li>}
 
             {!hasItems && (
-              <li className="text-sm text-gray-500 text-center py-4">
+              <li className="text-sm text-neutral-500 text-center py-4">
                 Keine Chats vorhanden
               </li>
             )}
@@ -269,13 +269,13 @@ const ChatListItem = React.memo(
             onKeyDown={handleKeyDown}
             onBlur={handleSave}
             autoFocus
-            className="w-full bg-transparent text-gray-200 py-2 px-3 border-transparent outline-none"
+            className="w-full bg-transparent text-neutral-200 py-2 px-3 border-transparent outline-none"
           />
         ) : (
           <>
             <button
               onClick={handleNavigate}
-              className="truncate py-2 pl-3 w-full flex items-center gap-1 text-left hover:text-gray-100 cursor-pointer"
+              className="truncate py-2 pl-3 w-full flex items-center gap-1 text-left hover:text-neutral-100 cursor-pointer"
             >
               {listIcon && listIcon}
               <AnimatePresence mode="wait" initial={false}>

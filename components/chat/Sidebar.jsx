@@ -1,15 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
-
-import Image from "next/image";
-import Link from "next/link";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 import {
   PrimaryButton,
@@ -19,6 +10,7 @@ import {
   DropdownContent,
   DropdownItem,
   DropdownSeparator,
+  LogoButton,
 } from "@/components";
 
 import { useAuth, useDatabase, Dropdown } from "@/context";
@@ -215,16 +207,7 @@ export default function Sidebar() {
               exit="exit"
               transition={{ duration: 0.3 }}
             >
-              <Link href={"/chat"}>
-                <Image
-                  src={"/assets/images/openchat_logo.webp"}
-                  alt="openchat logo"
-                  width={160}
-                  height={32}
-                  className="max-w-28"
-                  loading="eager" // Fix: LCP image should load eagerly
-                />
-              </Link>
+              <LogoButton />
             </motion.div>
           )}
           <button

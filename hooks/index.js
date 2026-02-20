@@ -5,3 +5,4 @@ export { useKeyboardHandler } from "./useKeyboardHandler";
 export { useOnClickOutside } from "./useOnClickOutside";
 export { usePhraseCarousel } from "./usePhraseCarousel";
 export { usePasteHandler } from "./usePasteHandler";
+export { useAuthGuard } from "./useAuthGuard";

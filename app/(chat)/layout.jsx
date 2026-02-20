@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components";
 import { PrivateRoute } from "@/lib";
 import React from "react";
+
 export default function ChatLayout({ children }) {
   return (
     <PrivateRoute>

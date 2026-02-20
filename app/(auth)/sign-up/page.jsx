@@ -1,24 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "react-feather";
 import { Input, PrimaryButton } from "@/components";
+import { useAuthGuard } from "@/hooks";
+import { motion } from "framer-motion";
+
+const pageVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: "easeOut" },
+  },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.2, ease: "easeIn" } },
+};
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signUp, error, user } = useAuth();
-  const router = useRouter();
+  const { signUp, error } = useAuth();
+  const { user, loading: authLoading } = useAuthGuard();
+
+  if (authLoading || user) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       await signUp(email, password);
     } catch (err) {
@@ -28,18 +40,21 @@ export default function SignUpPage() {
     }
   };
 
-  useEffect(() => {
-    if (user) router.push("/chat");
-  }, [user]);
-
   return (
     <div className="w-full md:max-w-sm px-4 md:px-0">
       <PrimaryButton
         href={"/"}
         text={<ArrowLeft size={16} />}
-        className="absolute top-0 left-0 w-max min-w-0 p-4 border-none shadow-none justify-center hover:bg-transparent text-white"
+        className="fixed top-0 left-0 w-max min-w-0 p-4 border-none shadow-none justify-center hover:bg-transparent text-white"
       />
-      <div className="p-6 md:border border-neutral-900 rounded-lg md:bg-neutral-800/5">
+
+      <motion.div
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        className="p-6 md:border border-neutral-900 rounded-lg md:bg-neutral-800/5"
+      >
         <h2 className="text-3xl md:text-2xl font-semibold mb-6 text-center">
           Create Account
         </h2>
@@ -77,11 +92,20 @@ export default function SignUpPage() {
             />
           </div>
 
-          {error && <div className="text-red-500 text-sm">{error}</div>}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-red-500 text-sm"
+            >
+              {error}
+            </motion.div>
+          )}
 
           <PrimaryButton
             text={loading ? "Creating account..." : "Sign Up"}
-            className="justify-center hover:ring-1 hover:ring-blue-500 "
+            className="justify-center hover:ring-1 hover:ring-blue-500"
             type="submit"
             cta
             disabled={loading}
@@ -94,7 +118,7 @@ export default function SignUpPage() {
             Sign in
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

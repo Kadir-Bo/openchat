@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { LogIn, MessageCircle } from "react-feather";
 import {
   MessageLimitAlert,
   PublicChatConversation,
@@ -43,9 +41,6 @@ export default function ChatPage() {
   messagesRef.current = messages;
 
   const limitReached = userMessageCount >= MAX_USER_MESSAGES;
-  const remaining = MAX_USER_MESSAGES - userMessageCount;
-  const showRemaining =
-    !limitReached && userMessageCount >= Math.floor(MAX_USER_MESSAGES / 2);
 
   // ── Shared streaming helper ───────────────────────────────────────────────
 

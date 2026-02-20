@@ -7,7 +7,7 @@ export default function PublicHeader() {
   return (
     <header className="fixed top-0 left-0 w-full flex flex-col z-999 ">
       <div className="">
-        <nav className="flex items-center justify-between mt-4 max-w-500 w-full mx-auto bg-neutral-950 px-12">
+        <nav className="flex items-center justify-between mt-4 max-w-500 w-full mx-auto bg-neutral-950 px-4 lg:px-12">
           <Link href={"/"}>
             <Image
               width={100}

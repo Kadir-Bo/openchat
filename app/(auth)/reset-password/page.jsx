@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, PrimaryButton } from "@/components";
+import { ArrowLeft } from "react-feather";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -28,6 +29,11 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="w-full md:max-w-sm px-4 md:px-0">
+      <PrimaryButton
+        text={<ArrowLeft size={16} />}
+        href={"/"}
+        className="absolute top-0 left-0 w-max min-w-0 p-4 border-none shadow-none justify-center hover:bg-transparent text-white"
+      />
       <div className="p-6 md:border border-neutral-900 rounded-lg md:bg-neutral-800/5">
         <AnimatePresence mode="wait">
           {success ? (

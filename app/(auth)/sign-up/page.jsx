@@ -37,9 +37,7 @@ export default function SignUpPage() {
       <PrimaryButton
         href={"/"}
         text={<ArrowLeft size={16} />}
-        className="absolute top-0 left-0 w-max aspect-square p-6 min-w-0 border-none shadow-none justify-center hover:bg-transparent "
-        tooltip={"return home"}
-        tooltipPosition="right"
+        className="absolute top-0 left-0 w-max min-w-0 p-4 border-none shadow-none justify-center hover:bg-transparent text-white"
       />
       <div className="p-6 md:border border-neutral-900 rounded-lg md:bg-neutral-800/5">
         <h2 className="text-3xl md:text-2xl font-semibold mb-6 text-center">

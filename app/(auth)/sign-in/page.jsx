@@ -33,13 +33,6 @@ export default function SignInPage() {
 
   return (
     <div className="w-full md:max-w-sm px-4 md:px-0">
-      <PrimaryButton
-        href={"/"}
-        text={<ArrowLeft size={16} />}
-        className="absolute top-0 left-0 w-max aspect-square p-6 min-w-0 border-none shadow-none justify-center hover:bg-transparent "
-        tooltip={"return home"}
-        tooltipPosition="right"
-      />
       <div className="p-6 md:border border-neutral-900 rounded-lg md:bg-neutral-800/5">
         <h2 className="text-3xl md:text-2xl font-semibold mb-6 text-center">
           Sign In

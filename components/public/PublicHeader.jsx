@@ -19,7 +19,7 @@ export default function PublicHeader() {
           </Link>
           <div className="w-max flex  items-center justify-end gap-2">
             <PrimaryButton
-              className="justify-center w-max border-none text-neutral-300"
+              className="justify-center w-maxa text-neutral-300"
               text="Sign Up"
               href={"/sign-up"}
             />

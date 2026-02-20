@@ -33,7 +33,7 @@ export default function SignInPage() {
 
   return (
     <div className="w-full max-w-sm">
-      <div className="p-6 lg:border border-neutral-900 rounded-lg lg:bg-neutral-800/5">
+      <div className="p-6 md:border border-neutral-900 rounded-lg md:bg-neutral-800/5">
         <h2 className="text-2xl font-semibold mb-6 text-center">Sign In</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4 px-6">

@@ -1,5 +1,9 @@
 import { useCallback } from "react";
-import { createPastedAttachment } from "@/lib";
+import {
+  createPastedAttachment,
+  detectAttachmentType,
+  insertTextAtCursor,
+} from "@/lib";
 export const usePasteHandler = (
   textareaRef,
   localUserInput,

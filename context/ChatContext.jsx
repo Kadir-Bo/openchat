@@ -10,6 +10,7 @@ import {
   generateTitleFromResponse,
   streamResponse,
   trimMessagesToTokenLimit,
+  generateId,
 } from "@/lib";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -121,7 +122,7 @@ const extractAndSaveUserMemory = (
           memories: [
             ...existingMemories,
             {
-              id: crypto.randomUUID(),
+              id: generateId(),
               text: result.memory,
               createdAt: new Date().toISOString(),
               source: "auto",
@@ -166,7 +167,7 @@ const extractAndSaveProjectMemory = (
         return updateProjectMemory(projectId, [
           ...existingMemories,
           {
-            id: crypto.randomUUID(),
+            id: generateId(),
             text: result.memory,
             createdAt: new Date().toISOString(),
             source: "auto",

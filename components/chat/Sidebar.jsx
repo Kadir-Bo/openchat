@@ -197,7 +197,7 @@ export default function Sidebar() {
 
   return (
     <motion.aside
-      className="bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-50 min-h-dvh"
+      className="bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-50 h-dvh"
       variants={sidebarVariants}
       initial={false}
       animate={isOpen ? "open" : "closed"}

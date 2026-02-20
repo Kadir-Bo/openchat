@@ -12,6 +12,7 @@ import {
   buildSystemPromptWithMemories,
   streamResponse,
   trimMessagesToTokenLimit,
+  generateId,
 } from "@/lib";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ export default function ChatPage() {
 
         setMessages((prev) => [
           ...prev,
-          { id: crypto.randomUUID(), role: "assistant", content: responseText },
+          { id: generateId(), role: "assistant", content: responseText },
         ]);
       } catch (err) {
         if (err.name !== "AbortError") {
@@ -154,7 +155,7 @@ export default function ChatPage() {
 
       const history = current.slice(0, index);
       const editedMsg = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         role: "user",
         content: newContent.trim(),
       };

@@ -5,6 +5,7 @@ import { useDatabase } from "@/context";
 import { MemoryItem, PrimaryButton } from "@/components";
 import { Plus, Info } from "react-feather";
 import { motion, AnimatePresence } from "framer-motion";
+import { generateId } from "@/lib";
 
 function PrivacySettingsPage() {
   const { getUserProfile, updateUserProfile, loading } = useDatabase();
@@ -41,7 +42,7 @@ function PrivacySettingsPage() {
     if (!newMemory.trim()) return;
 
     const newEntry = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       text: newMemory.trim(),
       createdAt: new Date().toISOString(),
     };

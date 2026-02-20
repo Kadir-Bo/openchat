@@ -23,6 +23,7 @@ import {
   buildContextMessages,
   buildSystemPromptWithMemories,
   trimMessagesToTokenLimit,
+  generateId,
 } from "@/lib";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -130,7 +131,7 @@ export default function PublicChatInterface({
 
     // Optimistically append user message
     const userMsg = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       role: "user",
       content: messageText,
     };

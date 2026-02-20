@@ -33,7 +33,7 @@ export default function SignUpPage() {
   }, [user]);
 
   return (
-    <div className="w-full md:max-w-sm">
+    <div className="w-full md:max-w-sm px-4 md:px-0">
       <PrimaryButton
         href={"/"}
         text={<ArrowLeft size={16} />}

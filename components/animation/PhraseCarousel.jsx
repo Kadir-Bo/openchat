@@ -87,7 +87,7 @@ const highlightVariants = {
   initial: { opacity: 0, color: "rgb(74 222 128)", filter: "blur(3px)" },
   enter: {
     opacity: 1,
-    color: "rgb(74 222 128)",
+    color: "rgb(255 255 255)",
     filter: "blur(0px)",
     transition: { duration: 0.6, ease: "easeInOut" },
   },
@@ -130,7 +130,7 @@ function AnimatedPhrase({ phrase, pattern }) {
                 initial="initial"
                 animate="enter"
                 exit="exit"
-                className="font-light"
+                className="tracking-tighter"
               >
                 {token.value}
               </motion.span>

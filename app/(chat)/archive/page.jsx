@@ -12,7 +12,7 @@ import { ArrowLeft } from "react-feather";
 import {
   ChatCard,
   StackedProjectCard,
-  PageShell,
+  ChatPageShell,
   DeleteButtons,
   EmptyStateSearch,
   PrimaryButton,
@@ -148,7 +148,7 @@ export default function ArchivePage() {
   };
 
   return (
-    <PageShell
+    <ChatPageShell
       title="Archive"
       tabs={[
         { key: "chats", label: "Chats", count: chats.length },
@@ -249,6 +249,6 @@ export default function ArchivePage() {
           icon={<ArrowLeft size={15} />}
         />
       )}
-    </PageShell>
+    </ChatPageShell>
   );
 }

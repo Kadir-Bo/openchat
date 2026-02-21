@@ -6,14 +6,11 @@ import {
   PrimaryButton,
   UserProfileImage,
   ChatList,
-  DropdownTrigger,
-  DropdownContent,
-  DropdownItem,
-  DropdownSeparator,
   LogoButton,
+  DropdownMenu,
 } from "@/components";
 
-import { useAuth, useDatabase, Dropdown } from "@/context";
+import { useAuth, useDatabase } from "@/context";
 import { useRouter } from "next/navigation";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -32,7 +29,6 @@ const _globalPendingIds = new Set();
 const _pendingTimers = new Map();
 const MIN_PENDING_MS = 1200;
 
-// Returns true if the viewport is considered "mobile" (<768px)
 function isMobileViewport() {
   if (typeof window === "undefined") return false;
   return window.innerWidth < 768;
@@ -40,7 +36,6 @@ function isMobileViewport() {
 
 export default function Sidebar() {
   const router = useRouter();
-  // Start closed on mobile, open on desktop
   const [isOpen, setIsOpen] = useState(() => !isMobileViewport());
   const [isMobile, setIsMobile] = useState(() => isMobileViewport());
   const [conversations, setConversations] = useState([]);
@@ -52,25 +47,18 @@ export default function Sidebar() {
   const { displayName, email, photoURL: userImage } = user;
   const username = displayName || email;
 
-  // Track viewport size to switch between mobile/desktop behaviour
   useEffect(() => {
     const handleResize = () => {
       const mobile = isMobileViewport();
       setIsMobile(mobile);
-      // Auto-close when resizing down to mobile
       if (mobile) setIsOpen(false);
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleToggleSidebar = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
-
-  const handleCloseSidebar = useCallback(() => {
-    setIsOpen(false);
-  }, []);
+  const handleToggleSidebar = useCallback(() => setIsOpen((prev) => !prev), []);
+  const handleCloseSidebar = useCallback(() => setIsOpen(false), []);
 
   const [, forceUpdate] = useState(0);
 
@@ -80,12 +68,8 @@ export default function Sidebar() {
       const filtered = newConversations.filter((c) => !c.isArchived);
       filtered.forEach((c) => {
         if (c.title === "New Chat") {
-          if (!_globalPendingIds.has(c.id)) {
-            _globalPendingIds.add(c.id);
-          }
-          if (_pendingTimers.has(c.id)) {
-            clearTimeout(_pendingTimers.get(c.id));
-          }
+          if (!_globalPendingIds.has(c.id)) _globalPendingIds.add(c.id);
+          if (_pendingTimers.has(c.id)) clearTimeout(_pendingTimers.get(c.id));
           _pendingTimers.set(
             c.id,
             setTimeout(() => {
@@ -128,20 +112,9 @@ export default function Sidebar() {
     }));
   }, [conversations]);
 
-  // On desktop the sidebar shifts content (static); on mobile it overlays (fixed)
   const sidebarVariants = {
-    open: { width: isMobile ? "280px" : "280px", x: 0 },
+    open: { width: "280px", x: 0 },
     closed: { width: isMobile ? "280px" : "50px", x: isMobile ? "-280px" : 0 },
-  };
-
-  const logoVariants = {
-    animate: { x: 10, opacity: 1 },
-    exit: { x: 20, opacity: 0 },
-  };
-
-  const listVariants = {
-    animate: { x: 0, opacity: 1 },
-    exit: { x: 10, opacity: 0 },
   };
 
   const signOut = useCallback(async () => {
@@ -162,6 +135,7 @@ export default function Sidebar() {
         label: "Sign Out",
         action: signOut,
         icon: LogOut,
+        separator: true,
       },
     ],
     [signOut],
@@ -169,18 +143,16 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* ── Mobile hamburger button (always visible when sidebar is closed on mobile) ── */}
       {isMobile && !isOpen && (
         <button
           className="fixed top-0 left-0 z-50 p-4 text-white"
           onClick={handleToggleSidebar}
-          aria-label="Sidebar öffnen"
+          aria-label="Open sidebar"
         >
           <Menu size={20} />
         </button>
       )}
 
-      {/* ── Backdrop (mobile only) — tap outside to close ── */}
       <AnimatePresence>
         {isMobile && isOpen && (
           <motion.div
@@ -196,7 +168,6 @@ export default function Sidebar() {
         )}
       </AnimatePresence>
 
-      {/* ── Sidebar ── */}
       <motion.aside
         className={`bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-50 h-dvh ${
           isMobile ? "fixed top-0 left-0" : "relative"
@@ -207,68 +178,73 @@ export default function Sidebar() {
         transition={{ duration: 0.3, ease: "easeInOut" }}
         id="sidebar"
       >
-        <div className="flex items-center justify-between h-12">
+        {/* Header */}
+        <div className="flex items-center justify-between h-20">
           <AnimatePresence>
             {isOpen && (
               <motion.div
                 key="logo"
-                variants={logoVariants}
-                initial="animate"
-                animate="animate"
-                exit="exit"
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 10, opacity: 1 }}
+                exit={{ x: 20, opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
                 <LogoButton />
               </motion.div>
             )}
-            <button
-              className="p-3 outline-none cursor-pointer"
-              onClick={handleToggleSidebar}
-              aria-label={isOpen ? "Sidebar schließen" : "Sidebar öffnen"}
-            >
-              {isOpen ? <ArrowLeft /> : <Menu />}
-            </button>
           </AnimatePresence>
+
+          {/* Outside AnimatePresence — never unmounted, never flickers */}
+          <button
+            className="p-3 outline-none cursor-pointer shrink-0"
+            onClick={handleToggleSidebar}
+            aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+          >
+            {!isOpen && !isMobile ? <Menu /> : <ArrowLeft />}
+          </button>
         </div>
 
+        {/* Content */}
         <AnimatePresence>
           {isOpen && (
             <motion.nav
               key="sidebar-navigation"
-              variants={listVariants}
-              initial="exit"
-              animate="animate"
-              exit="exit"
+              initial={{ x: 10, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 10, opacity: 0 }}
               transition={{ duration: 0.2, delay: 0.1 }}
-              className="p-1.5 flex flex-col gap-4 flex-1 overflow-y-auto overflow-x-hidden"
-              aria-label="Hauptnavigation"
+              className="flex flex-col gap-4 flex-1 overflow-y-auto overflow-x-hidden p-2"
+              aria-label="Main navigation"
             >
               <PrimaryButton
                 text="New Chat"
                 icon={<Plus size={16} />}
-                href={"/chat"}
+                href="/chat"
               />
+
               <div className="flex flex-col">
                 <PrimaryButton
                   text="Projects"
                   icon={<FolderPlus size={16} />}
-                  href={"/projects"}
+                  href="/projects"
                   className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
                 />
                 <PrimaryButton
                   text="Chats"
                   icon={<List size={16} />}
-                  href={"/chats"}
+                  href="/chats"
                   className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
                 />
                 <PrimaryButton
                   text="Archive"
                   icon={<Archive size={16} />}
-                  href={"/archive"}
+                  href="/archive"
                   className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
                 />
               </div>
+
               <hr className="text-neutral-800" />
+
               <div className="flex-1 overflow-y-auto overflow-x-hidden">
                 {recentChats.length > 0 ? (
                   <ChatList
@@ -284,35 +260,26 @@ export default function Sidebar() {
                 )}
               </div>
 
-              <Dropdown>
-                <DropdownTrigger>
-                  <PrimaryButton
-                    text={username}
-                    icon={
-                      <UserProfileImage image={userImage} username={username} />
-                    }
-                    className="gap-2 text-sm"
-                  />
-                </DropdownTrigger>
-
-                <DropdownContent
-                  side="top"
-                  sideOffset={4}
-                  className="-translate-x-1"
-                >
-                  {dropDownMenuItems.map((button, id) => (
-                    <React.Fragment key={button.id}>
-                      {id === dropDownMenuItems.length - 1 && (
-                        <DropdownSeparator />
-                      )}
-                      <DropdownItem onClick={button?.action} href={button.href}>
-                        <button.icon size={17} />
-                        {button.label}
-                      </DropdownItem>
-                    </React.Fragment>
-                  ))}
-                </DropdownContent>
-              </Dropdown>
+              <DropdownMenu
+                dropdownList={dropDownMenuItems}
+                contentSide="top"
+                contentSideOffset={4}
+                contentClassName="-translate-x-1"
+                // Only call action if one exists — href items are handled
+                // natively by DropdownItem's <Link> branch.
+                onClick={(e, menuItem) => {
+                  e.stopPropagation();
+                  menuItem.action?.();
+                }}
+              >
+                <PrimaryButton
+                  text={username}
+                  icon={
+                    <UserProfileImage image={userImage} username={username} />
+                  }
+                  className="gap-2 text-sm"
+                />
+              </DropdownMenu>
             </motion.nav>
           )}
         </AnimatePresence>

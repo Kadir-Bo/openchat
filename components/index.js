@@ -38,7 +38,7 @@ export { default as SelectionStatus } from "./ui/SelectionStatus";
 export { default as EmptyStateSearch } from "./ui/EmptyStateSearch";
 export { default as EmptyStateConversation } from "./ui/EmptyStateConversation";
 
-// DROPDOWN COMPONENTS
+// SHELL COMPONENTS
 export { default as ChatPageShell } from "./shell/ChatPageShell";
 export { default as AuthFormShell } from "./shell/AuthFormShell";
 

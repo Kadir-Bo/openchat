@@ -28,8 +28,10 @@ export default function PrimaryButton({
     border-neutral-500/30
     hover:border-neutral-500/50
     hover:bg-neutral-900
-    py-2.5
-    px-2
+    py-5
+    px-4
+    md:px-3
+    md:py-2.5
     rounded-lg
     cursor-pointer
     shadow
@@ -40,7 +42,7 @@ export default function PrimaryButton({
     items-center
     relative
     group
-    min-w-22
+    min-w-max
   `;
 
   const filledClasses = filled

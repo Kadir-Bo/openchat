@@ -31,7 +31,10 @@ export default function DropdownMenu({
       >
         {dropdownList.map((menuItem) => (
           <React.Fragment key={menuItem.id}>
-            <DropdownItem onClick={(e) => onClick(e, menuItem)}>
+            <DropdownItem
+              href={menuItem.href}
+              onClick={menuItem.href ? undefined : (e) => onClick(e, menuItem)}
+            >
               {menuItem.icon && (
                 <menuItem.icon
                   size={15}
@@ -41,7 +44,7 @@ export default function DropdownMenu({
               )}
               <span className="truncate min-w-0">{menuItem.label}</span>
             </DropdownItem>
-            {menuItem.seperator && <DropdownSeparator />}
+            {menuItem.separator && <DropdownSeparator />}
           </React.Fragment>
         ))}
       </DropdownContent>

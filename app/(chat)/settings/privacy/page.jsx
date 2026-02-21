@@ -121,18 +121,18 @@ function PrivacySettingsPage() {
         </div>
 
         <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
-          <div className="flex gap-2 items-end">
+          <div className="flex gap-2 items-start md:items-end relative">
             <textarea
               value={newMemory}
               onChange={(e) => setNewMemory(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="e.g. I prefer concise answers... (Shift+Enter for new line)"
               rows={Math.max(1, newMemory.split("\n").length)}
-              className="flex-1 bg-neutral-900 text-white text-sm px-3 py-2 rounded-lg border border-neutral-700 focus:border-neutral-500 outline-none placeholder:text-neutral-600 resize-none"
+              className="flex-1 bg-neutral-900 text-white text-sm px-3 py-2 rounded-lg border border-neutral-700 focus:border-neutral-500 outline-none placeholder:text-neutral-600 resize-none min-h-32"
             />
             <PrimaryButton
               text="Add"
-              className="w-max px-3 justify-center shrink-0"
+              className="w-max px-3 justify-center shrink-0 absolute bottom-2 right-2"
               onClick={handleAddMemory}
               disabled={!newMemory.trim() || loading}
             >

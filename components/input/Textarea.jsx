@@ -98,7 +98,7 @@ export default function Textarea({
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.4 }}
             onAnimationComplete={handleAnimationComplete}
-            className="absolute z-50 top-7 left-0 pt-2 pl-3 pointer-events-none select-none text-neutral-400"
+            className="absolute z-50 top-12 md:top-7 left-0 pt-2 pl-3 pointer-events-none select-none text-neutral-400"
           >
             {placeholderArray[currentPlaceholderIndex]}
           </motion.span>

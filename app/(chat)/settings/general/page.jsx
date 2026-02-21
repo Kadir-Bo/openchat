@@ -127,7 +127,7 @@ function GeneralSettingsPage() {
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Profile</h4>
         <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
-          <div className="flex items-start justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-start justify-between gap-6">
             <Input
               label="What would you like to be called?"
               value={fullName}
@@ -168,7 +168,7 @@ function GeneralSettingsPage() {
 
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Model & Theme</h4>
-        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
+        <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
           <Select
             id="default-model"
             name="default-model"

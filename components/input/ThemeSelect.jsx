@@ -8,7 +8,7 @@ export default function ThemeSelect({ themes, activeTheme, onClick }) {
       <span className="mb-1.5 text-neutral-300/80 text-sm ml-px flex gap-1 items-center justify-start">
         Appearance
       </span>
-      <div className="flex gap-4">
+      <div className="flex gap-4 max-w-full">
         {themes.map((theme) => (
           <div
             key={theme.id}
@@ -17,7 +17,7 @@ export default function ThemeSelect({ themes, activeTheme, onClick }) {
           >
             <div
               className={twMerge(
-                "w-32 h-24 border rounded-xl cursor-pointer border-neutral-500  overflow-hidden transition-all duration-100",
+                "w-full min-w-0 md:w-32 h-24 border rounded-xl cursor-pointer border-neutral-500  overflow-hidden transition-all duration-100 max-w-full",
                 theme.id === activeTheme
                   ? "ring-2 ring-blue-500/50"
                   : "hover:border-neutral-400",

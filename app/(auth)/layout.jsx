@@ -1,7 +1,5 @@
 export default function AuthLayout({ children }) {
   return (
-    <main className="h-dvh md:min-h-screen flex items-center justify-center">
-      {children}
-    </main>
+    <main className="h-dvh flex items-center justify-center">{children}</main>
   );
 }

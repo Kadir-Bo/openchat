@@ -32,12 +32,15 @@ export default function MemoryItem({ memory, onDelete, onUpdate }) {
   };
 
   return (
-    <div className="flex items-start justify-between gap-3 p-3 rounded-lg border border-neutral-800 bg-neutral-900/50 group">
+    <div
+      className={`flex items-start justify-between gap-3 p-3 rounded-lg border bg-neutral-900/50 group ${isEditing ? "border-neutral-600" : "border-neutral-800"}`}
+    >
       {isEditing ? (
         <textarea
           value={editText}
           onChange={(e) => setEditText(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={handleCancel}
           autoFocus
           rows={Math.max(2, editText.split("\n").length)}
           className="flex-1 bg-transparent text-sm text-neutral-300 leading-relaxed outline-none resize-none"
@@ -49,19 +52,19 @@ export default function MemoryItem({ memory, onDelete, onUpdate }) {
       )}
 
       <div
-        className={`flex items-center gap-2 shrink-0 mt-0.5 transition-opacity ${isEditing ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+        className={`flex items-center gap-2 shrink-0 mt-0.5 transition-opacity ${isEditing ? "opacity-100" : "md:opacity-0 group-hover:opacity-100"}`}
       >
         {isEditing ? (
           <>
             <button
               onClick={handleSave}
-              className="text-neutral-400 hover:text-green-400 transition-colors"
+              className="text-neutral-400 hover:text-green-400 transition-colors p-1 md:p-1"
             >
               <Check size={14} />
             </button>
             <button
               onClick={handleCancel}
-              className="text-neutral-400 hover:text-red-400 transition-colors"
+              className="text-neutral-400 hover:text-red-400 transition-colors p-1 md:p-1"
             >
               <X size={14} />
             </button>
@@ -70,13 +73,13 @@ export default function MemoryItem({ memory, onDelete, onUpdate }) {
           <>
             <button
               onClick={() => setIsEditing(true)}
-              className="text-neutral-600 hover:text-neutral-300 transition-colors"
+              className="text-neutral-600 hover:text-neutral-300 transition-colors p-1 md:p-1"
             >
               <Edit2 size={14} />
             </button>
             <button
               onClick={() => onDelete(memory.id)}
-              className="text-neutral-600 hover:text-red-400 transition-colors"
+              className="text-neutral-600 hover:text-red-400 transition-colors  p-1 md:p-1"
             >
               <Trash2 size={14} />
             </button>

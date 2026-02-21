@@ -68,7 +68,7 @@ function AccountSettingsPage() {
 
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Danger Zone</h4>
-        <div className="flex items-center justify-between p-4 rounded-xl border border-red-900/30 bg-red-950/10">
+        <div className="flex flex-col gap-8 md:flex-row items-center justify-between p-4 rounded-xl border border-red-900/30 bg-red-950/10">
           <div>
             <p className="text-sm font-medium text-white">Delete Account</p>
             <p className="text-sm text-neutral-400">
@@ -76,7 +76,7 @@ function AccountSettingsPage() {
             </p>
           </div>
           <PrimaryButton
-            className="w-max px-3 min-w-36 justify-center border-red-700/60 text-red-500 hover:bg-red-700/10"
+            className="min-w-36 w-full md:w-max justify-center border-red-700/60 text-red-500 hover:bg-red-700/10"
             onClick={handleDeleteAccount}
           >
             Delete Account <Trash2 size={15} />

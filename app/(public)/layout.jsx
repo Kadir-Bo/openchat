@@ -13,7 +13,7 @@ export default function PublicLayout({ children }) {
   return (
     <React.Fragment>
       <PublicHeader />
-      <main className="h-dvh md:min-h-screen">{children}</main>
+      <main className="h-dvh">{children}</main>
     </React.Fragment>
   );
 }

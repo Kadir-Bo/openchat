@@ -25,41 +25,28 @@ import {
   Plus,
   Settings,
 } from "react-feather";
+import { useIsMobile } from "@/hooks";
+import clsx from "clsx";
 
 const _globalPendingIds = new Set();
 const _pendingTimers = new Map();
 const MIN_PENDING_MS = 1200;
 
-function isMobileViewport() {
-  if (typeof window === "undefined") return false;
-  return window.innerWidth < 768;
-}
-
-export default function Sidebar() {
+export default function Sidebar({
+  isOpen,
+  handleCloseSidebar,
+  handleToggleSidebar,
+}) {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(() => !isMobileViewport());
-  const [isMobile, setIsMobile] = useState(() => isMobileViewport());
   const [conversations, setConversations] = useState([]);
   const [projects, setProjects] = useState([]);
+  const isMobile = useIsMobile();
 
   const { user, logout } = useAuth();
   const { subscribeToConversations, subscribeToProjects } = useDatabase();
 
   const { displayName, email, photoURL: userImage } = user;
   const username = displayName || email;
-
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = isMobileViewport();
-      setIsMobile(mobile);
-      if (mobile) setIsOpen(false);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const handleToggleSidebar = useCallback(() => setIsOpen((prev) => !prev), []);
-  const handleCloseSidebar = useCallback(() => setIsOpen(false), []);
 
   const [, forceUpdate] = useState(0);
 
@@ -144,16 +131,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {isMobile && !isOpen && (
-        <button
-          className="fixed top-0 left-0 z-50 p-4 text-white"
-          onClick={handleToggleSidebar}
-          aria-label="Open sidebar"
-        >
-          <Menu size={20} />
-        </button>
-      )}
-
       <AnimatePresence>
         {isMobile && isOpen && (
           <motion.div
@@ -170,7 +147,7 @@ export default function Sidebar() {
       </AnimatePresence>
 
       <motion.aside
-        className={`bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-50 h-dvh px-1 ${
+        className={`bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-999 h-dvh px-1 ${
           isMobile ? "fixed top-0 left-0" : "relative"
         }`}
         variants={sidebarVariants}
@@ -200,7 +177,11 @@ export default function Sidebar() {
             onClick={handleToggleSidebar}
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
           >
-            {!isOpen && !isMobile ? <Menu /> : <ArrowLeft />}
+            {!isOpen && !isMobile ? (
+              <Menu size={20} />
+            ) : (
+              <ArrowLeft size={20} />
+            )}
           </button>
         </div>
 

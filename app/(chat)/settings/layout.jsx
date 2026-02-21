@@ -14,14 +14,12 @@ export default function SettingsLayout({ children }) {
   ];
 
   return (
-    <div className="max-w-220 mx-auto pt-20 pb-8">
-      <h1 className="text-2xl mb-6">Settings</h1>
-
-      <div className="flex gap-6 items-start">
+    <div className="max-w-220 mx-auto">
+      <div className="flex flex-col md:flex-row gap-6 items-start">
         {/* Sidebar Navigation */}
-        <aside className="w-48 shrink-0">
+        <aside className="w-full md:w-48 fixed md:relative left-0 top-20 z-99 shrink-0 px-5 py-2 md:py-0 md:px-0 bg-neutral-900 md:bg-transparent">
           <nav aria-label="Settings navigation">
-            <ul className="space-y-1">
+            <ul className="space-y-1 flex flex-row md:flex-col justify-center">
               {tabs.map((tab) => {
                 const isActive = pathname === tab.href;
 
@@ -29,7 +27,7 @@ export default function SettingsLayout({ children }) {
                   <li key={tab.href}>
                     <PrimaryButton
                       href={tab.href}
-                      className="border-transparent hover:border-transparent hover:bg-neutral-800 shadow-none pl-3"
+                      className="border-transparent hover:border-transparent hover:bg-neutral-800 shadow-none py-2"
                       active={isActive}
                     >
                       {tab.name}
@@ -42,7 +40,7 @@ export default function SettingsLayout({ children }) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 min-w-0">{children}</main>
+        <main className="flex-1 w-full pt-40 py-8 md:pt-22">{children}</main>
       </div>
     </div>
   );

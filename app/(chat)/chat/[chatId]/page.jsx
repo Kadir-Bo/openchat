@@ -30,7 +30,7 @@ export default function ChatIDPage() {
 
   return (
     <motion.div
-      className="flex flex-col h-screen"
+      className="flex flex-col h-dvh"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >

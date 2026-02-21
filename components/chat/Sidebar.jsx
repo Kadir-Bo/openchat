@@ -25,8 +25,6 @@ import {
   Plus,
   Settings,
 } from "react-feather";
-import { useIsMobile } from "@/hooks";
-import clsx from "clsx";
 
 const _globalPendingIds = new Set();
 const _pendingTimers = new Map();
@@ -34,16 +32,15 @@ const MIN_PENDING_MS = 1200;
 
 export default function Sidebar({
   isOpen,
+  isMobile,
   handleCloseSidebar,
   handleToggleSidebar,
 }) {
   const router = useRouter();
   const [conversations, setConversations] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const isMobile = useIsMobile();
 
   const { user, logout } = useAuth();
-  const { subscribeToConversations, subscribeToProjects } = useDatabase();
+  const { subscribeToConversations } = useDatabase();
 
   const { displayName, email, photoURL: userImage } = user;
   const username = displayName || email;
@@ -80,14 +77,6 @@ export default function Sidebar({
     }, true);
     return () => unsubscribe?.();
   }, [user, subscribeToConversations]);
-
-  useEffect(() => {
-    if (!user) return;
-    const unsubscribe = subscribeToProjects((newProjects) => {
-      setProjects(newProjects.filter((p) => !p.isArchived));
-    }, true);
-    return () => unsubscribe?.();
-  }, [user, subscribeToProjects]);
 
   const recentChats = useMemo(() => {
     const filtered = conversations.filter((conv) => !conv.projectId);
@@ -204,21 +193,21 @@ export default function Sidebar({
                 </PrimaryButton>
                 <PrimaryButton
                   href="/projects"
-                  className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
+                  className="border-transparent  hover:border-transparent hover:bg-neutral-800 gap-2"
                 >
                   <FolderPlus size={16} />
                   Projects
                 </PrimaryButton>
                 <PrimaryButton
                   href="/chats"
-                  className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
+                  className="border-transparent  hover:border-transparent hover:bg-neutral-800 gap-2"
                 >
                   <List size={16} />
                   Chats
                 </PrimaryButton>
                 <PrimaryButton
                   href="/archive"
-                  className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
+                  className="border-transparent  hover:border-transparent hover:bg-neutral-800 gap-2"
                 >
                   <Archive size={16} />
                   Archive
@@ -252,7 +241,7 @@ export default function Sidebar({
                 contentClassName="bg-neutral-950/50 -translate-x-1.5"
                 triggerClassName="border-t border-neutral-800 pb-8 md:py-2"
               >
-                <PrimaryButton className="gap-2 md:text-sm rounded-none border-none shadow-none hover:bg-transparent">
+                <PrimaryButton className="gap-2 md:text-sm rounded-none border-none  hover:bg-transparent">
                   <UserProfileImage image={userImage} username={username} />
                   <div className="flex flex-1 justify-between items-center">
                     {username}

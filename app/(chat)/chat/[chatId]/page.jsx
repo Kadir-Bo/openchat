@@ -1,6 +1,6 @@
 "use client";
 
-import { ChatConversation, ChatHeader, ChatInterface } from "@/components";
+import { ChatConversation, ChatInterface } from "@/components";
 import { useDatabase } from "@/context";
 import { motion } from "framer-motion";
 import { useState, useCallback, useEffect } from "react";
@@ -30,11 +30,10 @@ export default function ChatIDPage() {
 
   return (
     <motion.div
-      className="flex flex-col h-dvh"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      className="flex-1 relative"
     >
-      <ChatHeader conversation={conversation} project={project} />
       <ChatConversation onConversationLoad={handleConversationLoad} />
       <ChatInterface project_id={project?.id ?? null} project={project} />
     </motion.div>

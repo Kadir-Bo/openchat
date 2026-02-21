@@ -117,10 +117,10 @@ export default function ProjectIDPage() {
               <p className="text-neutral-400">{currentProject.description}</p>
             </div>
             <div className="flex">
-              <PrimaryButton className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
+              <PrimaryButton className="outline-none border-none  cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
                 <MoreVertical size={17} />
               </PrimaryButton>
-              <PrimaryButton className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
+              <PrimaryButton className="outline-none border-none  cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
                 <Star size={17} />
               </PrimaryButton>
             </div>

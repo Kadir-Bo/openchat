@@ -168,7 +168,7 @@ export default function MessageBubble({
           )}
 
           <div
-            className={`p-2 ${
+            className={`p-2 w-full ${
               isUser
                 ? "bg-neutral-200 text-neutral-950 max-w-[90%] lg:max-w-[80%] border"
                 : "text-neutral-100"
@@ -267,10 +267,10 @@ export default function MessageBubble({
                 (action) => (
                   <PrimaryButton
                     key={action.id}
-                    className="outline-none border-none min-w-0 shadow-none cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+                    className="outline-none border-none min-w-0  cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                     onClick={action.onClick}
+                    tooltip={action.title}
                   >
-                    {action.title}
                     <action.icon size={14} />
                   </PrimaryButton>
                 ),

@@ -33,7 +33,7 @@ export default function EmptyStateConversation({
   highlightWords = HIGHLIGHT_WORDS,
 }) {
   return (
-    <div className="flex items-center justify-center w-full mb-12">
+    <div className="flex items-center justify-center w-full">
       <div className="text-center px-4 max-w-xl">
         <PhraseCarousel
           phrases={phrases}

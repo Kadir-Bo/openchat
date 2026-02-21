@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
     <>
       <PrimaryButton
         href="/"
-        className="fixed top-0 left-0 w-max min-w-0 p-4 border-none shadow-none justify-center hover:bg-transparent text-white"
+        className="fixed top-0 left-0 w-max min-w-0 p-4 border-none  justify-center hover:bg-transparent text-white"
       >
         <ArrowLeft size={16} />
       </PrimaryButton>

@@ -2,45 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 
-import { useAuth, useChat, useDatabase } from "@/context";
+import { useChat, useDatabase } from "@/context";
 import {
   EmptyStateConversation,
   MessageBubble,
   ProcessingIndicator,
 } from "@/components";
-import { PhraseCarousel } from "@/components";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
-
-const EXAMPLE_TASKS = [
-  "Write a cover letter",
-  "Explain quantum entanglement",
-  "Brainstorm startup ideas",
-  "Refactor this Python script",
-  "Draft a cold outreach email",
-  "Summarize this research paper",
-  "Generate a logo concept brief",
-  "Plan a 7-day trip to Japan",
-  "Come up with a product tagline",
-];
-
-const HIGHLIGHT_WORDS = new Set([
-  "cover letter",
-  "quantum entanglement",
-  "startup ideas",
-  "Python",
-  "cold outreach",
-  "research paper",
-  "logo",
-  "Japan",
-  "tagline",
-]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
@@ -49,8 +23,6 @@ const HIGHLIGHT_WORDS = new Set([
 export default function ChatConversation({ onConversationLoad = null }) {
   const { chatId: conversationId } = useParams() ?? {};
   const router = useRouter();
-
-  const { user } = useAuth();
 
   const {
     subscribeToMessages,
@@ -222,7 +194,7 @@ export default function ChatConversation({ onConversationLoad = null }) {
   }
 
   return (
-    <div className="flex-1 w-full overflow-y-auto py-8 px-4">
+    <div className="w-full py-8 h-[80vh] overflow-y-auto">
       <div className="space-y-3 max-w-220 mx-auto">
         {messages.map((message) => (
           <MessageBubble

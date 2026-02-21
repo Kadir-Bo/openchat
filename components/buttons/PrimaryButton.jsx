@@ -32,15 +32,13 @@ export default function PrimaryButton({
     md:py-2.5
     rounded-lg
     cursor-pointer
-    shadow
     outline-none
     transition-all
     duration-150
     justify-start
     items-center
     relative
-    group
-    min-w-max
+    group/btn 
   `;
 
   const filledClasses = filled
@@ -61,7 +59,7 @@ export default function PrimaryButton({
   const tooltipElement = tooltip && (
     <span
       className={twMerge(
-        "absolute whitespace-nowrap bg-neutral-800 text-neutral-100 text-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 group-hover:delay-500 delay-0 z-10",
+        "absolute whitespace-nowrap bg-neutral-800 text-neutral-100 text-sm px-2 py-1 rounded opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-opacity duration-200 group-hover/btn:delay-500 delay-0 z-10",
         tooltipPositionClasses[tooltipPosition],
       )}
     >

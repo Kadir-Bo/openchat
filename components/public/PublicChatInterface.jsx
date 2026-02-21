@@ -239,7 +239,7 @@ export default function PublicChatInterface({
           {/* Attach button */}
           <PrimaryButton
             className={twMerge(
-              "min-w-12 w-max h-12 justify-center ml-2 rounded-full scale-95 md:scale-100 border-transparent hover:border-neutral-900/50 shadow-none hover:bg-neutral-800",
+              "min-w-12 w-max h-12 justify-center ml-2 rounded-full scale-95 md:scale-100 border-transparent hover:border-neutral-900/50  hover:bg-neutral-800",
               buttonClassName,
               attachmentButtonClassName,
             )}

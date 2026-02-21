@@ -225,7 +225,7 @@ export default function ProjectsPage() {
             <div className="flex flex-col items-center gap-4">
               <p>No projects yet</p>
               <PrimaryButton
-                className="w-max justify-center text-sm px-4 shadow-none"
+                className="w-max justify-center text-sm px-4 "
                 href="/projects/create"
               >
                 <Plus size={17} />

@@ -140,7 +140,7 @@ function PrivacySettingsPage() {
             </PrimaryButton>
           </div>
 
-          <div className="flex flex-col gap-2 mt-1">
+          <div className="flex flex-col gap-2 mt-1 max-h-50 overflow-y-auto">
             <AnimatePresence initial={false}>
               {memories.length > 0 ? (
                 memories.map((memory) => (
@@ -150,7 +150,7 @@ function PrivacySettingsPage() {
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2, ease: "easeInOut" }}
-                    className="overflow-hidden"
+                    className="overflow-hidden shrink-0"
                   >
                     <MemoryItem
                       memory={memory}

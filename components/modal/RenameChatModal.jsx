@@ -64,18 +64,20 @@ export default function RenameChatModal({ title, id }) {
       </div>
       <div className="flex justify-end items-center gap-2">
         <PrimaryButton
-          text="Cancel"
           className="w-max px-3"
           onClick={handleCancel}
           disabled={loading}
-        />
+        >
+          Cancel
+        </PrimaryButton>
         <PrimaryButton
-          text={loading ? "Saving..." : "Save"}
           className="w-max px-3 min-w-24 justify-center"
           onClick={handleRenameChat}
           disabled={loading}
           filled
-        />
+        >
+          {loading ? "Saving..." : "Save"}
+        </PrimaryButton>
       </div>
     </div>
   );

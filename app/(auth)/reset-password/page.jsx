@@ -32,10 +32,11 @@ export default function ResetPasswordPage() {
   return (
     <>
       <PrimaryButton
-        text={<ArrowLeft size={16} />}
         href="/"
         className="fixed top-0 left-0 w-max min-w-0 p-4 border-none shadow-none justify-center hover:bg-transparent text-white"
-      />
+      >
+        <ArrowLeft size={16} />
+      </PrimaryButton>
 
       {success ? (
         <AuthFormShell
@@ -43,11 +44,12 @@ export default function ResetPasswordPage() {
           title="Check your email"
           footer={
             <PrimaryButton
-              text="Back to Sign In"
               href="/sign-in"
               className="justify-center w-full"
               cta
-            />
+            >
+              Back to Sign In
+            </PrimaryButton>
           }
         >
           <p className="text-sm text-center text-neutral-400 -mt-4 mb-2">
@@ -84,12 +86,13 @@ export default function ResetPasswordPage() {
             />
 
             <PrimaryButton
-              text={loading ? "Sending..." : "Reset Password"}
               className="justify-center hover:ring-2 hover:ring-blue-600/20"
               cta
               type="submit"
               disabled={loading}
-            />
+            >
+              {loading ? "Sending..." : "Reset Password"}
+            </PrimaryButton>
           </form>
         </AuthFormShell>
       )}

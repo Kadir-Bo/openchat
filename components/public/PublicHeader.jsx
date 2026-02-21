@@ -9,15 +9,17 @@ export default function PublicHeader() {
         <div className="w-max flex  items-center justify-end gap-2">
           <PrimaryButton
             className="justify-center w-maxa text-neutral-300"
-            text="Sign Up"
             href={"/sign-up"}
-          />
+          >
+            Sign Up
+          </PrimaryButton>
           <PrimaryButton
             className="justify-center w-max"
-            text="Sign In"
             href={"/sign-in"}
             filled
-          />
+          >
+            Sign In
+          </PrimaryButton>
         </div>
       </nav>
     </header>

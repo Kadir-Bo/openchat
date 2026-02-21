@@ -21,13 +21,10 @@ export default function MessageLimitAlert({ max }) {
             Sign up to keep chatting.
           </span>
         </div>
-        <PrimaryButton
-          text="sign-in"
-          icon={<LogIn size={15} />}
-          className="w-max px-4"
-          filled
-          href={"/sign-in"}
-        />
+        <PrimaryButton className="w-max px-4" filled href={"/sign-in"}>
+          sign-in
+          <LogIn size={15} />
+        </PrimaryButton>
       </motion.div>
     </AnimatePresence>
   );

@@ -2,8 +2,6 @@ import Link from "next/link";
 import React from "react";
 import { twMerge } from "tailwind-merge";
 export default function PrimaryButton({
-  text = "button",
-  icon = null,
   iconSize = 19,
   className = "",
   onClick,
@@ -85,8 +83,7 @@ export default function PrimaryButton({
       {...props}
     >
       {tooltipElement}
-      {icon && icon}
-      {text}
+      {children}
     </Link>
   ) : (
     <button

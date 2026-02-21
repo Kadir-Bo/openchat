@@ -18,12 +18,13 @@ export default function EmptyStateSearch({
         <div className="flex flex-col items-center gap-4">
           <p>No {itemType}s yet</p>
           <PrimaryButton
-            text={hrefLabel}
-            icon={icon ?? <Plus size={17} />}
             className="w-max justify-center text-sm px-4"
             href={href}
             filled={!icon}
-          />
+          >
+            {hrefLabel}
+            {icon ?? <Plus size={17} />}
+          </PrimaryButton>
         </div>
       )}
     </div>

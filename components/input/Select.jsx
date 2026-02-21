@@ -57,7 +57,6 @@ export default function Select({
           contentSide="bottom"
         >
           <PrimaryButton
-            text={value || "Select an option"}
             className={twMerge(
               "border w-full px-3 py-2 rounded-lg border-neutral-700 outline-none focus:ring-1 focus:ring-blue-500/30 justify-between text-left bg-transparent",
               !value && "text-neutral-500",
@@ -68,7 +67,9 @@ export default function Select({
             aria-label={label}
             onBlur={onBlur}
             onFocus={onFocus}
-          />
+          >
+            {value || "Select an option"}
+          </PrimaryButton>
         </DropdownMenu>
       )}
     </div>

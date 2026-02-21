@@ -54,12 +54,13 @@ function AccountSettingsPage() {
             </p>
           </div>
           <PrimaryButton
-            text={isLoggingOut ? "Logging out..." : "Log out"}
-            icon={<LogOut size={15} />}
             className="w-max px-3 min-w-28 justify-center"
             onClick={handleLogout}
             disabled={isLoggingOut}
-          />
+          >
+            {isLoggingOut ? "Logging out..." : "Log out"}
+            <LogOut size={15} />
+          </PrimaryButton>
         </div>
       </div>
 
@@ -75,11 +76,11 @@ function AccountSettingsPage() {
             </p>
           </div>
           <PrimaryButton
-            text="Delete Account"
-            icon={<Trash2 size={15} />}
             className="w-max px-3 min-w-36 justify-center border-red-700/60 text-red-500 hover:bg-red-700/10"
             onClick={handleDeleteAccount}
-          />
+          >
+            Delete Account <Trash2 size={15} />
+          </PrimaryButton>
         </div>
       </div>
     </div>

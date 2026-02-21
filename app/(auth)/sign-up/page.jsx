@@ -33,9 +33,10 @@ export default function SignUpPage() {
     <>
       <PrimaryButton
         href="/"
-        text={<ArrowLeft size={16} />}
         className="fixed top-0 left-0 w-max min-w-0 p-4 border-none shadow-none justify-center hover:bg-transparent text-white"
-      />
+      >
+        <ArrowLeft size={16} />
+      </PrimaryButton>
 
       <AuthFormShell
         title="Create Account"
@@ -83,12 +84,13 @@ export default function SignUpPage() {
           </div>
 
           <PrimaryButton
-            text={loading ? "Creating account..." : "Sign Up"}
             className="justify-center hover:ring-1 hover:ring-blue-500"
             type="submit"
             cta
             disabled={loading}
-          />
+          >
+            {loading ? "Creating account..." : "Sign Up"}
+          </PrimaryButton>
         </form>
       </AuthFormShell>
     </>

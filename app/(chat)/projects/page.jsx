@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Plus, Trash2 } from "react-feather";
+import { Archive, Plus, Trash2 } from "react-feather";
 import {
   PrimaryButton,
   ProjectCard,
@@ -149,12 +149,13 @@ export default function ProjectsPage() {
       <header className="flex items-center justify-between">
         <h1 className="text-3xl font-light">Projects</h1>
         <PrimaryButton
-          text="New Project"
-          icon={<Plus size={17} />}
           className="w-max justify-center text-sm min-w-32"
           href="/projects/create"
           filled
-        />
+        >
+          New Project
+          <Plus size={17} />
+        </PrimaryButton>
       </header>
 
       <div className="flex justify-end items-center gap-3">
@@ -187,16 +188,19 @@ export default function ProjectsPage() {
         {selectedCount > 0 && (
           <div className="flex items-center gap-2">
             <PrimaryButton
-              text={`Archive ${selectedCount}`}
               className="w-max text-sm px-4"
               onClick={handleArchiveSelected}
-            />
+            >
+              <Archive size={14} />
+              {`Archive ${selectedCount}`}
+            </PrimaryButton>
             <PrimaryButton
-              text={`Delete ${selectedCount} ${selectedCount === 1 ? "project" : "projects"}`}
-              icon={<Trash2 size={14} />}
               className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
               onClick={handleDeleteSelected}
-            />
+            >
+              <Trash2 size={14} />
+              {`Delete ${selectedCount} ${selectedCount === 1 ? "project" : "projects"}`}
+            </PrimaryButton>
           </div>
         )}
       </div>
@@ -221,11 +225,12 @@ export default function ProjectsPage() {
             <div className="flex flex-col items-center gap-4">
               <p>No projects yet</p>
               <PrimaryButton
-                text="Create your first project"
-                icon={<Plus size={17} />}
                 className="w-max justify-center text-sm px-4 shadow-none"
                 href="/projects/create"
-              />
+              >
+                <Plus size={17} />
+                Create your first project
+              </PrimaryButton>
             </div>
           )}
         </div>

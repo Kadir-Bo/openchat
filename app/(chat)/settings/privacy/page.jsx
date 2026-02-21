@@ -132,11 +132,12 @@ function PrivacySettingsPage() {
             />
             <PrimaryButton
               text="Add"
-              icon={<Plus size={15} />}
               className="w-max px-3 justify-center shrink-0"
               onClick={handleAddMemory}
               disabled={!newMemory.trim() || loading}
-            />
+            >
+              <Plus size={15} />
+            </PrimaryButton>
           </div>
 
           <div className="flex flex-col gap-2 mt-1">

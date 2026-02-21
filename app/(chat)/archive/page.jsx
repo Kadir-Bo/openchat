@@ -183,10 +183,11 @@ export default function ArchivePage() {
             !isChats &&
             selectedCount > 0 && (
               <PrimaryButton
-                text={`Unarchive ${selectedCount}`}
                 className="w-max text-sm px-4"
                 onClick={handleUnarchiveSelected}
-              />
+              >
+                {`Unarchive ${selectedCount}`}
+              </PrimaryButton>
             )
           }
         />

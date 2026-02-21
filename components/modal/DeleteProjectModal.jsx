@@ -57,19 +57,21 @@ export default function DeleteProjectModal({ title, id, onDeleted }) {
       </p>
       <div className="flex justify-end items-center gap-2 mt-4">
         <PrimaryButton
-          text="Cancel"
           className="w-max px-3"
           onClick={handleCancel}
           disabled={loading}
-        />
+        >
+          Cancel
+        </PrimaryButton>
         <PrimaryButton
-          text={loading ? "Deleting..." : "Delete Project"}
           data-action="confirm-delete"
           className="w-max px-3 min-w-34 justify-center border-none ring-none text-white bg-red-700/60 hover:bg-red-700/90 hover:text-white"
           onClick={handleDeleteProject}
           disabled={loading}
           filled
-        />
+        >
+          {loading ? "Deleting..." : "Delete Project"}
+        </PrimaryButton>
       </div>
     </div>
   );

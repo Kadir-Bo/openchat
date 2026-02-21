@@ -101,11 +101,12 @@ export default function ProjectIDPage() {
   return (
     <div className="max-w-220 mx-auto h-dvh md:min-h-screen flex flex-col items-start justify-start gap-8 py-8">
       <PrimaryButton
-        text="All Projects"
         href={"/projects"}
-        icon={<ArrowLeft size={15} />}
         className="border-none hover:bg-transparent text-neutral-400 hover:text-neutral-100 w-max text-sm"
-      />
+      >
+        All Projects
+        <ArrowLeft size={15} />
+      </PrimaryButton>
 
       <div className="flex w-full gap-8 items-start justify-between">
         {/* ── left column ── */}
@@ -116,14 +117,12 @@ export default function ProjectIDPage() {
               <p className="text-neutral-400">{currentProject.description}</p>
             </div>
             <div className="flex">
-              <PrimaryButton
-                text={<MoreVertical size={17} />}
-                className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max"
-              />
-              <PrimaryButton
-                text={<Star size={17} />}
-                className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max"
-              />
+              <PrimaryButton className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
+                <MoreVertical size={17} />
+              </PrimaryButton>
+              <PrimaryButton className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
+                <Star size={17} />
+              </PrimaryButton>
             </div>
           </div>
 

@@ -90,18 +90,20 @@ export default function RenameProjectModal({ title, description, id }) {
 
       <div className="flex justify-end items-center gap-2 mt-4">
         <PrimaryButton
-          text="Cancel"
           className="w-max px-3"
           onClick={handleCancel}
           disabled={loading}
-        />
+        >
+          Cancel
+        </PrimaryButton>
         <PrimaryButton
-          text={loading ? "Updating..." : "Update Project"}
           className="w-max px-3 min-w-34 justify-center"
           onClick={handleUpdateProject}
           disabled={loading || !project.name.trim()}
           filled
-        />
+        >
+          {loading ? "Updating..." : "Update Project"}
+        </PrimaryButton>
       </div>
     </div>
   );

@@ -18,20 +18,16 @@ export default function DeleteButtons({
     <>
       {extraActions}
       {selectedCount > 0 ? (
-        <PrimaryButton
-          text={`Delete ${selectedCount} ${label}`}
-          icon={<Trash2 size={14} />}
-          className={redClass}
-          onClick={onDeleteSelected}
-        />
+        <PrimaryButton className={redClass} onClick={onDeleteSelected}>
+          {`Delete ${selectedCount} ${label}`}
+          <Trash2 size={14} />
+        </PrimaryButton>
       ) : (
         hasItems && (
-          <PrimaryButton
-            text={`Delete all ${label}s`}
-            icon={<Trash2 size={14} />}
-            className={redClass}
-            onClick={onDeleteAll}
-          />
+          <PrimaryButton className={redClass} onClick={onDeleteAll}>
+            {`Delete all ${label}s`}
+            <Trash2 size={14} />
+          </PrimaryButton>
         )
       )}
     </>

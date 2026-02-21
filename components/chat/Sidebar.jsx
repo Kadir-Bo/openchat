@@ -217,30 +217,31 @@ export default function Sidebar() {
               aria-label="Main navigation"
             >
               <div className="flex flex-col gap-1 p-2">
+                <PrimaryButton href="/chat" className="hover:bg-neutral-800">
+                  <Plus size={16} />
+                  New Chat
+                </PrimaryButton>
                 <PrimaryButton
-                  text="New Chat"
-                  icon={<Plus size={16} />}
-                  href="/chat"
-                  className="hover:bg-neutral-800"
-                />
-                <PrimaryButton
-                  text="Projects"
-                  icon={<FolderPlus size={16} />}
                   href="/projects"
                   className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
-                />
+                >
+                  <FolderPlus size={16} />
+                  Projects
+                </PrimaryButton>
                 <PrimaryButton
-                  text="Chats"
-                  icon={<List size={16} />}
                   href="/chats"
                   className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
-                />
+                >
+                  <List size={16} />
+                  Chats
+                </PrimaryButton>
                 <PrimaryButton
-                  text="Archive"
-                  icon={<Archive size={16} />}
                   href="/archive"
                   className="border-transparent shadow-none hover:border-transparent hover:bg-neutral-800 gap-2"
-                />
+                >
+                  <Archive size={16} />
+                  Archive
+                </PrimaryButton>
               </div>
 
               <hr className="text-neutral-800" />

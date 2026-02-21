@@ -202,10 +202,11 @@ export default function ChatInterface({
               attachmentButtonClassName,
             )}
             disabled={isLoading}
-            text={<Plus size={buttonIconSize} />}
             tooltip="Add files"
             onClick={() => fileInputRef.current?.click()}
-          />
+          >
+            <Plus size={buttonIconSize} />
+          </PrimaryButton>
 
           {/* Textarea */}
           <motion.textarea
@@ -239,16 +240,15 @@ export default function ChatInterface({
                 buttonClassName,
                 sendButtonClassName,
               )}
-              text={
-                <Square
-                  size={buttonIconSize}
-                  className="fill-white stroke-transparent scale-95"
-                />
-              }
               tooltip="Stop"
               filled
               onClick={stopGeneration}
-            />
+            >
+              <Square
+                size={buttonIconSize}
+                className="fill-white stroke-transparent scale-95"
+              />
+            </PrimaryButton>
           ) : (
             <PrimaryButton
               className={twMerge(
@@ -256,10 +256,11 @@ export default function ChatInterface({
                 buttonClassName,
                 sendButtonClassName,
               )}
-              text={<ArrowUp size={buttonIconSize} />}
               tooltip="Send"
               onClick={handleSend}
-            />
+            >
+              <ArrowUp size={buttonIconSize} />
+            </PrimaryButton>
           )}
         </div>
       </motion.div>

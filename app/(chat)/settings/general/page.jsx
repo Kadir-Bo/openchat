@@ -196,10 +196,11 @@ function GeneralSettingsPage() {
       >
         <PrimaryButton
           className="w-max px-4"
-          text={loading ? "Saving..." : isSaved ? "Saved!" : "Save Changes"}
           disabled={loading}
           onClick={handleOnSave}
-        />
+        >
+          {loading ? "Saving..." : isSaved ? "Saved!" : "Save Changes"}
+        </PrimaryButton>
       </motion.div>
     </div>
   );

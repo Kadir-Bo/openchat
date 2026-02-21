@@ -73,12 +73,13 @@ export default function FilesPanel({
         </div>
         {!isEmpty && (
           <PrimaryButton
-            text={<Plus size={15} />}
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             tooltip="Upload file"
             className="outline-none border-none shadow-none cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max"
-          />
+          >
+            <Plus size={15} />
+          </PrimaryButton>
         )}
       </div>
 

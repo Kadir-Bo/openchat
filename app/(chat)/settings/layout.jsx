@@ -28,11 +28,12 @@ export default function SettingsLayout({ children }) {
                 return (
                   <li key={tab.href}>
                     <PrimaryButton
-                      text={tab.name}
                       href={tab.href}
                       className="border-transparent hover:border-transparent hover:bg-neutral-800 shadow-none pl-3"
                       active={isActive}
-                    />
+                    >
+                      {tab.name}
+                    </PrimaryButton>
                   </li>
                 );
               })}

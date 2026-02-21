@@ -30,12 +30,13 @@ export default function ChatPageShell({
       <header className="flex items-center justify-between">
         <h1 className="text-3xl font-light">{title}</h1>
         <PrimaryButton
-          text="New Chat"
-          icon={<Plus size={17} />}
           className="w-max justify-center text-sm min-w-32"
           href="/chat"
           filled
-        />
+        >
+          New Chat
+          <Plus size={17} />
+        </PrimaryButton>
       </header>
 
       <div className="flex items-center gap-1 border-b border-neutral-800">

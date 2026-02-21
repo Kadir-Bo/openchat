@@ -45,18 +45,17 @@ export default function DeleteAccountModal() {
         />
       </div>
       <div className="flex justify-end items-center gap-2 mt-4">
+        <PrimaryButton className="w-max px-3" onClick={closeModal}>
+          Cancel
+        </PrimaryButton>
         <PrimaryButton
-          text="Cancel"
-          className="w-max px-3"
-          onClick={closeModal}
-        />
-        <PrimaryButton
-          text="Delete Account"
           className="w-max px-3 min-w-34 justify-center border-none text-white bg-red-700/60 hover:bg-red-700/90 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
           onClick={handleDeleteAccount}
           disabled={!isConfirmed}
           filled
-        />
+        >
+          Delete Account
+        </PrimaryButton>
       </div>
     </div>
   );

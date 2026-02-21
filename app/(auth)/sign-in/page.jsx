@@ -32,9 +32,10 @@ export default function SignInPage() {
     <>
       <PrimaryButton
         href="/"
-        text={<ArrowLeft size={16} />}
         className="fixed top-0 left-0 w-max min-w-0 p-4 border-none shadow-none justify-center hover:bg-transparent text-white"
-      />
+      >
+        <ArrowLeft size={16} />
+      </PrimaryButton>
 
       <AuthFormShell
         title="Sign In"
@@ -80,12 +81,13 @@ export default function SignInPage() {
           </div>
 
           <PrimaryButton
-            text={loading ? "Signing in..." : "Sign In"}
             className="justify-center hover:ring-2 hover:ring-blue-600/20"
             cta
             type="submit"
             disabled={loading}
-          />
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </PrimaryButton>
         </form>
       </AuthFormShell>
     </>

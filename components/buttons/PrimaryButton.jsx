@@ -13,6 +13,7 @@ export default function PrimaryButton({
   tooltip = null,
   tooltipPosition = "top",
   cta = null,
+  children,
   ...props
 }) {
   const defaultClasses = `
@@ -28,8 +29,7 @@ export default function PrimaryButton({
     border-neutral-500/30
     hover:border-neutral-500/50
     hover:bg-neutral-900
-    py-5
-    px-4
+    p-4
     md:px-3
     md:py-2.5
     rounded-lg
@@ -101,8 +101,7 @@ export default function PrimaryButton({
       {...props}
     >
       {tooltipElement}
-      {icon && icon}
-      {text}
+      {children}
     </button>
   );
 }

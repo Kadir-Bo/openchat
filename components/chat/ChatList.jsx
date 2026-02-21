@@ -52,8 +52,6 @@ export default function ChatList({
     setEditTitle(currentTitle);
   }, []);
 
-  // Mirror editTitle into a ref so handleSaveRename can stay stable
-  // (no editTitle in its dep array) while still reading the latest value.
   const editTitleRef = useRef(editTitle);
   useEffect(() => {
     editTitleRef.current = editTitle;
@@ -184,8 +182,6 @@ export default function ChatList({
                     ? pendingIds.has(item.id)
                     : item.title === "New Chat"
                 }
-                // Only the item being edited receives editTitle.
-                // All other items get "" → they don't re-render while the user types.
                 editTitle={editingId === item.id ? editTitle : ""}
                 onTitleChange={setEditTitle}
                 onSave={handleSaveRename}
@@ -246,7 +242,7 @@ const ChatListItem = React.memo(
     );
 
     const defaultClasses =
-      "w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border";
+      "w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border py-1.5";
     const editingClasses = isEditing
       ? "border-neutral-500 bg-neutral-900/50"
       : "hover:bg-neutral-800 border-transparent";
@@ -269,13 +265,13 @@ const ChatListItem = React.memo(
             onKeyDown={handleKeyDown}
             onBlur={handleSave}
             autoFocus
-            className="w-full bg-transparent text-neutral-200 py-2 px-3 border-transparent outline-none"
+            className="w-full bg-transparent text-neutral-200 py-1 px-3 border-transparent outline-none"
           />
         ) : (
           <>
             <button
               onClick={handleNavigate}
-              className="truncate py-2 pl-3 w-full flex items-center gap-1 text-left hover:text-neutral-100 cursor-pointer"
+              className="truncate py-1 pl-3 w-full flex items-center gap-1 text-left hover:text-neutral-100 cursor-pointer"
             >
               {listIcon && listIcon}
               <AnimatePresence mode="wait" initial={false}>

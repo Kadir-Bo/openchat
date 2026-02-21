@@ -20,9 +20,6 @@ export default function DropdownContent({
   const [shouldRender, setShouldRender] = useState(false);
   const contentRef = useRef(null);
 
-  // Exclude the trigger — clicks on it are handled by DropdownTrigger's toggle.
-  // Without this, mousedown on the trigger closes the dropdown here first,
-  // then the click handler in DropdownTrigger tries to open it again → net: stays open.
   useOnClickOutside(contentRef, (e) => {
     if (triggerRef.current?.contains(e.target)) return;
     setIsOpen(false);

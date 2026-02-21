@@ -17,6 +17,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive,
   ArrowLeft,
+  ChevronUp,
   FolderPlus,
   List,
   LogOut,
@@ -169,7 +170,7 @@ export default function Sidebar() {
       </AnimatePresence>
 
       <motion.aside
-        className={`bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-50 h-dvh pb-4 md:pb-0 ${
+        className={`bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-50 h-dvh px-1 ${
           isMobile ? "fixed top-0 left-0" : "relative"
         }`}
         variants={sidebarVariants}
@@ -194,7 +195,6 @@ export default function Sidebar() {
             )}
           </AnimatePresence>
 
-          {/* Outside AnimatePresence — never unmounted, never flickers */}
           <button
             className="p-3 outline-none cursor-pointer shrink-0"
             onClick={handleToggleSidebar}
@@ -213,16 +213,16 @@ export default function Sidebar() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 10, opacity: 0 }}
               transition={{ duration: 0.2, delay: 0.1 }}
-              className="flex flex-col gap-4 flex-1 overflow-y-auto overflow-x-hidden p-2"
+              className="flex flex-col gap-4 flex-1 overflow-y-auto overflow-x-hidden"
               aria-label="Main navigation"
             >
-              <PrimaryButton
-                text="New Chat"
-                icon={<Plus size={16} />}
-                href="/chat"
-              />
-
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-1 p-2">
+                <PrimaryButton
+                  text="New Chat"
+                  icon={<Plus size={16} />}
+                  href="/chat"
+                  className="hover:bg-neutral-800"
+                />
                 <PrimaryButton
                   text="Projects"
                   icon={<FolderPlus size={16} />}
@@ -245,7 +245,7 @@ export default function Sidebar() {
 
               <hr className="text-neutral-800" />
 
-              <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-2s">
                 {recentChats.length > 0 ? (
                   <ChatList
                     label="Recent Chats"
@@ -263,22 +263,20 @@ export default function Sidebar() {
               <DropdownMenu
                 dropdownList={dropDownMenuItems}
                 contentSide="top"
-                contentSideOffset={4}
-                contentClassName="-translate-x-1"
-                // Only call action if one exists — href items are handled
-                // natively by DropdownItem's <Link> branch.
                 onClick={(e, menuItem) => {
                   e.stopPropagation();
                   menuItem.action?.();
                 }}
+                contentClassName="bg-neutral-950/50 -translate-x-1.5"
+                triggerClassName="border-t border-neutral-800 pb-8 md:py-2"
               >
-                <PrimaryButton
-                  text={username}
-                  icon={
-                    <UserProfileImage image={userImage} username={username} />
-                  }
-                  className="gap-2 text-sm"
-                />
+                <PrimaryButton className="gap-2 md:text-sm rounded-none border-none shadow-none hover:bg-transparent">
+                  <UserProfileImage image={userImage} username={username} />
+                  <div className="flex flex-1 justify-between items-center">
+                    {username}
+                    <ChevronUp size={15} />
+                  </div>
+                </PrimaryButton>
               </DropdownMenu>
             </motion.nav>
           )}

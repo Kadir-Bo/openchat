@@ -3,7 +3,7 @@ import Link from "next/link";
 import { twMerge } from "tailwind-merge";
 
 const itemClassName =
-  "w-full py-5 px-3 md:px-3 md:py-2 text-left md:text-sm text-neutral-300 hover:bg-neutral-800/50 transition-colors flex items-center gap-2 rounded-md";
+  "w-full p-3 text-left md:text-sm text-neutral-300 hover:bg-neutral-800/50 transition-colors flex items-center gap-2 rounded-md";
 
 export function DropdownItem({
   children,

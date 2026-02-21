@@ -14,6 +14,7 @@ export default function DropdownMenu({
   onClick = () => null,
   triggerClassName = "",
   contentClassName = "",
+  itemClassName = "",
   contentSide = "bottom",
   onOpenChange,
   contentSideOffset,
@@ -34,6 +35,7 @@ export default function DropdownMenu({
             {menuItem.separator && <DropdownSeparator />}
             <DropdownItem
               href={menuItem.href}
+              className={itemClassName}
               onClick={menuItem.href ? undefined : (e) => onClick(e, menuItem)}
             >
               {menuItem.icon && (

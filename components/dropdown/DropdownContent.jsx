@@ -10,35 +10,30 @@ import { twMerge } from "tailwind-merge";
 export default function DropdownContent({
   children,
   className = "",
-  align = "start", // start, center, end
-  side = "top", // top, bottom, left, right
+  align = "start",
+  side = "bottom",
   sideOffset = 4,
   alignOffset = 0,
   ...props
 }) {
-  const { isOpen, setIsOpen } = useDropdown();
+  const { isOpen, setIsOpen, triggerRef } = useDropdown();
   const [shouldRender, setShouldRender] = useState(false);
   const contentRef = useRef(null);
-  const triggerRef = useRef(null);
 
-  useOnClickOutside(contentRef, () => setIsOpen(false));
+  // Exclude the trigger — clicks on it are handled by DropdownTrigger's toggle.
+  // Without this, mousedown on the trigger closes the dropdown here first,
+  // then the click handler in DropdownTrigger tries to open it again → net: stays open.
+  useOnClickOutside(contentRef, (e) => {
+    if (triggerRef.current?.contains(e.target)) return;
+    setIsOpen(false);
+  });
 
   useEffect(() => {
     if (!isOpen) {
       setShouldRender(false);
       return;
     }
-
-    const trigger = document.querySelector(
-      '[aria-haspopup="true"][aria-expanded="true"]',
-    );
-
-    if (trigger) {
-      triggerRef.current = trigger;
-      requestAnimationFrame(() => {
-        setShouldRender(true);
-      });
-    }
+    requestAnimationFrame(() => setShouldRender(true));
   }, [isOpen]);
 
   const getPosition = useCallback(() => {
@@ -48,10 +43,7 @@ export default function DropdownContent({
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const contentRect = contentRef.current.getBoundingClientRect();
-    const viewport = {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    };
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
 
     let top = 2;
     let left = 0;
@@ -107,38 +99,23 @@ export default function DropdownContent({
       }
     }
 
-    // Viewport collision detection
-    if (left + contentRect.width > viewport.width) {
+    if (left + contentRect.width > viewport.width)
       left = viewport.width - contentRect.width - 8;
-    }
-    if (left < 8) {
-      left = 8;
-    }
-    if (top + contentRect.height > viewport.height + window.scrollY) {
+    if (left < 8) left = 8;
+    if (top + contentRect.height > viewport.height + window.scrollY)
       top = triggerRect.top - contentRect.height - sideOffset;
-    }
-    if (top < window.scrollY) {
-      top = triggerRect.bottom + sideOffset;
-    }
+    if (top < window.scrollY) top = triggerRect.bottom + sideOffset;
 
-    return {
-      top,
-      left,
-      minWidth: triggerRect.width,
-    };
-  }, [side, align, sideOffset, alignOffset]);
+    return { top, left, minWidth: triggerRect.width };
+  }, [side, align, sideOffset, alignOffset, triggerRef]);
 
   const [, forceUpdate] = useState({});
-  const requestUpdate = useCallback(() => {
-    forceUpdate({});
-  }, []);
+  const requestUpdate = useCallback(() => forceUpdate({}), []);
 
   useEffect(() => {
     if (!isOpen || !shouldRender) return;
-
     window.addEventListener("resize", requestUpdate);
     window.addEventListener("scroll", requestUpdate, true);
-
     return () => {
       window.removeEventListener("resize", requestUpdate);
       window.removeEventListener("scroll", requestUpdate, true);
@@ -147,44 +124,29 @@ export default function DropdownContent({
 
   useEffect(() => {
     if (!isOpen) return;
-
     const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        setIsOpen(false);
-      }
+      if (e.key === "Escape") setIsOpen(false);
     };
-
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, setIsOpen]);
 
-  const defaultClasses = `
-    bg-neutral-900
-    border
-    border-neutral-500/30
-    rounded-xl
-    shadow-lg
-    overflow-hidden
-    p-1.5
-    max-w-50
-  `;
-
   if (!isOpen) return null;
 
-  const position = getPosition();
-  const { top, left, minWidth } = position;
+  const { top, left, minWidth } = getPosition();
 
   const content = (
     <AnimatePresence>
       <motion.div
         ref={contentRef}
         initial={{ opacity: 0 }}
-        animate={{
-          opacity: shouldRender ? 1 : 0,
-        }}
+        animate={{ opacity: shouldRender ? 1 : 0 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.15, ease: "easeOut" }}
-        className={twMerge(defaultClasses, className)}
+        className={twMerge(
+          "bg-neutral-900 border border-neutral-500/30 rounded-xl shadow-lg overflow-hidden p-1.5 max-w-50",
+          className,
+        )}
         style={{
           position: "fixed",
           top: `${top}px`,

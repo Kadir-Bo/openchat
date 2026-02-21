@@ -169,7 +169,7 @@ export default function Sidebar() {
       </AnimatePresence>
 
       <motion.aside
-        className={`bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-50 h-dvh ${
+        className={`bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-50 h-dvh pb-4 md:pb-0 ${
           isMobile ? "fixed top-0 left-0" : "relative"
         }`}
         variants={sidebarVariants}

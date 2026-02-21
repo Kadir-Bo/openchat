@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ChatCard,
   StackedProjectCard,
-  PageShell,
+  ChatPageShell,
   DeleteButtons,
   EmptyStateSearch,
 } from "@/components";
@@ -154,7 +154,7 @@ export default function ChatsPage() {
   };
 
   return (
-    <PageShell
+    <ChatPageShell
       title="Chats"
       tabs={[
         { key: "chats", label: "Chats", count: visibleConversations.length },
@@ -247,6 +247,6 @@ export default function ChatsPage() {
           hrefLabel="Create a project"
         />
       )}
-    </PageShell>
+    </ChatPageShell>
   );
 }

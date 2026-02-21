@@ -35,9 +35,12 @@ export { default as Message } from "./ui/Message";
 export { default as MemoryItem } from "./ui/MemoryItem";
 export { default as MessageLimitAlert } from "./ui/MessageLimitAlert";
 export { default as SelectionStatus } from "./ui/SelectionStatus";
-export { default as PageShell } from "./ui/PageShell";
 export { default as EmptyStateSearch } from "./ui/EmptyStateSearch";
 export { default as EmptyStateConversation } from "./ui/EmptyStateConversation";
+
+// DROPDOWN COMPONENTS
+export { default as ChatPageShell } from "./shell/ChatPageShell";
+export { default as AuthFormShell } from "./shell/AuthFormShell";
 
 // DROPDOWN COMPONENTS
 export {

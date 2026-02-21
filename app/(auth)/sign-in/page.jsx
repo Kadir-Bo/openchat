@@ -1,22 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { ArrowLeft } from "react-feather";
-import { Input, PrimaryButton } from "@/components";
+import { useAuth } from "@/context/AuthContext";
 import { useAuthGuard } from "@/hooks";
-import { motion } from "framer-motion";
-
-const pageVariants = {
-  initial: { opacity: 0, y: 10 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.25, ease: "easeOut" },
-  },
-  exit: { opacity: 0, y: -8, transition: { duration: 0.2, ease: "easeIn" } },
-};
+import { Input, PrimaryButton, AuthFormShell } from "@/components";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -40,25 +29,31 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="w-full md:max-w-sm px-4 md:px-0">
-      {/* Fixed so it stays top-left regardless of card position */}
+    <>
       <PrimaryButton
-        href={"/"}
+        href="/"
         text={<ArrowLeft size={16} />}
         className="fixed top-0 left-0 w-max min-w-0 p-4 border-none shadow-none justify-center hover:bg-transparent text-white"
       />
 
-      <motion.div
-        variants={pageVariants}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-        className="p-6 md:border border-neutral-900 rounded-lg md:bg-neutral-800/5"
+      <AuthFormShell
+        title="Sign In"
+        error={error}
+        footer={
+          <>
+            <Link
+              href="/reset-password"
+              className="block mb-2 text-neutral-400 hover:underline"
+            >
+              Forgot password?
+            </Link>
+            Don&apos;t have an account?{" "}
+            <Link href="/sign-up" className="text-blue-400 hover:underline">
+              Sign up
+            </Link>
+          </>
+        }
       >
-        <h2 className="text-3xl md:text-2xl font-semibold mb-6 text-center">
-          Sign In
-        </h2>
-
         <form
           onSubmit={handleSubmit}
           className="space-y-12 md:space-y-8 px-3 md:px-6"
@@ -84,17 +79,6 @@ export default function SignInPage() {
             />
           </div>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-red-500 text-sm"
-            >
-              {error}
-            </motion.div>
-          )}
-
           <PrimaryButton
             text={loading ? "Signing in..." : "Sign In"}
             className="justify-center hover:ring-2 hover:ring-blue-600/20"
@@ -103,23 +87,7 @@ export default function SignInPage() {
             disabled={loading}
           />
         </form>
-
-        <div className="mt-4 text-center text-sm">
-          <Link
-            href="/reset-password"
-            className="text-neutral-400 hover:underline"
-          >
-            Forgot password?
-          </Link>
-        </div>
-
-        <div className="mt-4 text-center text-sm text-neutral-200">
-          Don&apos;t have an account?{" "}
-          <Link href="/sign-up" className="text-blue-400 hover:underline">
-            Sign up
-          </Link>
-        </div>
-      </motion.div>
-    </div>
+      </AuthFormShell>
+    </>
   );
 }

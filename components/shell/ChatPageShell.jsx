@@ -7,7 +7,7 @@ import {
 } from "@/components";
 import { FILTER_OPTIONS } from "@/lib";
 
-export default function PageShell({
+export default function ChatPageShell({
   title,
   tabs,
   activeTab,

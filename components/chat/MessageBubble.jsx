@@ -170,7 +170,7 @@ export default function MessageBubble({
           <div
             className={`p-2 w-full ${
               isUser
-                ? "bg-neutral-200 text-neutral-950 max-w-[90%] lg:max-w-[80%] border"
+                ? "bg-neutral-200 text-neutral-950 w-max max-w-[90%] lg:max-w-[80%] border"
                 : "text-neutral-100"
             }`}
             style={

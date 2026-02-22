@@ -52,7 +52,7 @@ export default function SignUpPage() {
       >
         <form
           onSubmit={handleSubmit}
-          className="space-y-12 md:space-y-8 px-3 md:px-6"
+          className="space-y-6 md:space-y-8 px-3 md:px-6"
         >
           <div className="space-y-3 md:space-y-4">
             <Input

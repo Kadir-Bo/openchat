@@ -32,13 +32,13 @@ export default function AuthFormShell({
         >
           {/* ── Title ───────────────────────────────────── */}
           {title && (
-            <h2 className="text-3xl md:text-2xl font-semibold mb-6 text-center">
+            <h2 className="text-3xl md:text-2xl font-semibold mb-6 text-center ">
               {title}
             </h2>
           )}
 
           {/* ── Main content (form or success state) ────── */}
-          {children}
+          <div className="my-10 md:my-6">{children}</div>
 
           {/* ── Inline error ────────────────────────────── */}
           <AnimatePresence>
@@ -57,9 +57,7 @@ export default function AuthFormShell({
 
           {/* ── Footer links ────────────────────────────── */}
           {footer && (
-            <div className="mt-4 text-center text-sm text-neutral-200">
-              {footer}
-            </div>
+            <div className="text-center text-sm text-neutral-200">{footer}</div>
           )}
         </motion.div>
       </AnimatePresence>

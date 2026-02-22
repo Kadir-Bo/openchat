@@ -7,3 +7,4 @@ export { usePhraseCarousel } from "./usePhraseCarousel";
 export { usePasteHandler } from "./usePasteHandler";
 export { useAuthGuard } from "./useAuthGuard";
 export { useIsMobile } from "./useIsMobile";
+export { useLongPress } from "./useLongPress";

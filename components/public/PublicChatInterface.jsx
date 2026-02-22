@@ -200,7 +200,7 @@ export default function PublicChatInterface({
     <motion.div
       className={twMerge(
         // Full-width on mobile, capped on desktop
-        "w-full relative max-w-3xl mx-auto py-3 sm:py-4 flex flex-col",
+        "w-full relative max-w-3xl mx-auto py-3 sm:py-4 flex flex-col overflow-hidden",
         // Safe-area padding for notched phones
         "pb-[env(safe-area-inset-bottom)]",
         className,

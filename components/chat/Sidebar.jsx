@@ -8,6 +8,7 @@ import {
   ChatList,
   LogoButton,
   DropdownMenu,
+  Backdrop,
 } from "@/components";
 
 import { useAuth, useDatabase } from "@/context";
@@ -120,20 +121,7 @@ export default function Sidebar({
 
   return (
     <>
-      <AnimatePresence>
-        {isMobile && isOpen && (
-          <motion.div
-            key="sidebar-backdrop"
-            className="fixed inset-0 z-40 bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={handleCloseSidebar}
-            aria-hidden="true"
-          />
-        )}
-      </AnimatePresence>
+      <AnimatePresence>{isMobile && isOpen && <Backdrop />}</AnimatePresence>
 
       <motion.aside
         className={`bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-999 h-dvh px-1 ${

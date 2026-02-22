@@ -15,6 +15,7 @@ import {
   usePasteHandler,
   useFileSelectHandler,
   useKeyboardHandler,
+  useIsMobile,
 } from "@/hooks";
 import {
   getContainerVariant,
@@ -31,19 +32,23 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_CONTEXT_MSGS = 10;
-const MAX_TOKENS = 100000;
+const MAX_TOKENS = 100_000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function PublicChatInterface({
+  // Data
   messages = [],
   onMessages,
-  onBeforeSend, // () => boolean — false cancels send
-  onAfterSend, // async (history, userContent) => void
+  // Lifecycle callbacks
+  onBeforeSend,
+  onAfterSend,
+  // Model / prompt
   model = "openai/gpt-oss-120b",
   systemPrompt = "",
+  // Styling overrides
   className = "",
   containerClassName = "",
   textareaClassName = "",
@@ -51,10 +56,12 @@ export default function PublicChatInterface({
   buttonClassName = "",
   attachmentButtonClassName = "",
   sendButtonClassName = "",
-  buttonIconSize = 21,
+  // Layout
+  buttonIconSize = 20,
   textAreaGrowHeight = 180,
   buttonContainerHeight = 50,
-  placeholder = "ask anything",
+  // Behaviour
+  placeholder = "Ask anything…",
   autofocus = true,
   indicator = true,
 }) {
@@ -63,6 +70,7 @@ export default function PublicChatInterface({
 
   const [localUserInput, setLocalUserInput] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
+  const isMobile = useIsMobile();
 
   const {
     attachments,
@@ -78,27 +86,24 @@ export default function PublicChatInterface({
   const resetInput = useCallback(() => {
     setLocalUserInput("");
     setIsExpanded(false);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.focus();
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      if (!isMobile) el.focus();
     }
-  }, []);
+  }, [isMobile]);
 
   const checkExpanded = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     const lineHeight = parseInt(getComputedStyle(el).lineHeight, 10);
-    const paddingY = 24;
-    setIsExpanded(el.scrollHeight > lineHeight + paddingY);
+    setIsExpanded(el.scrollHeight > lineHeight + 24); // 24 = paddingY
   }, []);
 
   const handleChange = useCallback((e) => {
-    const value = e.target.value;
-    setLocalUserInput(value);
-    if (!value) setIsExpanded(false);
+    setLocalUserInput(e.target.value);
+    if (!e.target.value) setIsExpanded(false);
   }, []);
-
-  const handleInput = useCallback(() => checkExpanded(), [checkExpanded]);
 
   const handlePaste = usePasteHandler(
     textareaRef,
@@ -112,36 +117,31 @@ export default function PublicChatInterface({
 
   const handleSend = useCallback(async () => {
     const text = localUserInput.trim();
-    if (!text && attachments.length === 0) return;
-    if (isLoading) return;
+    if ((!text && attachments.length === 0) || isLoading) return;
+    if (onBeforeSend?.() === false) return;
 
-    // Allow parent to cancel (e.g. limit reached)
-    if (onBeforeSend && onBeforeSend() === false) return;
-
-    // Build message text (inline attachment content)
-    let messageText = text;
-    attachments.forEach((att) => {
+    // Inline attachment content
+    const messageText = attachments.reduce((acc, att) => {
       if (att.type === "code")
-        messageText += `\n\n\`\`\`\n${att.content}\n\`\`\``;
-      else if (att.type === "text") messageText += `\n\n${att.content}`;
-    });
+        return `${acc}\n\n\`\`\`\n${att.content}\n\`\`\``;
+      if (att.type === "text") return `${acc}\n\n${att.content}`;
+      return acc;
+    }, text);
 
     clearAttachments();
     resetInput();
 
-    // Optimistically append user message
-    const userMsg = {
-      id: generateId(),
-      role: "user",
-      content: messageText,
-    };
+    // Optimistic user message
+    const userMsg = { id: generateId(), role: "user", content: messageText };
     onMessages?.((prev) => [...prev, userMsg]);
 
     if (onAfterSend) {
-      // Delegate streaming to parent (PublicChatPage)
       const builtSystemPrompt =
         systemPrompt || buildSystemPromptWithMemories([], "", null);
-      const history = trimMessagesToTokenLimit(
+
+      // Build & trim history — currently unused in the parent call
+      // but kept for potential future use / logging
+      trimMessagesToTokenLimit(
         buildContextMessages(
           messages,
           messageText,
@@ -150,12 +150,15 @@ export default function PublicChatInterface({
         ),
         MAX_TOKENS,
       );
-      // Pass the raw history + content so the parent can build its own payload
+
       await onAfterSend(messages, messageText);
     }
 
-    setTimeout(() => textareaRef.current?.focus(), 0);
+    setTimeout(() => {
+      if (!isMobile) textareaRef.current?.focus();
+    }, 0);
   }, [
+    isMobile,
     localUserInput,
     attachments,
     isLoading,
@@ -181,16 +184,29 @@ export default function PublicChatInterface({
     [buttonContainerHeight],
   );
 
+  // ── Shared button classes ─────────────────────────────────────────────────
+
+  const baseButtonCls = twMerge(
+    // Base — tappable on mobile, slightly smaller scaling on mobile
+    "w-max p-2.5 sm:p-3 aspect-square justify-center rounded-full",
+    // Touch target: min 44 × 44 px on mobile
+    "min-w-[44px] min-h-[44px]",
+    buttonClassName,
+  );
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <motion.div
       className={twMerge(
-        "w-full relative max-w-220 mx-auto py-4 flex flex-col",
+        // Full-width on mobile, capped on desktop
+        "w-full relative max-w-3xl mx-auto py-3 sm:py-4 flex flex-col",
+        // Safe-area padding for notched phones
+        "pb-[env(safe-area-inset-bottom)]",
         className,
       )}
     >
-      {/* Attachment previews */}
+      {/* ── Attachment previews ─────────────────────────────────────────── */}
       <AnimatePresence>
         {attachments.length > 0 && (
           <motion.div
@@ -199,7 +215,11 @@ export default function PublicChatInterface({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.15 }}
-            className="flex flex-wrap gap-2 bottom-full h-30 overflow-y-auto"
+            className={twMerge(
+              "flex flex-wrap gap-2 mb-2",
+              // Scrollable row on very small screens
+              "max-h-28 overflow-y-auto",
+            )}
           >
             {attachments.map((attachment) => (
               <AttachmentThumbnail
@@ -212,10 +232,11 @@ export default function PublicChatInterface({
         )}
       </AnimatePresence>
 
-      {/* Input container */}
+      {/* ── Input container ─────────────────────────────────────────────── */}
       <motion.div
         className={twMerge(
-          "bg-neutral-900 flex flex-col justify-end relative my-px",
+          "bg-neutral-900 flex flex-col justify-end relative mb-6 sm:mb-8",
+          "rounded-2xl",
           containerClassName,
         )}
         variants={containerVariant}
@@ -223,10 +244,8 @@ export default function PublicChatInterface({
         animate={isExpanded ? "animate" : "initial"}
         transition={{ duration: 0.2, ease: "easeOut" }}
       >
-        <div
-          className="flex justify-between items-center"
-          style={{ height: `${buttonContainerHeight}px` }}
-        >
+        <div className="flex items-center justify-between gap-1 p-1.5">
+          {/* Hidden file input */}
           <input
             ref={fileInputRef}
             type="file"
@@ -234,17 +253,19 @@ export default function PublicChatInterface({
             accept={ACCEPTED_FILE_TYPES}
             onChange={handleFileSelect}
             className="hidden"
+            aria-hidden="true"
           />
 
           {/* Attach button */}
           <PrimaryButton
             className={twMerge(
-              "min-w-12 w-max h-12 justify-center ml-2 rounded-full scale-95 md:scale-100 border-transparent hover:border-neutral-900/50  hover:bg-neutral-800",
-              buttonClassName,
+              baseButtonCls,
+              "border-transparent hover:border-neutral-900/50 hover:bg-neutral-800",
               attachmentButtonClassName,
             )}
             disabled={isLoading}
             tooltip="Add files"
+            aria-label="Add files"
             onClick={() => fileInputRef.current?.click()}
           >
             <Plus size={buttonIconSize} />
@@ -257,32 +278,43 @@ export default function PublicChatInterface({
             id="user-input"
             placeholder={placeholder}
             className={twMerge(
-              "resize-none w-full p-3 overflow-y-auto no-scrollbar outline-none disabled:opacity-50 disabled:cursor-not-allowed",
+              // Layout
+              "resize-none flex-1 min-w-0 p-2",
+              // Typography — readable on small screens
+              "text-sm sm:text-base leading-relaxed",
+              // Scroll & outline
+              "overflow-y-auto no-scrollbar outline-none",
+              // States
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              // Mobile: disable double-tap zoom
+              "touch-manipulation",
               textareaClassName,
-              isExpanded && `w-auto ${textareaExpandedClassName}`,
+              isExpanded && textareaExpandedClassName,
             )}
             value={localUserInput}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            onInput={handleInput}
+            onInput={checkExpanded}
             variants={textAreaVariant}
             initial="initial"
             animate={isExpanded ? "animate" : "initial"}
-            rows={1}
             disabled={isLoading}
-            autoFocus={autofocus}
+            autoFocus={autofocus && !isMobile}
+            rows={1}
+            aria-label="Message input"
           />
 
           {/* Send / Stop button */}
           {isLoading ? (
             <PrimaryButton
               className={twMerge(
-                "min-w-12 w-max h-12 justify-center mr-2 rounded-full bg-transparent border-neutral-600 hover:bg-transparent scale-95 md:scale-100",
-                buttonClassName,
+                baseButtonCls,
+                "bg-transparent border-neutral-600 hover:bg-transparent",
                 sendButtonClassName,
               )}
-              tooltip="Stop"
+              tooltip="Stop generation"
+              aria-label="Stop generation"
               filled
               onClick={stopGeneration}
             >
@@ -294,11 +326,12 @@ export default function PublicChatInterface({
           ) : (
             <PrimaryButton
               className={twMerge(
-                "min-w-12 w-max h-12 justify-center mr-2 rounded-full hover:bg-neutral-100 hover:text-neutral-950 scale-95 md:scale-100",
-                buttonClassName,
+                baseButtonCls,
+                "hover:bg-neutral-100 hover:text-neutral-950",
                 sendButtonClassName,
               )}
-              tooltip="Send"
+              tooltip="Send message"
+              aria-label="Send message"
               onClick={handleSend}
             >
               <ArrowUp size={buttonIconSize} />
@@ -307,6 +340,7 @@ export default function PublicChatInterface({
         </div>
       </motion.div>
 
+      {/* ── Footer indicator ────────────────────────────────────────────── */}
       {indicator && <ChatFooterMessage />}
     </motion.div>
   );

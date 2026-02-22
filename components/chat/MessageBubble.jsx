@@ -1,75 +1,49 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import clsx from "clsx";
+
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
 import "highlight.js/styles/github-dark.css";
+
 import { PrimaryButton, AttachmentThumbnail } from "@/components";
-import {
-  Copy,
-  RefreshCcw,
-  RotateCcw,
-  Check,
-  Edit2,
-  X,
-  ArrowUp,
-} from "react-feather";
+import { getBubbleRadius, getCodeText } from "@/lib";
 
-// ── Dynamic border radius based on line count ─────────────────────────────
-// Single line → max radius (pill-like), multi-line → min radius (card-like)
-const MIN_RADIUS = 22; // px — used for long/multi-line messages
-const MAX_RADIUS = 8; // px — used for short single-line messages
+import { motion } from "framer-motion";
+import { Copy, RefreshCcw, RotateCcw, Check, Edit2, X } from "react-feather";
 
-const getBubbleRadius = (content) => {
-  if (!content) return MAX_RADIUS;
-  const lines = content.trim().split("\n").length;
-  const chars = content.trim().length;
-  // Scale down radius as content grows
-  if (lines === 1 && chars <= 60) return MAX_RADIUS;
-  if (lines <= 2 && chars <= 120) return 18;
-  return MIN_RADIUS;
-};
-
-export default function MessageBubble({
-  message,
-  isStreaming = false,
-  onRegenerate,
-  onEdit,
-}) {
+export default function MessageBubble({ message, onRegenerate, onEdit }) {
   const isUser = message.role === "user";
-  const isAssistant = message.role === "assistant";
+  const isStreaming = message.id === "streaming";
+
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(message.content);
   const textareaRef = useRef(null);
 
-  const bubbleRadius = getBubbleRadius(message.content);
-
+  // Auto-focus and resize textarea when editing starts
   useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.selectionStart = textareaRef.current.value.length;
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        textareaRef.current.scrollHeight + "px";
-    }
+    if (!isEditing || !textareaRef.current) return;
+    const el = textareaRef.current;
+    el.focus();
+    el.selectionStart = el.value.length;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
   }, [isEditing]);
 
-  const handleCopyMessage = () => {
-    navigator.clipboard.writeText(message.content);
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
   };
 
-  const handleRegenerate = () => {
-    if (onRegenerate) onRegenerate(message.id);
-  };
-
-  const handleEditStart = () => {
-    setEditValue(message.content);
-    setIsEditing(true);
+  const handleEditSubmit = () => {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== message.content) onEdit?.(message.id, trimmed);
+    setIsEditing(false);
   };
 
   const handleEditCancel = () => {
@@ -77,13 +51,10 @@ export default function MessageBubble({
     setIsEditing(false);
   };
 
-  const handleEditSubmit = () => {
-    if (!editValue.trim() || editValue.trim() === message.content) {
-      setIsEditing(false);
-      return;
-    }
-    if (onEdit) onEdit(message.id, editValue.trim());
-    setIsEditing(false);
+  const handleTextareaChange = (e) => {
+    setEditValue(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
   const handleEditKeyDown = (e) => {
@@ -91,70 +62,59 @@ export default function MessageBubble({
       e.preventDefault();
       handleEditSubmit();
     }
-    if (e.key === "Escape") {
-      handleEditCancel();
-    }
+    if (e.key === "Escape") handleEditCancel();
   };
 
-  const handleTextareaChange = (e) => {
-    setEditValue(e.target.value);
-    e.target.style.height = "auto";
-    e.target.style.height = e.target.scrollHeight + "px";
-  };
+  const CopyIcon = copied ? Check : Copy;
 
-  const getCodeText = (children) => {
-    if (typeof children === "string") return children;
-    if (Array.isArray(children)) return children.map(getCodeText).join("");
-    if (children?.props?.children) return getCodeText(children.props.children);
-    return String(children || "");
-  };
-
-  const userBubbleActions = [
+  const userActions = [
     {
       id: "edit",
-      icon: Edit2,
-      onClick: handleEditStart,
+      Icon: Edit2,
+      onClick: () => setIsEditing(true),
       title: "Edit message",
     },
     {
       id: "copy",
-      icon: copied ? Check : Copy,
-      onClick: handleCopyMessage,
+      Icon: CopyIcon,
+      onClick: () => handleCopy(message.content),
       title: "Copy message",
     },
     {
-      id: "redo",
-      icon: RotateCcw,
-      onClick: handleRegenerate,
+      id: "resend",
+      Icon: RotateCcw,
+      onClick: () => onRegenerate?.(message.id),
       title: "Resend message",
     },
   ];
 
-  const assistantBubbleActions = [
+  const assistantActions = [
     {
       id: "copy",
-      icon: copied ? Check : Copy,
-      onClick: handleCopyMessage,
+      Icon: CopyIcon,
+      onClick: () => handleCopy(message.content),
       title: "Copy message",
     },
     {
-      id: "redo",
-      icon: RefreshCcw,
-      onClick: handleRegenerate,
+      id: "regen",
+      Icon: RefreshCcw,
+      onClick: () => onRegenerate?.(message.id),
       title: "Regenerate response",
     },
   ];
 
+  const actions = isUser ? userActions : assistantActions;
+
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start mb-8"}`}>
+    <motion.div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`flex flex-col ${isUser ? "items-end" : "items-start"} w-full`}
+        className={`flex flex-col w-full ${isUser ? "items-end" : "items-start"}`}
       >
         <div
           className={`group flex flex-col relative w-full ${isUser ? "items-end" : "items-start"}`}
         >
-          {/* Attachments — shown above user message */}
-          {isUser && message.attachments && message.attachments.length > 0 && (
+          {/* Attachments above user bubble */}
+          {isUser && message.attachments?.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2 max-w-[80%]">
               {message.attachments.map((attachment) => (
                 <AttachmentThumbnail
@@ -167,60 +127,31 @@ export default function MessageBubble({
             </div>
           )}
 
+          {/* Bubble */}
           <div
-            className={`p-2 w-full ${
+            className={clsx(
+              "w-full select-none md:select-auto p-2",
               isUser
-                ? "bg-neutral-200 text-neutral-950 w-max max-w-[90%] lg:max-w-[80%] border"
-                : "text-neutral-100"
-            }`}
+                ? clsx(
+                    "text-neutral-950 w-max max-w-[90%] lg:max-w-[80%] border",
+                    isEditing
+                      ? " text-white bg-neutral-500/5 border-neutral-500"
+                      : "bg-neutral-200",
+                  )
+                : "text-neutral-100",
+            )}
             style={
               isUser
                 ? {
-                    borderRadius: `${bubbleRadius}px`,
-                    // Keep the bottom-right corner tighter — classic chat bubble feel
+                    borderRadius: getBubbleRadius(message.content),
                     transition: "border-radius 0.15s ease",
                   }
                 : undefined
             }
           >
-            {/* Message Content */}
-            <div
-              className={
-                isAssistant ? "markdown prose prose-invert max-w-none" : ""
-              }
-            >
-              {isAssistant ? (
-                <>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeHighlight, rehypeRaw]}
-                    components={{
-                      p: ({ children }) => <div>{children}</div>,
-                      pre: ({ children }) => (
-                        <div className="relative group/code">
-                          <button
-                            onClick={() => {
-                              const codeText = getCodeText(children);
-                              navigator.clipboard.writeText(codeText);
-                            }}
-                            className="absolute right-2 top-2 opacity-0 group-hover/code:opacity-100 transition-opacity p-1.5 rounded bg-neutral-900 hover:bg-neutral-700 z-10 cursor-pointer"
-                          >
-                            {copied ? <Check size={14} /> : <Copy size={14} />}
-                          </button>
-                          <pre className="overflow-x-auto mt-2 p-1 rounded-xl [&>code]:rounded-md">
-                            {children}
-                          </pre>
-                        </div>
-                      ),
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                  {message.id === "streaming" && (
-                    <span className="inline-block w-2 h-4 bg-neutral-400 ml-1 animate-pulse" />
-                  )}
-                </>
-              ) : isEditing ? (
+            {isUser ? (
+              isEditing ? (
+                /* Edit mode */
                 <div className="flex flex-col gap-2 min-w-60">
                   <textarea
                     ref={textareaRef}
@@ -228,57 +159,85 @@ export default function MessageBubble({
                     onChange={handleTextareaChange}
                     onKeyDown={handleEditKeyDown}
                     rows={1}
-                    className="w-full resize-none bg-transparent text-sm text-neutral-950 outline-none placeholder:text-neutral-400 overflow-hidden"
-                    style={{ minHeight: "1.5rem" }}
+                    className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-neutral-400 overflow-hidden"
                   />
-                  <div className="flex items-center gap-1 justify-end">
-                    <button
-                      onClick={handleEditCancel}
-                      className="flex items-center gap-1 text-xs p-2 rounded-md text-neutral-500 hover:bg-neutral-300/50 hover:text-neutral-700 transition-colors"
-                    >
-                      <X size={12} />
-                    </button>
-                    <button
-                      onClick={handleEditSubmit}
-                      className="flex items-center gap-1 text-xs p-2 rounded-md bg-neutral-800 text-white hover:bg-neutral-700 transition-colors"
-                    >
-                      <ArrowUp size={12} />
-                    </button>
-                  </div>
                 </div>
               ) : (
                 <p className="text-sm whitespace-pre-wrap px-1">
                   {message.content}
                 </p>
-              )}
-            </div>
+              )
+            ) : (
+              /* Assistant markdown */
+              <div className="markdown prose prose-invert max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                  components={{
+                    p: ({ children }) => <div>{children}</div>,
+                    pre: ({ children }) => (
+                      <div className="relative group/code">
+                        <button
+                          onClick={() => handleCopy(getCodeText(children))}
+                          className="absolute right-2 top-2 md:opacity-0 group-hover/code:opacity-100 transition-opacity p-1.5 rounded bg-neutral-900 hover:bg-neutral-700 z-10 cursor-pointer"
+                        >
+                          <CopyIcon size={14} />
+                        </button>
+                        <pre className="overflow-x-auto mt-2 p-1 rounded-xl [&>code]:rounded-md">
+                          {children}
+                        </pre>
+                      </div>
+                    ),
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+                {isStreaming && (
+                  <span className="inline-block w-2 h-4 bg-neutral-400 ml-1 animate-pulse" />
+                )}
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}
-          {message.id !== "streaming" && !isEditing && (
+          {!isStreaming && !isEditing && (
             <div
-              className={`flex text-xs mt-2 gap-1 transition-all duration-150 ${
+              className={`hidden md:flex text-xs mt-2 gap-1 transition-all duration-150 ${
                 isUser
                   ? "justify-end opacity-0 group-hover:opacity-100 mr-2"
                   : "justify-start ml-2"
               }`}
             >
-              {(isUser ? userBubbleActions : assistantBubbleActions).map(
-                (action) => (
-                  <PrimaryButton
-                    key={action.id}
-                    className="outline-none border-none min-w-0  cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
-                    onClick={action.onClick}
-                    tooltip={action.title}
-                  >
-                    <action.icon size={14} />
-                  </PrimaryButton>
-                ),
-              )}
+              {actions.map(({ id, Icon, onClick, title }) => (
+                <PrimaryButton
+                  key={id}
+                  className="outline-none border-none min-w-0 cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+                  onClick={onClick}
+                  tooltip={title}
+                >
+                  <Icon size={14} />
+                </PrimaryButton>
+              ))}
+            </div>
+          )}
+          {isEditing && (
+            <div className="flex items-center gap-1 justify-end">
+              <PrimaryButton
+                onClick={handleEditCancel}
+                className="outline-none border-none min-w-0 cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+              >
+                <X size={14} />
+              </PrimaryButton>
+              <PrimaryButton
+                onClick={handleEditSubmit}
+                className="outline-none border-none min-w-0 cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+              >
+                <Check size={14} />
+              </PrimaryButton>
             </div>
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

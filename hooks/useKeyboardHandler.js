@@ -1,20 +1,27 @@
 import { useCallback } from "react";
 import { insertTextAtCursor } from "@/lib";
+import { useIsMobile } from "@/hooks";
 
 export const useKeyboardHandler = (handleSendMessage, setLocalUserInput) => {
+  const isMobile = useIsMobile();
+
   return useCallback(
     (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSendMessage();
-        return;
+      if (e.key === "Enter") {
+        // On mobile, Enter always inserts a newline (user taps Send button instead)
+        if (isMobile) return;
+        // On desktop, Enter sends; Shift+Enter inserts newline
+        if (!e.shiftKey) {
+          e.preventDefault();
+          handleSendMessage();
+          return;
+        }
       }
       if (e.key === "Tab") {
         e.preventDefault();
-        // Read directly from the DOM element to avoid a stale closure on localUserInput.
         insertTextAtCursor(e.target.value, "  ", e.target, setLocalUserInput);
       }
     },
-    [handleSendMessage, setLocalUserInput],
+    [isMobile, handleSendMessage, setLocalUserInput],
   );
 };

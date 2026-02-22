@@ -177,7 +177,7 @@ export default function ChatPage() {
         onEdit={handleEdit}
       />
 
-      <div className="w-full max-w-220 mx-auto px-4">
+      <div className="w-full max-w-220 mx-auto px-2 pb-2">
         {limitReached ? (
           <MessageLimitAlert max={MAX_USER_MESSAGES} />
         ) : (

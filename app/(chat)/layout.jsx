@@ -34,7 +34,7 @@ export default function ChatLayout({ children }) {
             handleToggleSidebar={handleToggleSidebar}
             handleCloseSidebar={handleCloseSidebar}
           />
-          <div className="px-4 md:px-0 flex-1 overflow-hidden">{children}</div>
+          <div className="flex-1 overflow-hidden">{children}</div>
         </div>
       </main>
     </PrivateRoute>

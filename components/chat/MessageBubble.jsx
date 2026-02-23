@@ -30,6 +30,8 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
 
   const textareaRef = useRef(null);
   const bubbleRef = useRef(null);
+  const pressPointRef = useRef(null);
+  const didScrollRef = useRef(false);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const isMobile = useIsMobile();
@@ -74,7 +76,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
     if (e.key === "Escape") handleEditCancel();
   };
 
-  const CopyIcon = copied ? Check : Copy;
+  const CopyIcon = copied ? { icon: Check, text: "copied" } : { icon: Copy };
 
   const userActions = [
     {
@@ -88,7 +90,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
     },
     {
       id: "copy",
-      Icon: CopyIcon,
+      Icon: CopyIcon.icon,
       title: "Copy",
       copyText: message.content,
       onClick: () => {
@@ -111,7 +113,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
   const assistantActions = [
     {
       id: "copy",
-      Icon: CopyIcon,
+      Icon: CopyIcon.icon,
       title: "Copy",
       copyText: message.content,
       onClick: () => {
@@ -150,15 +152,21 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
     },
     onTouchStart: (e) => {
       if (menuOpen) return;
+      didScrollRef.current = false;
+      pressPointRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
       lp.onTouchStart(e);
+    },
+    onTouchMove: (e) => {
+      if (menuOpen) return;
+      didScrollRef.current = true;
+      lp.onTouchMove(e);
     },
     onTouchEnd: (e) => {
       if (menuOpen) return;
       lp.onTouchEnd(e);
-    },
-    onTouchMove: (e) => {
-      if (menuOpen) return;
-      lp.onTouchMove(e);
     },
     onContextMenu: (e) => {
       if (menuOpen) return;
@@ -177,6 +185,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
             <MobileContextMenu
               actions={actions}
               bubbleRef={bubbleRef}
+              pressPoint={pressPointRef.current}
               isUser={isUser}
               onClose={closeMenu}
             />
@@ -186,7 +195,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
 
       <div
         ref={bubbleRef}
-        className={`flex select-none md:select-auto ${isUser ? "justify-end" : "justify-start"}`}
+        className={`flex select-none md:select-auto ${isUser ? "justify-end mt-12" : "justify-start"}`}
       >
         <div
           className={`flex flex-col w-full ${isUser ? "items-end" : "items-start"}`}
@@ -228,7 +237,18 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                   ? { borderRadius: getBubbleRadius(message.content) }
                   : {}),
               }}
-              whileTap={canAnimate ? { scale: 0.95 } : {}}
+              whileTap={
+                canAnimate && !didScrollRef.current
+                  ? {
+                      y: 2,
+                      transition: {
+                        type: "spring",
+                        stiffness: 600,
+                        damping: 30,
+                      },
+                    }
+                  : {}
+              }
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
               {...bubbleHandlers}
             >
@@ -250,19 +270,25 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                   </p>
                 )
               ) : (
-                <div className="markdown prose prose-invert max-w-none">
+                <div className="markdown prose prose-invert max-w-none min-w-0 w-full">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight, rehypeRaw]}
                     components={{
                       p: ({ children }) => <div>{children}</div>,
+                      table: ({ children }) => (
+                        <div className="table-wrapper">
+                          <table>{children}</table>
+                        </div>
+                      ),
                       pre: ({ children }) => (
                         <div className="relative group/code">
                           <button
                             onClick={() => handleCopy(getCodeText(children))}
-                            className="absolute right-2 top-2 md:opacity-0 group-hover/code:opacity-100 transition-opacity p-1.5 rounded bg-neutral-900 hover:bg-neutral-700 z-10 cursor-pointer"
+                            className="absolute right-2 top-2 flex items-center justify-center gap-1 text-[11px] opacity-80 md:opacity-0 group-hover/code:opacity-100 transition-opacity p-1.5 rounded bg-neutral-900 hover:bg-neutral-700 z-10 cursor-pointer"
                           >
-                            <CopyIcon size={14} />
+                            <CopyIcon.icon size={14} />
+                            {CopyIcon.text}
                           </button>
                           <pre className="overflow-x-auto mt-2 p-1 rounded-xl [&>code]:rounded-md">
                             {children}

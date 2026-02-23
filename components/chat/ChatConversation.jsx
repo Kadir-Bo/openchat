@@ -12,7 +12,10 @@ import {
 
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
-export default function ChatConversation({ onConversationLoad = null }) {
+export default function ChatConversation({
+  onConversationLoad = null,
+  bottomPadding = 260,
+}) {
   const { chatId: conversationId } = useParams() ?? {};
   const router = useRouter();
 
@@ -184,36 +187,38 @@ export default function ChatConversation({ onConversationLoad = null }) {
   if (!conversationId) return <EmptyStateConversation />;
 
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      className="w-full py-8 h-[80vh] overflow-y-auto"
-    >
-      <div className="space-y-3 max-w-220 mx-auto">
-        {messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            onRegenerate={handleRegenerate}
-            onEdit={handleEdit}
-          />
-        ))}
+    <div style={{ paddingBottom: bottomPadding }} className="h-dvh">
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="w-full overflow-y-auto h-full"
+      >
+        <div className="space-y-3 max-w-220 mx-auto">
+          {messages.map((message) => (
+            <MessageBubble
+              key={message.id}
+              message={message}
+              onRegenerate={handleRegenerate}
+              onEdit={handleEdit}
+            />
+          ))}
 
-        {isStreaming && (
-          <MessageBubble
-            message={{
-              id: "streaming",
-              role: "assistant",
-              content: currentStreamResponse,
-            }}
-          />
-        )}
+          {isStreaming && (
+            <MessageBubble
+              message={{
+                id: "streaming",
+                role: "assistant",
+                content: currentStreamResponse,
+              }}
+            />
+          )}
 
-        {!!processingMessage && (
-          <div className="flex justify-start px-1">
-            <ProcessingIndicator message={processingMessage} />
-          </div>
-        )}
+          {!!processingMessage && (
+            <div className="flex justify-start px-1">
+              <ProcessingIndicator message={processingMessage} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

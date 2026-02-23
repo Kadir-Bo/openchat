@@ -31,7 +31,12 @@ const _globalPendingIds = new Set();
 const _pendingTimers = new Map();
 const MIN_PENDING_MS = 1200;
 
-export default function Sidebar({ isOpen, isMobile, handleToggleSidebar }) {
+export default function Sidebar({
+  isOpen,
+  isMobile,
+  handleToggleSidebar,
+  handleCloseSidebar,
+}) {
   const router = useRouter();
   const [conversations, setConversations] = useState([]);
 
@@ -116,7 +121,9 @@ export default function Sidebar({ isOpen, isMobile, handleToggleSidebar }) {
 
   return (
     <>
-      <AnimatePresence>{isMobile && isOpen && <Backdrop />}</AnimatePresence>
+      <AnimatePresence>
+        {isMobile && isOpen && <Backdrop onClose={handleCloseSidebar} />}
+      </AnimatePresence>
 
       <motion.aside
         className={`bg-neutral-900 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-999 h-dvh px-1 ${

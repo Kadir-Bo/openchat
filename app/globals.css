@@ -38,8 +38,8 @@
 
 @layer base {
   * {
-  touch-action: pan-x pan-y !important;
-}
+    touch-action: pan-x pan-y !important;
+  }
 
   html {
     font-size: 15px;
@@ -61,7 +61,7 @@
     -webkit-box-shadow: 0 0 0px 1000px var(--input-box-shadow-color, #0f0f0f)
       inset;
     -webkit-text-fill-color: white;
-    -webkit-text-size-adjust:inherit;
+    -webkit-text-size-adjust: inherit;
   }
 
   /* Scrollbar Styles - Webkit (Chrome, Safari, Edge) */
@@ -88,7 +88,6 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
   }
-
 }
 
 /* ==================== Custom Utilities ==================== */
@@ -123,6 +122,12 @@
   /* Markdown Container */
   .markdown {
     @apply text-neutral-200 text-sm leading-relaxed;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  .markdown > * {
+    @apply max-w-full;
   }
 
   /* Headings */
@@ -155,6 +160,7 @@
   .markdown p {
     @apply mb-3 last:mb-0;
   }
+
   /* Lists */
   .markdown ul,
   .markdown ol {
@@ -191,11 +197,14 @@
   }
 
   .markdown pre {
-    @apply bg-neutral-900 p-2 rounded-lg overflow-x-auto border border-neutral-800;
+    @apply bg-neutral-900 p-2 rounded-lg border border-neutral-800;
+    overflow-x: auto;
+    max-width: 100%;
   }
 
   .markdown pre code {
     @apply bg-transparent p-0 text-xs;
+    white-space: pre;
   }
 
   /* Links */
@@ -227,8 +236,13 @@
   }
 
   /* Tables */
+  .markdown .table-wrapper {
+    @apply overflow-x-auto max-w-full;
+  }
+
   .markdown table {
-    @apply w-full border-collapse text-sm;
+    @apply border-collapse text-sm;
+    min-width: max-content;
   }
 
   .markdown thead {

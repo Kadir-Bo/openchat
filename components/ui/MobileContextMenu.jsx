@@ -4,10 +4,12 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useLayoutEffect, useRef, useState } from "react";
 import { copyToClipboard } from "@/lib";
+import { useOnClickOutside } from "@/hooks";
 
 export default function MobileContextMenu({
   actions,
   bubbleRef,
+  pressPoint,
   isUser,
   onClose,
 }) {
@@ -15,34 +17,31 @@ export default function MobileContextMenu({
   const [pos, setPos] = useState(null);
 
   useLayoutEffect(() => {
-    if (!bubbleRef.current || !menuRef.current) return;
+    if (!menuRef.current) return;
 
-    const bRect = bubbleRef.current.getBoundingClientRect();
     const menuHeight = menuRef.current.offsetHeight;
     const menuWidth = menuRef.current.offsetWidth;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const GAP = 12;
 
-    const spaceAbove = bRect.top;
-    const spaceBelow = vh - bRect.bottom;
-    const canFitAbove = spaceAbove >= menuHeight + GAP;
-    const canFitBelow = spaceBelow >= menuHeight + GAP;
-    const showAbove = canFitAbove && (!canFitBelow || spaceAbove > spaceBelow);
+    const anchorX =
+      pressPoint?.x ?? bubbleRef.current?.getBoundingClientRect().left ?? 0;
+    const anchorY =
+      pressPoint?.y ?? bubbleRef.current?.getBoundingClientRect().bottom ?? 0;
 
-    let left;
-    if (isUser) {
-      left = bRect.right - menuWidth;
-    } else {
-      left = bRect.left;
-    }
+    const spaceAbove = anchorY;
+    const spaceBelow = vh - anchorY;
+    const showAbove = spaceAbove >= menuHeight + GAP && spaceAbove > spaceBelow;
+
+    let left = isUser ? anchorX - menuWidth : anchorX;
     left = Math.max(8, Math.min(left, vw - menuWidth - 8));
 
     setPos({
-      top: showAbove ? bRect.top - menuHeight - GAP : bRect.bottom + GAP,
+      top: showAbove ? anchorY - menuHeight - GAP : anchorY + GAP,
       left,
     });
-  }, [bubbleRef, isUser]);
+  }, [bubbleRef, pressPoint, isUser]);
 
   useLayoutEffect(() => {
     const handler = (e) => {
@@ -64,6 +63,8 @@ export default function MobileContextMenu({
     };
   }, [onClose, bubbleRef]);
 
+  useOnClickOutside(menuRef, () => onClose());
+
   return (
     <motion.div
       ref={menuRef}
@@ -73,7 +74,7 @@ export default function MobileContextMenu({
       transition={{ type: "spring", duration: 0.25, bounce: 0.2 }}
       style={{
         position: "fixed",
-        zIndex: 9999,
+        zIndex: 999999,
         top: pos?.top ?? 0,
         left: pos?.left ?? 0,
         minWidth: 180,
@@ -87,10 +88,7 @@ export default function MobileContextMenu({
           key={id}
           onPointerDown={(e) => {
             e.stopPropagation();
-            // Copy must happen synchronously inside the gesture for iOS
-            if (copyText) {
-              copyToClipboard(copyText);
-            }
+            if (copyText) copyToClipboard(copyText);
             onClick();
             onClose();
           }}

@@ -26,7 +26,7 @@ export default function ChatPageShell({
   const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
 
   return (
-    <div className="flex-1 flex flex-col max-w-220 mx-auto py-8 gap-6 w-full">
+    <div className="flex-1 flex flex-col max-w-220 mx-auto py-8 gap-6 w-full px-4">
       <header className="flex items-center justify-between">
         <h1 className="text-3xl font-light">{title}</h1>
         <PrimaryButton

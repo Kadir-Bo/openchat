@@ -14,7 +14,6 @@ export { default as FilesPanel } from "./chat/FilesPanel";
 export { default as InstructionsPanel } from "./chat/InstructionsPanel";
 export { default as StackedProjectCard } from "./chat/StackedProjectCard";
 export { default as ChatFooterMessage } from "./chat/ChatFooterMessage";
-export { default as MessageList } from "./chat/MessageList";
 
 // PUBLIC COMPONENTS
 export { default as PublicHeader } from "./public/PublicHeader";

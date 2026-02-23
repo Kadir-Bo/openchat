@@ -19,8 +19,6 @@ import { AnimatePresence } from "framer-motion";
 import { Copy, RefreshCcw, RotateCcw, Check, Edit2, X } from "react-feather";
 import { useIsMobile, useLongPress } from "@/hooks";
 
-// ─── MessageBubble ────────────────────────────────────────────────────────────
-
 export default function MessageBubble({ message, onRegenerate, onEdit }) {
   const isUser = message.role === "user";
   const isStreaming = message.id === "streaming";

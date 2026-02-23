@@ -2,23 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-
 import { useChat, useDatabase } from "@/context";
+import { useScrollLock } from "@/hooks";
 import {
   EmptyStateConversation,
   MessageBubble,
   ProcessingIndicator,
 } from "@/components";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
-
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ChatConversation({ onConversationLoad = null }) {
   const { chatId: conversationId } = useParams() ?? {};
@@ -50,16 +42,26 @@ export default function ChatConversation({ onConversationLoad = null }) {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(!!conversationId);
 
-  const messagesEndRef = useRef(null);
   const suppressListenerRef = useRef(false);
 
-  // ── Scroll ───────────────────────────────────────────────────────────────
+  // ── Scroll ────────────────────────────────────────────────────────────────
+
+  const { containerRef, handleScroll, scrollToBottom, scrollToBottomIfLocked } =
+    useScrollLock({ threshold: 80 });
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
-  }, [messages, currentStreamResponse, processingMessage]);
+    scrollToBottom();
+  }, [messages.length]);
+  useEffect(() => {
+    if (!currentStreamResponse) return;
+    scrollToBottomIfLocked();
+  }, [currentStreamResponse]);
+  useEffect(() => {
+    if (!processingMessage) return;
+    scrollToBottom();
+  }, [processingMessage]);
 
-  // ── Load conversation + project ──────────────────────────────────────────
+  // ── Load conversation + project ───────────────────────────────────────────
 
   useEffect(() => {
     if (!conversationId) return;
@@ -74,7 +76,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
         }
 
         setConversation(conv);
-
         const proj = conv.projectId ? await getProject(conv.projectId) : null;
         setProject(proj);
         onConversationLoad?.({ conversation: conv, project: proj });
@@ -86,20 +87,18 @@ export default function ChatConversation({ onConversationLoad = null }) {
     };
 
     load();
-  }, [conversationId, getConversation, getProject, router]);
+  }, [conversationId]);
 
-  // ── Realtime message listener ────────────────────────────────────────────
+  // ── Realtime message listener ─────────────────────────────────────────────
 
   useEffect(() => {
     if (!conversationId) return;
-
     const unsubscribe = subscribeToMessages(conversationId, (incoming) => {
       if (suppressListenerRef.current) return;
       setMessages(incoming);
     });
-
     return () => unsubscribe();
-  }, [conversationId, subscribeToMessages]);
+  }, [conversationId]);
 
   // ── Shared context args ───────────────────────────────────────────────────
 
@@ -117,12 +116,11 @@ export default function ChatConversation({ onConversationLoad = null }) {
     project,
   };
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleRegenerate = useCallback(
     async (messageId) => {
       if (isLoading) return;
-
       const index = messages.findIndex((m) => m.id === messageId);
       if (index === -1) return;
 
@@ -132,7 +130,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
 
       suppressListenerRef.current = true;
       setMessages(keptMessages);
-
       try {
         await regenerateResponse({
           ...sharedArgs,
@@ -151,7 +148,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
   const handleEdit = useCallback(
     async (messageId, newContent) => {
       if (isLoading) return;
-
       const index = messages.findIndex((m) => m.id === messageId);
       if (index === -1) return;
 
@@ -160,7 +156,6 @@ export default function ChatConversation({ onConversationLoad = null }) {
 
       suppressListenerRef.current = true;
       setMessages(keptMessages);
-
       try {
         await editAndResend({
           ...sharedArgs,
@@ -177,24 +172,23 @@ export default function ChatConversation({ onConversationLoad = null }) {
     [isLoading, messages, sharedArgs, editAndResend],
   );
 
-  // ── Derived display state ─────────────────────────────────────────────────
+  // ── Derived state ─────────────────────────────────────────────────────────
 
   const lastMessage = messages.at(-1);
-  const isStreamingComplete = lastMessage?.role === "assistant";
-  const shouldShowStream =
-    !!currentStreamResponse?.trim() && !isStreamingComplete;
-  const showIndicator = !!processingMessage;
+  const isStreaming =
+    !!currentStreamResponse?.trim() && lastMessage?.role !== "assistant";
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) return null;
-
-  if (!conversationId) {
-    return <EmptyStateConversation />;
-  }
+  if (!conversationId) return <EmptyStateConversation />;
 
   return (
-    <div className="w-full py-8 h-[80vh] overflow-y-auto">
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="w-full py-8 h-[80vh] overflow-y-auto"
+    >
       <div className="space-y-3 max-w-220 mx-auto">
         {messages.map((message) => (
           <MessageBubble
@@ -205,7 +199,7 @@ export default function ChatConversation({ onConversationLoad = null }) {
           />
         ))}
 
-        {shouldShowStream && (
+        {isStreaming && (
           <MessageBubble
             message={{
               id: "streaming",
@@ -215,13 +209,11 @@ export default function ChatConversation({ onConversationLoad = null }) {
           />
         )}
 
-        {showIndicator && (
+        {!!processingMessage && (
           <div className="flex justify-start px-1">
             <ProcessingIndicator message={processingMessage} />
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
     </div>
   );

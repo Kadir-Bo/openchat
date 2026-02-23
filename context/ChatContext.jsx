@@ -6,6 +6,7 @@ import {
   buildSystemPromptWithMemories,
   buildApiMessages,
   extractAndSaveUserMemory,
+  generateTitleFromResponse,
 } from "@/lib";
 
 // ─────────────────────────────────────────────────────────────────────────────

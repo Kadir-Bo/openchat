@@ -31,12 +31,7 @@ const _globalPendingIds = new Set();
 const _pendingTimers = new Map();
 const MIN_PENDING_MS = 1200;
 
-export default function Sidebar({
-  isOpen,
-  isMobile,
-  handleCloseSidebar,
-  handleToggleSidebar,
-}) {
+export default function Sidebar({ isOpen, isMobile, handleToggleSidebar }) {
   const router = useRouter();
   const [conversations, setConversations] = useState([]);
 
@@ -134,7 +129,7 @@ export default function Sidebar({
         id="sidebar"
       >
         {/* Header */}
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between py-1">
           <AnimatePresence>
             {isOpen && (
               <motion.div

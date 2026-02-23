@@ -45,7 +45,6 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
     el.style.height = `${el.scrollHeight}px`;
   }, [isEditing]);
 
-  // Used for desktop buttons — direct click gesture, safe for clipboard
   const handleCopy = (text) => {
     copyToClipboard(text);
     setCopied(true);
@@ -93,8 +92,6 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
       id: "copy",
       Icon: CopyIcon,
       title: "Copy",
-      // copyText is consumed by MobileContextMenu and called synchronously
-      // inside onPointerDown — the only way iOS will allow clipboard access
       copyText: message.content,
       onClick: () => {
         closeMenu();
@@ -233,7 +230,6 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                   ? { borderRadius: getBubbleRadius(message.content) }
                   : {}),
               }}
-              whileHover={canAnimate ? { scale: 0.98 } : {}}
               whileTap={canAnimate ? { scale: 0.95 } : {}}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
               {...bubbleHandlers}
@@ -298,7 +294,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                 {actions.map(({ id, Icon, onClick, title }) => (
                   <PrimaryButton
                     key={id}
-                    className="outline-none border-none min-w-0 cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+                    className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                     onClick={onClick}
                     tooltip={title}
                   >
@@ -313,13 +309,13 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
               <div className="flex items-center gap-1 justify-end mt-1">
                 <PrimaryButton
                   onClick={handleEditCancel}
-                  className="outline-none border-none min-w-0 cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                 >
                   <X size={14} />
                 </PrimaryButton>
                 <PrimaryButton
                   onClick={handleEditSubmit}
-                  className="outline-none border-none min-w-0 cursor-pointer p-2 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                 >
                   <Check size={14} />
                 </PrimaryButton>

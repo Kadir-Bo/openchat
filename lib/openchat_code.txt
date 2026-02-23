@@ -1,0 +1,1569 @@
+﻿=== E:\Projekte\openchat\lib\api\streamResponse.js ===
+/**
+ * Optimierte Stream-Response mit Conversation Context
+ * @param {Array} messages - Array von message objects: [{role, content}, ...]
+ * @param {string} selectedModel - Model name
+ * @param {function} onChunk - Callback function for streaming chunks
+ * @param {boolean} reasoning - Enable high reasoning effort
+ * @param {number} updateInterval - 50ms = flÃ¼ssig, 100ms = performant
+ * @param {AbortSignal} signal - AbortController signal to cancel the request
+ */
+export const streamResponse = async (
+  messages,
+  selectedModel = "openai/gpt-oss-120b",
+  onChunk = null,
+  reasoning = false,
+  updateInterval = 50,
+  signal = null,
+) => {
+  try {
+    // Validierung
+    if (!Array.isArray(messages) || messages.length === 0) {
+      throw new Error("Messages array darf nicht leer sein");
+    }
+
+    // API Request with signal
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messages,
+        model: selectedModel,
+        reasoning_effort: reasoning ? "high" : "medium",
+      }),
+      signal,
+    });
+
+    // Response Status Check
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: `HTTP ${response.status}: ${response.statusText}`,
+      }));
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    // Content-Type Check
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("text/event-stream")) {
+      const text = await response.text();
+      throw new Error(
+        `UngÃ¼ltiger Response-Typ: ${contentType}. Response: ${text.substring(0, 200)}`,
+      );
+    }
+
+    // Stream lesen mit Zeit-basiertem Buffering
+    let fullResponse = "";
+    let displayBuffer = "";
+    let lastUpdateTime = Date.now();
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    const sendBufferedUpdate = () => {
+      if (displayBuffer && onChunk && typeof onChunk === "function") {
+        onChunk(displayBuffer, fullResponse);
+        displayBuffer = "";
+        lastUpdateTime = Date.now();
+      }
+    };
+
+    // Cleanup function to cancel reader when aborted
+    if (signal) {
+      signal.addEventListener("abort", () => {
+        reader.cancel();
+      });
+    }
+
+    while (true) {
+      // Check if aborted before reading
+      if (signal?.aborted) {
+        reader.cancel();
+        throw new DOMException("Request aborted", "AbortError");
+      }
+
+      const { done, value } = await reader.read();
+
+      if (done) {
+        sendBufferedUpdate();
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const messageChunks = buffer.split("\n\n");
+      buffer = messageChunks.pop() || "";
+
+      for (const message of messageChunks) {
+        if (!message.trim()) continue;
+
+        const lines = message.split("\n");
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+
+          if (!trimmedLine || trimmedLine.startsWith(":")) {
+            continue;
+          }
+
+          if (trimmedLine.startsWith("data: ")) {
+            const jsonStr = trimmedLine.slice(6);
+
+            if (jsonStr === "[DONE]") {
+              continue;
+            }
+
+            try {
+              const data = JSON.parse(jsonStr);
+              const content = data.content || "";
+
+              if (content) {
+                fullResponse += content;
+                displayBuffer += content;
+
+                const currentTime = Date.now();
+                if (currentTime - lastUpdateTime >= updateInterval) {
+                  sendBufferedUpdate();
+                }
+              }
+            } catch (parseError) {
+              console.warn("Chunk parse error:", jsonStr);
+            }
+          }
+        }
+      }
+    }
+
+    // Process remaining buffer
+    if (buffer.trim()) {
+      const lines = buffer.split("\n");
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine && trimmedLine.startsWith("data: ")) {
+          const jsonStr = trimmedLine.slice(6);
+          if (jsonStr !== "[DONE]") {
+            try {
+              const data = JSON.parse(jsonStr);
+              const content = data.content || "";
+              if (content) {
+                fullResponse += content;
+                displayBuffer += content;
+              }
+            } catch (parseError) {
+              console.warn("Final chunk parse error:", jsonStr);
+            }
+          }
+        }
+      }
+
+      sendBufferedUpdate();
+    }
+
+    // Validierung der Antwort
+    if (!fullResponse.trim()) {
+      throw new Error("Leere Antwort vom Server erhalten");
+    }
+
+    return fullResponse;
+  } catch (error) {
+    // Re-throw abort errors as-is
+    if (error.name === "AbortError") {
+      throw error;
+    }
+    console.error("âŒ Streaming-Fehler:", error.message);
+    throw error;
+  }
+};
+=== E:\Projekte\openchat\lib\chat\attachmentHelpers.js ===
+export function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function fileTypeLabel(type) {
+  const map = {
+    js: "JS",
+    jsx: "JSX",
+    ts: "TS",
+    tsx: "TSX",
+    py: "PY",
+    java: "Java",
+    cpp: "C++",
+    c: "C",
+    cs: "C#",
+    rb: "Ruby",
+    go: "Go",
+    rs: "Rust",
+    php: "PHP",
+    html: "HTML",
+    css: "CSS",
+    scss: "SCSS",
+    json: "JSON",
+    xml: "XML",
+    yaml: "YAML",
+    yml: "YAML",
+    csv: "CSV",
+    md: "MD",
+    txt: "TXT",
+    pdf: "PDF",
+  };
+  return map[type?.toLowerCase()] ?? type?.toUpperCase() ?? "File";
+}
+
+export const detectAttachmentType = (text, fileName = "") => {
+  const extension = fileName.split(".").pop()?.toLowerCase();
+
+  if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(extension)) {
+    return "image";
+  }
+
+  if (
+    ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(extension)
+  ) {
+    return "document";
+  }
+
+  const hasMultipleLines = text.includes("\n");
+  const looksLikeCode =
+    /[{}\[\]();]/.test(text) ||
+    /^\s*(function|const|let|var|class|import|export|def|public|private|package|interface)/m.test(
+      text,
+    );
+
+  if (
+    (hasMultipleLines && text.split("\n").length > 3 && looksLikeCode) ||
+    [
+      "js",
+      "jsx",
+      "ts",
+      "tsx",
+      "py",
+      "java",
+      "cpp",
+      "c",
+      "css",
+      "html",
+    ].includes(extension)
+  ) {
+    return "code";
+  }
+
+  if (["txt", "md", "json", "xml", "csv"].includes(extension)) {
+    return "text";
+  }
+
+  return "file";
+};
+
+/**
+ * Creates an attachment object from a file
+ */
+export const createAttachment = (
+  file,
+  type,
+  content = null,
+  preview = null,
+) => {
+  return {
+    id: Date.now() + Math.random(),
+    type,
+    name: file.name,
+    content,
+    preview,
+    file,
+  };
+};
+
+/**
+ * Creates an attachment object from pasted content
+ */
+export const createPastedAttachment = (type, name, content, preview = null) => {
+  return {
+    id: Date.now(),
+    type,
+    name,
+    content,
+    preview,
+    file: null,
+  };
+};
+
+/**
+ * Accepted file types for file input
+ */
+export const ACCEPTED_FILE_TYPES =
+  "image/*,.pdf,.doc,.docx,.txt,.md,.json,.js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.css,.html";
+=== E:\Projekte\openchat\lib\chat\buildMessages.js ===
+/**
+ * SchÃ¤tzt Token-Count (grob: ~4 Zeichen = 1 Token)
+ */
+export function estimateTokens(text) {
+  return Math.ceil(text.length / 4);
+}
+
+/**
+ * Baut das messages-Array fÃ¼r die API mit Conversation History
+ */
+export function buildContextMessages(
+  recentMessages = [],
+  currentUserMessage,
+  maxMessages = 10,
+  systemPrompt = null,
+) {
+  const system = {
+    role: "system",
+    content: systemPrompt || "Du bist ein hilfreicher KI-Assistent.",
+  };
+
+  const contextMessages = recentMessages.slice(-maxMessages).map((msg) => ({
+    role: msg.role,
+    content: msg.content,
+  }));
+
+  const userMessage = {
+    role: "user",
+    content: currentUserMessage,
+  };
+
+  return [system, ...contextMessages, userMessage];
+}
+
+/**
+ * Trimmt Messages auf Token-Limit (128k fÃ¼r gpt-oss-120b)
+ */
+export function trimMessagesToTokenLimit(messages, maxTokens = 120000) {
+  if (messages.length === 0) return [];
+
+  const systemMessage = messages[0];
+  const userMessage = messages[messages.length - 1];
+  const history = messages.slice(1, -1);
+
+  const fixedTokens =
+    estimateTokens(systemMessage.content) + estimateTokens(userMessage.content);
+
+  let remainingTokens = maxTokens - fixedTokens;
+  const trimmedHistory = [];
+
+  for (let i = history.length - 1; i >= 0; i--) {
+    const msgTokens = estimateTokens(history[i].content);
+    if (remainingTokens - msgTokens < 0) break;
+    trimmedHistory.unshift(history[i]);
+    remainingTokens -= msgTokens;
+  }
+
+  return [systemMessage, ...trimmedHistory, userMessage];
+}
+=== E:\Projekte\openchat\lib\chat\chatContextUtils.js ===
+import {
+  buildContextMessages,
+  trimMessagesToTokenLimit,
+} from "./buildMessages";
+import { buildSummaryPrompt } from "../prompts/summaryPrompt";
+import { streamResponse } from "../api/streamResponse";
+
+/** Build a trimmed messages array ready for the API. */
+export const buildApiMessages = (
+  history,
+  userMessage,
+  systemPrompt,
+  MAX_CONTEXT_MSGS = 10,
+  MAX_TOKENS = 100000,
+) =>
+  trimMessagesToTokenLimit(
+    buildContextMessages(history, userMessage, MAX_CONTEXT_MSGS, systemPrompt),
+    MAX_TOKENS,
+  );
+
+/** Fetch summaries of sibling conversations in the same project. */
+export const fetchSiblingConversationSummaries = async (
+  projectId,
+  currentChatId,
+  getProjectConversations,
+) => {
+  try {
+    const siblings = await getProjectConversations(projectId);
+    return siblings
+      .filter((c) => c.id !== currentChatId && c.summary?.trim())
+      .map((c) => ({ title: c.title || "Untitled Chat", summary: c.summary }));
+  } catch {
+    return [];
+  }
+};
+
+/** Fire-and-forget: generate + persist a conversation summary. */
+export const generateAndSaveConversationSummary = (
+  chatId,
+  messages,
+  userMessage,
+  assistantResponse,
+  updateConversation,
+  DEFAULT_MODEL = "openai/gpt-oss-120b",
+) => {
+  const transcript = [
+    ...messages.map(
+      (m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`,
+    ),
+    `User: ${userMessage}`,
+    `Assistant: ${assistantResponse}`,
+  ]
+    .join("\n\n")
+    .substring(0, 8000);
+
+  streamResponse(
+    [
+      { role: "system", content: buildSummaryPrompt() },
+      { role: "user", content: transcript },
+    ],
+    DEFAULT_MODEL,
+  )
+    .then((summary) =>
+      updateConversation(chatId, {
+        summary: summary.trim(),
+        summaryUpdatedAt: new Date().toISOString(),
+      }),
+    )
+    .catch((err) => console.warn("Summary generation failed:", err));
+};
+=== E:\Projekte\openchat\lib\firebase\config.js ===
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+};
+
+function hasFirebaseConfig() {
+  return Boolean(firebaseConfig.apiKey);
+}
+
+export function getFirebaseApp() {
+  if (!hasFirebaseConfig()) return null;
+  return getApps().length ? getApp() : initializeApp(firebaseConfig);
+}
+
+export function getFirebaseAuth() {
+  const app = getFirebaseApp();
+  return app ? getAuth(app) : null;
+}
+
+export function getFirebaseDB() {
+  const app = getFirebaseApp();
+  return app ? getFirestore(app) : null;
+}
+
+export function getFirebaseStorage() {
+  const app = getFirebaseApp();
+  return app ? getStorage(app) : null;
+}
+=== E:\Projekte\openchat\lib\firebase\error-messages.js ===
+// Firebase Auth Error Codes to User-Friendly Messages
+export const authErrorMessages = {
+  // Email/Password Errors
+  "auth/email-already-exists":
+    "This email is already taken. Try signing in instead.",
+  "auth/email-already-in-use":
+    "This email is already taken. Try signing in instead.",
+  "auth/invalid-email": "Please enter a valid email address.",
+  "auth/user-not-found":
+    "We couldn't find an account with this email. Want to create one?",
+  "auth/wrong-password":
+    "Wrong password. Try again or click 'Forgot password' to reset it.",
+  "auth/weak-password": "Your password needs at least 6 characters.",
+  "auth/invalid-password": "Your password needs at least 6 characters.",
+
+  // Account Status Errors
+  "auth/user-disabled": "Your account has been disabled. Contact us for help.",
+  "auth/account-exists-with-different-credential":
+    "You already have an account with this email. Try a different sign-in method.",
+
+  // Token & Session Errors
+  "auth/id-token-expired": "Your session expired. Please sign in again.",
+  "auth/id-token-revoked": "You've been signed out. Please sign in again.",
+  "auth/invalid-id-token": "Something went wrong. Please sign in again.",
+  "auth/session-cookie-expired": "Your session expired. Please sign in again.",
+  "auth/session-cookie-revoked":
+    "You've been signed out. Please sign in again.",
+  "auth/requires-recent-login":
+    "For your security, please sign in again to continue.",
+
+  // Password Reset Errors
+  "auth/invalid-action-code":
+    "This reset link doesn't work anymore. Request a new one.",
+  "auth/expired-action-code": "This reset link expired. Request a new one.",
+
+  // Network & Rate Limiting Errors
+  "auth/network-request-failed":
+    "Can't connect. Check your internet and try again.",
+  "auth/too-many-requests":
+    "Too many tries. Wait a bit and try again, or reset your password.",
+
+  // Configuration Errors
+  "auth/api-key-not-valid.-please-pass-a-valid-api-key.":
+    "Something's wrong on our end. Please contact support.",
+  "auth/invalid-api-key":
+    "Something's wrong on our end. Please contact support.",
+  "auth/operation-not-allowed":
+    "This sign-in method isn't available right now. Contact support.",
+  "auth/unauthorized-continue-uri":
+    "Something's wrong with this link. Contact support.",
+  "auth/invalid-continue-uri":
+    "Something's wrong with this link. Contact support.",
+  "auth/invalid-dynamic-link-domain":
+    "Something's wrong on our end. Contact support.",
+
+  // Permission & Server Errors
+  "auth/insufficient-permission":
+    "You don't have permission to do this. Contact support.",
+  "auth/internal-error": "Something went wrong. Please try again.",
+  "auth/project-not-found": "Something's wrong on our end. Contact support.",
+
+  // Phone Number Errors
+  "auth/invalid-phone-number": "Please enter a valid phone number.",
+  "auth/phone-number-already-exists": "This phone number is already in use.",
+
+  // User Data Validation Errors
+  "auth/invalid-display-name": "Please enter your name.",
+  "auth/invalid-email-verified": "Email verification failed.",
+  "auth/invalid-photo-url": "Please use a valid photo URL.",
+  "auth/invalid-uid": "Something went wrong. Please try again.",
+  "auth/uid-already-exists": "This account already exists.",
+
+  // Popup & Redirect Errors
+  "auth/popup-blocked":
+    "Your browser blocked the popup. Please allow popups and try again.",
+  "auth/popup-closed-by-user": "Sign-in cancelled. Try again when ready.",
+  "auth/redirect-cancelled-by-user": "Sign-in cancelled. Try again when ready.",
+  "auth/redirect-operation-pending":
+    "Already signing in. Please wait a moment.",
+
+  // Claims & Custom Attributes
+  "auth/claims-too-large": "Too much data. Contact support.",
+  "auth/invalid-claims": "Invalid data. Contact support.",
+  "auth/reserved-claims": "Invalid data. Contact support.",
+
+  // Import & Batch Operations
+  "auth/invalid-user-import": "Import failed. Contact support.",
+  "auth/maximum-user-count-exceeded": "Too many users. Contact support.",
+
+  // Missing Required Fields
+  "auth/missing-android-pkg-name": "Missing app information.",
+  "auth/missing-continue-uri": "Missing required information.",
+  "auth/missing-ios-bundle-id": "Missing app information.",
+  "auth/missing-uid": "Missing user information.",
+
+  // Hash & Password Import Errors
+  "auth/invalid-hash-algorithm": "Password setup error. Contact support.",
+  "auth/invalid-hash-block-size": "Password setup error. Contact support.",
+  "auth/invalid-hash-derived-key-length":
+    "Password setup error. Contact support.",
+  "auth/invalid-hash-key": "Password setup error. Contact support.",
+  "auth/invalid-hash-memory-cost": "Password setup error. Contact support.",
+  "auth/invalid-hash-parallelization": "Password setup error. Contact support.",
+  "auth/invalid-hash-rounds": "Password setup error. Contact support.",
+  "auth/invalid-hash-salt-separator": "Password setup error. Contact support.",
+  "auth/invalid-password-hash": "Password setup error. Contact support.",
+  "auth/invalid-password-salt": "Password setup error. Contact support.",
+  "auth/missing-hash-algorithm": "Password setup error. Contact support.",
+
+  // OAuth & Provider Errors
+  "auth/invalid-oauth-responsetype": "Sign-in error. Contact support.",
+  "auth/missing-oauth-client-secret": "Sign-in error. Contact support.",
+  "auth/invalid-provider-id": "Invalid sign-in method.",
+  "auth/invalid-provider-data": "Invalid sign-in data.",
+
+  // Credential Errors
+  "auth/invalid-credential": "Wrong email or password. Please try again.",
+  "auth/invalid-verification-code": "Wrong code. Please try again.",
+  "auth/invalid-verification-id": "Verification failed. Try again.",
+  "auth/missing-verification-code": "Please enter the code we sent you.",
+  "auth/missing-verification-id": "Verification missing. Try again.",
+
+  // Time & Date Errors
+  "auth/invalid-creation-time": "Invalid date.",
+  "auth/invalid-last-sign-in-time": "Invalid date.",
+
+  // Session Cookie Errors
+  "auth/invalid-session-cookie-duration": "Session error.",
+
+  // Argument & Page Token Errors
+  "auth/invalid-argument": "Something went wrong. Please try again.",
+  "auth/invalid-page-token": "Please refresh the page and try again.",
+
+  // Default
+  default: "Something went wrong. Please try again.",
+};
+
+/**
+ * Get user-friendly error message from Firebase error
+ * @param {Error} error - Firebase error object
+ * @returns {string} User-friendly error message
+ */
+export function getAuthErrorMessage(error) {
+  if (!error) return authErrorMessages.default;
+  console.log(error);
+
+  // Extract error code from Firebase error
+  const errorCode = error.code || error.message || "";
+
+  // Return custom message or default
+  return authErrorMessages[errorCode] || authErrorMessages.default;
+}
+=== E:\Projekte\openchat\lib\memory\memoryUtils.js ===
+/** Fire-and-forget: extract a memory entry from the latest exchange. */
+export const extractAndSaveUserMemory = (
+  userMessage,
+  assistantResponse,
+  existingMemories,
+  updateUserProfile,
+  DEFAULT_MODEL = "openai/gpt-oss-120b",
+) => {
+  const prompt = buildMemoryExtractionPrompt(existingMemories);
+
+  streamResponse(
+    [
+      { role: "system", content: prompt },
+      {
+        role: "user",
+        content: `User said: "${userMessage}"\n\nAssistant responded: "${assistantResponse.substring(0, 500)}"`,
+      },
+    ],
+    DEFAULT_MODEL,
+  )
+    .then((raw) => {
+      const result = JSON.parse(raw.replace(/```json|```/g, "").trim());
+
+      if (result.action === "add" && result.memory) {
+        return updateUserProfile({
+          memories: [
+            ...existingMemories,
+            {
+              id: generateId(),
+              text: result.memory,
+              createdAt: new Date().toISOString(),
+              source: "auto",
+            },
+          ],
+        });
+      }
+
+      if (result.action === "update" && result.id && result.memory) {
+        return updateUserProfile({
+          memories: existingMemories.map((m) =>
+            m.id === result.id
+              ? {
+                  ...m,
+                  text: result.memory,
+                  updatedAt: new Date().toISOString(),
+                }
+              : m,
+          ),
+        });
+      }
+    })
+    .catch((err) => console.warn("User memory extraction failed:", err));
+};
+
+/** Fire-and-forget: extract a memory entry for the project. */
+export const extractAndSaveProjectMemory = (
+  userMessage,
+  assistantResponse,
+  projectId,
+  existingMemories,
+  updateProjectMemory,
+) => {
+  extractProjectMemoryFromConversation(
+    userMessage,
+    assistantResponse,
+    existingMemories,
+    streamResponse,
+  )
+    .then((result) => {
+      if (result.action === "add" && result.memory) {
+        return updateProjectMemory(projectId, [
+          ...existingMemories,
+          {
+            id: generateId(),
+            text: result.memory,
+            createdAt: new Date().toISOString(),
+            source: "auto",
+          },
+        ]);
+      }
+
+      if (result.action === "update" && result.id && result.memory) {
+        return updateProjectMemory(
+          projectId,
+          existingMemories.map((m) =>
+            m.id === result.id
+              ? {
+                  ...m,
+                  text: result.memory,
+                  updatedAt: new Date().toISOString(),
+                }
+              : m,
+          ),
+        );
+      }
+    })
+    .catch((err) => console.warn("Project memory extraction failed:", err));
+};
+
+/**
+ * Runs project memory extraction via the LLM.
+ * Returns { action, memory?, id? } â€” same shape as user memory extraction.
+ */
+export const extractProjectMemoryFromConversation = async (
+  userMessage,
+  assistantResponse,
+  existingMemories = [],
+  streamResponseFn,
+) => {
+  try {
+    const result = await streamResponseFn(
+      [
+        {
+          role: "system",
+          content: buildProjectMemoryExtractionPrompt(existingMemories),
+        },
+        {
+          role: "user",
+          content: `User said: "${userMessage}"\n\nAssistant responded: "${assistantResponse.substring(0, 500)}"`,
+        },
+      ],
+      "openai/gpt-oss-120b",
+      null,
+      false,
+      50,
+      null,
+    );
+    const cleaned = result.replace(/```json|```/g, "").trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return { action: "none" };
+  }
+};
+=== E:\Projekte\openchat\lib\prompts\memoryPrompts.js ===
+// ==================== ERINNERUNGS-EXTRAKTION ====================
+
+export const buildMemoryExtractionPrompt = (existingMemories = []) => {
+  const existingList =
+    existingMemories.length > 0
+      ? existingMemories
+          .map((m, i) => `${i + 1}. [id:${m.id}] ${m.text}`)
+          .join("\n")
+      : "Keine bisherigen Erinnerungen.";
+
+  return `You are a memory extraction assistant. Analyze the conversation and determine if there is any important personal information worth remembering about the user.
+
+Existing memories about this user:
+${existingList}
+
+Your task:
+- If the conversation contains NEW information not covered by existing memories â†’ return action "add"
+- If the conversation UPDATES or CONTRADICTS an existing memory â†’ return action "update" with the id of the memory to replace
+- If nothing new or relevant is found â†’ return action "none"
+
+Examples of memory-worthy information:
+- Personal preferences ("I prefer dark mode", "I like concise answers")
+- Professional context ("I'm a React developer", "I work at a startup")
+- Personal facts ("I'm learning German", "I have 2 kids")
+- Recurring needs ("I always need TypeScript", "I use Next.js")
+
+Respond ONLY with valid JSON, one of these three shapes:
+{"action": "none"}
+{"action": "add", "memory": "Short, factual memory text"}
+{"action": "update", "id": "<existing memory id>", "memory": "Updated memory text"}`;
+};
+
+// ==================== PROJECT MEMORY EXTRAKTION ====================
+
+export const buildProjectMemoryExtractionPrompt = (existingMemories = []) => {
+  const existingList =
+    existingMemories.length > 0
+      ? existingMemories
+          .map((m, i) => `${i + 1}. [id:${m.id}] ${m.text}`)
+          .join("\n")
+      : "No existing project memories.";
+
+  return `You are a project knowledge extraction assistant. Analyze the conversation and determine if it contains important project-specific information worth remembering.
+
+Existing project memories:
+${existingList}
+
+Extract information relevant to the PROJECT, not the person. This includes:
+- Technical decisions ("We use Tailwind for styling", "Auth is handled via Firebase")
+- Architecture choices ("Components live in /components", "API routes use edge runtime")
+- Design decisions ("Primary color is neutral-900", "Buttons use rounded-full")
+- Conventions ("Always use TypeScript", "Prefix hooks with use")
+- Constraints or requirements ("Must support mobile", "No external UI libraries")
+- Resolved problems ("Fixed CORS by adding header", "Pagination uses cursor-based approach")
+
+Do NOT extract personal preferences, user habits, or anything that belongs to the person rather than the project.
+
+Respond ONLY with valid JSON:
+{"action": "none"}
+{"action": "add", "memory": "Short, factual project memory"}
+{"action": "update", "id": "<existing memory id>", "memory": "Updated memory text"}`;
+};
+=== E:\Projekte\openchat\lib\prompts\summaryPrompt.js ===
+// ==================== CHAT SUMMARY ====================
+
+/**
+ * Builds the prompt used to generate a conversation summary.
+ * The summary is stored on the conversation doc and injected into
+ * sibling chats within the same project.
+ */
+export const buildSummaryPrompt = () =>
+  `You are a concise summarization assistant. 
+Summarize the key decisions, facts, and outcomes from this conversation in 3-8 bullet points. 
+Focus on information that would be useful context for someone working on a related task in the same project. 
+Be specific and factual. Do not include pleasantries or meta-commentary. 
+Respond with plain bullet points only, no headers.`;
+
+/**
+ * Generiert einen Titel basierend auf User-Frage und AI-Antwort
+ * @param {string} userMessage - Die Nachricht des Users
+ * @param {string} aiResponse - Die Antwort der AI
+ * @param {function} streamResponse - Die Stream-Funktion fÃ¼r AI-Anfragen
+ * @returns {Promise<string>} - Generierter Titel
+ */
+
+export async function generateTitleFromResponse(
+  userMessage,
+  aiResponse,
+  streamResponse = null,
+) {
+  if (!userMessage && !aiResponse) return "New Chat";
+
+  // Fallback: Erste 3 WÃ¶rter der User-Nachricht
+  const fallbackTitle = generateFallbackTitle(userMessage);
+
+  // Wenn keine streamResponse-Funktion Ã¼bergeben wurde, nutze Fallback
+  if (!streamResponse || typeof streamResponse !== "function") {
+    return fallbackTitle;
+  }
+
+  try {
+    // KÃ¼rze die Inputs fÃ¼r den Prompt
+    const truncatedUser = userMessage.substring(0, 150);
+    const truncatedAI = aiResponse.substring(0, 300);
+
+    // AI-generierter Titel basierend auf beiden Nachrichten
+    const prompt = `Based on this conversation, generate a short, descriptive title (max 5 words). Only respond with the title in the same language as the message, nothing else:
+
+User: "${truncatedUser}"
+Assistant: "${truncatedAI}"`;
+
+    // ====== FIX: Baue messages Array ======
+    const messages = [
+      {
+        role: "system",
+        content:
+          "You are an assistant that creates short, concise titles. Respond only with the title, nothing else.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ];
+
+    // ====== GEÃ„NDERT: Ãœbergebe messages Array statt String ======
+    const aiTitle = await streamResponse(
+      messages,
+      "openai/gpt-oss-120b",
+      null, // onChunk
+      false, // reasoning
+      50, // updateInterval
+      null, // signal
+    );
+
+    // SÃ¤ubere und validiere AI-Antwort
+    const cleaned = aiTitle
+      .trim()
+      .replace(/['"]/g, "") // Entferne AnfÃ¼hrungszeichen
+      .replace(/^(Title:|Titel:)/i, "") // Entferne "Title:" Prefix
+      .trim();
+
+    // Validierung: Nicht zu lang, nicht leer
+    if (cleaned && cleaned.length > 0 && cleaned.length <= 60) {
+      return truncateText(cleaned, 50, true);
+    }
+
+    // Falls AI-Titel ungÃ¼ltig, nutze Fallback
+    return fallbackTitle;
+  } catch (error) {
+    console.warn(
+      "Fehler bei AI-Titel-Generierung, nutze Fallback:",
+      error.message,
+    );
+    return fallbackTitle;
+  }
+}
+=== E:\Projekte\openchat\lib\prompts\systemprompt.js ===
+/**
+ * Baut den Projekt-Kontext-Block fÃ¼r den System Prompt.
+ * EnthÃ¤lt Projekt-Instructions, hochgeladene Dokumente und Zusammenfassungen
+ * der anderen Chats im selben Projekt.
+ *
+ * @param {Object|null} project - Projekt-Objekt aus Firestore
+ * @returns {string} - Formatierter Kontext-Block oder leerer String
+ */
+export function buildProjectContext(project) {
+  if (!project) return "";
+
+  const parts = [];
+
+  if (project.instructions?.trim()) {
+    parts.push(`## Projekt-Anweisungen\n${project.instructions.trim()}`);
+  }
+
+  if (project.documents?.length > 0) {
+    const docBlocks = project.documents
+      .map((doc) => {
+        const header = `### ${doc.title || "Dokument"} (${doc.type || "text"})`;
+        return `${header}\n${doc.content}`;
+      })
+      .join("\n\n");
+
+    parts.push(`## Projekt-Dateien\n${docBlocks}`);
+  }
+
+  if (project.memories?.length > 0) {
+    const memoriesList = project.memories.map((m) => `- ${m.text}`).join("\n");
+    parts.push(`## Project Memory\n${memoriesList}`);
+  }
+
+  // Inject summaries from sibling chats in the same project.
+  // These are fetched in ChatContext.sendMessage and attached as
+  // project.conversationSummaries (excluding the current chat).
+  if (project.conversationSummaries?.length > 0) {
+    const summaryBlocks = project.conversationSummaries
+      .map((s) => `### ${s.title || "Untitled Chat"}\n${s.summary}`)
+      .join("\n\n");
+
+    parts.push(
+      `## Knowledge from other chats in this project\nThe following are summaries of other conversations in this project. Use them to answer questions or maintain continuity across chats.\n\n${summaryBlocks}`,
+    );
+  }
+
+  if (parts.length === 0) return "";
+
+  return `\n\n---\n# Projekt-Kontext: "${project.title}"\n\n${parts.join("\n\n")}`;
+}
+
+/**
+ * System Prompt
+ */
+
+export const buildSystemPromptWithMemories = (
+  memories = [],
+  basePreferences = "",
+  project = null,
+) => {
+  let systemPrompt = "You are a helpful AI assistant.";
+
+  if (basePreferences) {
+    systemPrompt += `\n\nUser preferences: ${basePreferences}`;
+  }
+
+  if (memories?.length > 0) {
+    const memoriesList = memories.map((m) => `- ${m.text}`).join("\n");
+    systemPrompt += `\n\nWhat you remember about this user:\n${memoriesList}`;
+  }
+
+  const projectContext = buildProjectContext(project);
+  if (projectContext) {
+    systemPrompt += projectContext;
+  }
+
+  return systemPrompt;
+};
+=== E:\Projekte\openchat\lib\routing\PrivateRoute.jsx ===
+"use client";
+
+import { useAuth } from "@/context";
+import { redirect } from "next/navigation";
+import React from "react";
+
+export default function PrivateRoute({ children }) {
+  const { user } = useAuth();
+  if (!user) {
+    redirect("/sign-in");
+  }
+  return <React.Fragment>{children}</React.Fragment>;
+}
+=== E:\Projekte\openchat\lib\ui\animationVariants.js ===
+/**
+ * Animation variants for the container
+ */
+export const getContainerVariant = (textAreaGrowHeight) => ({
+  initial: {
+    borderRadius: 30,
+    height: "auto",
+  },
+  animate: {
+    borderRadius: 32,
+    height: textAreaGrowHeight,
+  },
+});
+
+/**
+ * Animation variants for the textarea
+ */
+export const getTextAreaVariant = (buttonContainerHeight) => ({
+  initial: {
+    position: "relative",
+  },
+  animate: {
+    position: "absolute",
+    left: 8,
+    top: 8,
+    right: 8,
+    bottom: buttonContainerHeight + 8,
+  },
+});
+=== E:\Projekte\openchat\lib\ui\bubbleUtils.js ===
+// Chat Bubble Radius Calculation
+export const getBubbleRadius = (content = "") => {
+  const lines = content.trim().split("\n").length;
+  const chars = content.trim().length;
+  if (lines === 1 && chars <= 60) return 8;
+  if (lines <= 2 && chars <= 120) return 18;
+  return 22;
+};
+// Get code Text
+export const getCodeText = (children) => {
+  if (typeof children === "string") return children;
+  if (Array.isArray(children)) return children.map(getCodeText).join("");
+  if (children?.props?.children) return getCodeText(children.props.children);
+  return String(children ?? "");
+};
+
+export function copyToClipboard(text) {
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;";
+  el.setAttribute("readonly", "");
+  document.body.appendChild(el);
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  el.setSelectionRange(0, text.length);
+  document.execCommand("copy");
+  document.body.removeChild(el);
+}
+=== E:\Projekte\openchat\lib\utils\archiveUtils.js ===
+export const fuzzyMatch = (str, pattern) => {
+  if (!pattern) return { match: true, score: 0 };
+  if (!str) return { match: false, score: 0 };
+
+  const lowerStr = str.toLowerCase();
+  const lowerPattern = pattern.toLowerCase();
+
+  if (lowerStr.includes(lowerPattern)) return { match: true, score: 1000 };
+
+  let patternIdx = 0,
+    strIdx = 0,
+    score = 0,
+    consecutiveMatches = 0;
+
+  while (strIdx < lowerStr.length && patternIdx < lowerPattern.length) {
+    if (lowerStr[strIdx] === lowerPattern[patternIdx]) {
+      score += 1;
+      consecutiveMatches++;
+      if (consecutiveMatches > 1) score += consecutiveMatches * 2;
+      if (strIdx === 0 || lowerStr[strIdx - 1] === " ") score += 5;
+      patternIdx++;
+    } else {
+      consecutiveMatches = 0;
+    }
+    strIdx++;
+  }
+
+  const match = patternIdx === lowerPattern.length;
+  if (match) score = score * (1 + score / lowerStr.length);
+  return { match, score: match ? score : 0 };
+};
+
+export const toMs = (v) => v?.toDate?.().getTime() ?? new Date(v).getTime();
+
+export const sortItems = (list, sortBy) =>
+  [...list].sort((a, b) => {
+    if (sortBy === "name") return (a.title || "").localeCompare(b.title || "");
+    const key = sortBy === "date" ? "createdAt" : "updatedAt";
+    return toMs(b[key]) - toMs(a[key]);
+  });
+
+export const fuzzyFilterChats = (chats, query) =>
+  chats
+    .map((c) => ({ c, ...fuzzyMatch(c.title || "", query) }))
+    .filter(({ match }) => match)
+    .sort((a, b) => b.score - a.score)
+    .map(({ c }) => c);
+
+export const filterProjects = (projects, query, sortBy) => {
+  if (query.trim()) {
+    return projects.filter((p) =>
+      [p.title, p.description]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+    );
+  }
+  return sortItems(projects, sortBy);
+};
+
+export const groupConversationsByProject = (
+  conversations,
+  projectsById = null,
+) => {
+  const map = {};
+  for (const c of conversations) {
+    if (!c.projectId) continue;
+    if (projectsById && !projectsById[c.projectId]) continue;
+    if (!map[c.projectId]) map[c.projectId] = [];
+    map[c.projectId].push(c);
+  }
+  return map;
+};
+
+export const buildChatTabItems = ({
+  conversations,
+  projectsById,
+  conversationsByProject,
+  searchQuery,
+  sortBy,
+}) => {
+  const q = searchQuery.trim();
+  const items = [];
+  const seenProjects = new Set();
+
+  for (const c of conversations) {
+    const project = c.projectId ? projectsById[c.projectId] : null;
+
+    if (project) {
+      if (seenProjects.has(project.id)) continue;
+      seenProjects.add(project.id);
+
+      if (q) {
+        const projectMatch = fuzzyMatch(project.title || "", q);
+        const chatMatches = (conversationsByProject[project.id] ?? []).map(
+          (conv) => fuzzyMatch(conv.title || "", q),
+        );
+        const bestChatScore = chatMatches.reduce(
+          (best, s) => (s.score > best.score ? s : best),
+          { match: false, score: 0 },
+        );
+        if (!projectMatch.match && !bestChatScore.match) continue;
+        items.push({
+          type: "project",
+          item: project,
+          score: Math.max(projectMatch.score, bestChatScore.score),
+        });
+      } else {
+        items.push({ type: "project", item: project });
+      }
+    } else {
+      if (q) {
+        const { match, score } = fuzzyMatch(c.title || "", q);
+        if (!match) continue;
+        items.push({ type: "chat", item: c, score });
+      } else {
+        items.push({ type: "chat", item: c });
+      }
+    }
+  }
+
+  if (q) {
+    items.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  } else if (sortBy === "name") {
+    items.sort((a, b) =>
+      (a.item.title || "").localeCompare(b.item.title || ""),
+    );
+  } else {
+    const key = sortBy === "date" ? "createdAt" : "updatedAt";
+    items.sort((a, b) => toMs(b.item[key]) - toMs(a.item[key]));
+  }
+
+  return items;
+};
+
+export const FILTER_OPTIONS = [
+  { id: "recent", value: "activity", label: "Recent activity" },
+  { id: "name", value: "name", label: "Name" },
+  { id: "date", value: "date", label: "Date created" },
+];
+=== E:\Projekte\openchat\lib\utils\formatHelpers.js ===
+/**
+ * SchÃ¤tzt Token-Count (grob: ~4 Zeichen = 1 Token)
+ */
+export function estimateTokens(text) {
+  return Math.ceil(text.length / 4);
+}
+
+export function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function fileTypeLabel(type) {
+  const map = {
+    js: "JS",
+    jsx: "JSX",
+    ts: "TS",
+    tsx: "TSX",
+    py: "PY",
+    java: "Java",
+    cpp: "C++",
+    c: "C",
+    cs: "C#",
+    rb: "Ruby",
+    go: "Go",
+    rs: "Rust",
+    php: "PHP",
+    html: "HTML",
+    css: "CSS",
+    scss: "SCSS",
+    json: "JSON",
+    xml: "XML",
+    yaml: "YAML",
+    yml: "YAML",
+    csv: "CSV",
+    md: "MD",
+    txt: "TXT",
+    pdf: "PDF",
+  };
+  return map[type?.toLowerCase()] ?? type?.toUpperCase() ?? "File";
+}
+=== E:\Projekte\openchat\lib\utils\idUtils.js ===
+/**
+ * Pollyfill for generating UUID
+ */
+export const generateId = () => {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+=== E:\Projekte\openchat\lib\utils\models.js ===
+export const MODELS = [
+  {
+    id: "gpt-oss",
+    value: "gpt-oss",
+    label: "gpt-oss",
+  },
+  {
+    id: "gemini-2.5-flash",
+    value: "gemini flash",
+    label: "gemini-2.5-flash",
+  },
+];
+=== E:\Projekte\openchat\lib\utils\textUtils.js ===
+// textUtils.js
+
+/**
+ * Generiert einen Fallback-Titel aus den ersten 3 WÃ¶rtern
+ * @param {string} message - Die Nachricht
+ * @returns {string} - Titel aus den ersten 3 WÃ¶rtern
+ */
+export function generateFallbackTitle(message) {
+  if (!message || typeof message !== "string") {
+    return "New Chat";
+  }
+
+  // Entferne Markdown und normalisiere Whitespace
+  const cleaned = message
+    .replace(/[#*_~`]/g, "")
+    .replace(/\n+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleaned) return "New Chat";
+
+  // Nimm die ersten 3 WÃ¶rter
+  const words = cleaned.split(" ").filter((word) => word.length > 0);
+  const firstThreeWords = words.slice(0, 3).join(" ");
+
+  // Falls weniger als 3 WÃ¶rter, nimm was da ist
+  return firstThreeWords || "New Chat";
+}
+
+/**
+ * KÃ¼rzt einen Text auf eine maximale LÃ¤nge und fÃ¼gt Ellipsis hinzu
+ * @param {string} text - Der zu kÃ¼rzende Text
+ * @param {number} maxLength - Maximale ZeichenlÃ¤nge (default: 50)
+ * @param {boolean} smartTrim - Versucht bei Wortgrenzen zu kÃ¼rzen (default: true)
+ * @returns {string} - GekÃ¼rzter Text mit "..." wenn nÃ¶tig
+ */
+export function truncateText(text, maxLength = 50, smartTrim = true) {
+  if (!text) return "";
+
+  const trimmed = text.trim();
+
+  if (trimmed.length <= maxLength) {
+    return trimmed;
+  }
+
+  let truncated = trimmed.substring(0, maxLength);
+
+  if (smartTrim) {
+    const lastSpace = truncated.lastIndexOf(" ");
+
+    if (lastSpace > maxLength * 0.6) {
+      truncated = truncated.substring(0, lastSpace);
+    }
+  }
+
+  return truncated + "...";
+}
+
+/**
+ * Validiert und sÃ¤ubert einen Titel
+ * @param {string} title - Der zu validierende Titel
+ * @param {number} maxLength - Maximale LÃ¤nge (default: 100)
+ * @returns {string} - Validierter und gesÃ¤uberter Titel
+ */
+export function sanitizeTitle(title, maxLength = 100) {
+  if (!title || typeof title !== "string") {
+    return "New Chat";
+  }
+
+  const sanitized = title.replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
+
+  if (!sanitized) return "New Chat";
+
+  return truncateText(sanitized, maxLength, true);
+}
+
+// Format the last activity date
+export const formatDate = (timestamp) => {
+  // Handle Firestore Timestamp
+  let date;
+  if (timestamp?.toDate) {
+    // Firestore Timestamp object
+    date = timestamp.toDate();
+  } else if (timestamp?.seconds) {
+    // Firestore Timestamp plain object with seconds
+    date = new Date(timestamp.seconds * 1000);
+  } else if (timestamp instanceof Date) {
+    // Already a Date object
+    date = timestamp;
+  } else if (typeof timestamp === "string") {
+    // ISO string
+    date = new Date(timestamp);
+  } else {
+    // Invalid timestamp
+    return "Unknown";
+  }
+
+  const now = new Date();
+  const diffInMs = now - date;
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  const diffInMonths = Math.floor(diffInDays / 30);
+  const diffInYears = Math.floor(diffInDays / 365);
+
+  if (diffInDays === 0) return "Today";
+  if (diffInDays === 1) return "Yesterday";
+  if (diffInDays < 30) return `${diffInDays} days ago`;
+  if (diffInMonths < 12)
+    return `${diffInMonths} ${diffInMonths === 1 ? "month" : "months"} ago`;
+  if (diffInYears === 1) return "1 year ago";
+  return `${diffInYears} years ago`;
+};
+
+/**
+ * Formats a username by removing email domain and replacing special characters
+ * @param {string} username - The username or email to format
+ * @returns {string} - Formatted username
+ *
+ * Examples:
+ * "max.muster@mail.de" -> "max muster"
+ * "max_muster@mail.de" -> "max muster"
+ * "john-doe@example.com" -> "john doe"
+ * "Max Muster" -> "Max Muster" (no change if no @)
+ */
+export function formatUsername(username) {
+  if (!username || typeof username !== "string") {
+    return "User";
+  }
+
+  // Remove everything after @ (including @)
+  let formatted = username.split("@")[0];
+
+  // Replace special characters (., _, -, etc.) with spaces
+  formatted = formatted.replace(/[._\-+]/g, " ");
+
+  // Capitalize first letter of each word
+  formatted = formatted
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+
+  return formatted.trim() || "User";
+}
+
+/**
+ * Inserts text at cursor position in textarea
+ */
+export const insertTextAtCursor = (
+  currentValue,
+  textToInsert,
+  textarea,
+  callback,
+) => {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+
+  const newValue =
+    currentValue.substring(0, start) +
+    textToInsert +
+    currentValue.substring(end);
+
+  callback(newValue);
+
+  setTimeout(() => {
+    textarea.selectionStart = textarea.selectionEnd =
+      start + textToInsert.length;
+    textarea.focus();
+  }, 0);
+};
+=== E:\Projekte\openchat\lib\utils\themes.js ===
+export const THEMES = [
+  {
+    id: "light",
+    theme: "light",
+    imageURL: "/assets/images/theme thumbnails/theme_light.webp",
+  },
+  {
+    id: "auto",
+    theme: "auto",
+    imageURL: "/assets/images/theme thumbnails/theme_auto.webp",
+  },
+  {
+    id: "dark",
+    theme: "dark",
+    imageURL: "/assets/images/theme thumbnails/theme_dark.webp",
+  },
+];
+=== E:\Projekte\openchat\lib\index.js ===
+// â”€â”€â”€ FIREBASE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export {
+  getFirebaseApp,
+  getFirebaseDB,
+  getFirebaseStorage,
+  getFirebaseAuth,
+} from "./firebase/config";
+export {
+  authErrorMessages,
+  getAuthErrorMessage,
+} from "./firebase/error-messages";
+
+// â”€â”€â”€ ROUTING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export { default as PrivateRoute } from "./routing/PrivateRoute";
+
+// â”€â”€â”€ API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export { streamResponse } from "./api/streamResponse";
+
+// â”€â”€â”€ CHAT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export {
+  buildContextMessages,
+  trimMessagesToTokenLimit,
+  estimateTokens,
+} from "./chat/buildMessages";
+
+export {
+  detectAttachmentType,
+  createAttachment,
+  createPastedAttachment,
+  ACCEPTED_FILE_TYPES,
+} from "./chat/attachmentHelpers";
+
+// â”€â”€â”€ CHAT CONTEXT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export {
+  buildApiMessages,
+  fetchSiblingConversationSummaries,
+  generateAndSaveConversationSummary,
+} from "./chat/chatContextUtils";
+
+// â”€â”€â”€ MEMORY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export {
+  extractProjectMemoryFromConversation,
+  extractAndSaveUserMemory,
+  extractAndSaveProjectMemory,
+} from "./memory/memoryUtils";
+
+// â”€â”€â”€ PROMPTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export {
+  buildMemoryExtractionPrompt,
+  buildProjectMemoryExtractionPrompt,
+} from "./prompts/memoryPrompts";
+
+export {
+  buildSummaryPrompt,
+  generateTitleFromResponse,
+} from "./prompts/summaryPrompt";
+
+export {
+  buildProjectContext,
+  buildSystemPromptWithMemories,
+} from "./prompts/systemprompt";
+
+// â”€â”€â”€ UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export {
+  getContainerVariant,
+  getTextAreaVariant,
+} from "./ui/animationVariants";
+
+export {
+  getBubbleRadius,
+  getCodeText,
+  copyToClipboard,
+} from "./ui/bubbleUtils";
+
+// â”€â”€â”€ UTILS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export { generateId } from "./utils/idUtils";
+
+export { formatBytes, fileTypeLabel } from "./utils/formatHelpers";
+
+export {
+  truncateText,
+  sanitizeTitle,
+  generateFallbackTitle,
+  formatDate,
+  formatUsername,
+  insertTextAtCursor,
+} from "./utils/textUtils";
+
+export {
+  fuzzyMatch,
+  sortItems,
+  fuzzyFilterChats,
+  filterProjects,
+  groupConversationsByProject,
+  buildChatTabItems,
+  FILTER_OPTIONS,
+} from "./utils/archiveUtils";
+
+export { MODELS } from "./utils/models";
+export { THEMES } from "./utils/themes";

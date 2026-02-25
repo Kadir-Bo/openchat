@@ -23,6 +23,7 @@ export default function ChatHeader({ handleToggleSidebar }) {
             className="p-3 m-0 border-none w-max"
             tooltip={"New Chat"}
             tooltipPosition="left"
+            href={"/chat"}
           >
             <MessageSquare size={20} />
           </PrimaryButton>

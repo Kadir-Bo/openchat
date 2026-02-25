@@ -17,8 +17,8 @@ export default function PrimaryButton({
   const defaultClasses = `
     min-w-max
     w-full
-    font-normal
-    text-base
+    font-medium
+    text-sm
     flex
     justify-start
     items-center

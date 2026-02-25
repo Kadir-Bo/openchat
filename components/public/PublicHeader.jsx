@@ -8,7 +8,7 @@ export default function PublicHeader() {
         <LogoButton />
         <div className="w-max flex  items-center justify-end gap-2">
           <PrimaryButton
-            className="justify-center w-maxa text-neutral-300"
+            className="justify-center w-max text-neutral-300 hidden md:flex"
             href={"/sign-up"}
           >
             Sign Up

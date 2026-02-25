@@ -17,6 +17,7 @@ import {
   useFileSelectHandler,
   useKeyboardHandler,
   useSendMessageHandler,
+  useIsMobile,
 } from "@/hooks";
 import {
   getContainerVariant,
@@ -34,7 +35,7 @@ export default function ChatInterface({
   buttonClassName = "",
   attachmentButtonClassName = "",
   sendButtonClassName = "",
-  buttonIconSize = 21,
+  buttonIconSize = 20,
   textAreaGrowHeight = 180,
   buttonContainerHeight = 50,
   placeholder = "ask anything",
@@ -49,6 +50,8 @@ export default function ChatInterface({
 
   const [localUserInput, setLocalUserInput] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const isMobile = useIsMobile();
 
   const {
     attachments,
@@ -74,15 +77,18 @@ export default function ChatInterface({
   const resetInput = useCallback(() => {
     setLocalUserInput("");
     setIsExpanded(false);
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-  }, []);
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      if (!isMobile) el.focus();
+    }
+  }, [isMobile]);
 
   const checkExpanded = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     const lineHeight = parseInt(getComputedStyle(el).lineHeight, 10);
-    const paddingY = 24; // py-3 = 12px top + 12px bottom
-    setIsExpanded(el.scrollHeight > lineHeight + paddingY);
+    setIsExpanded(el.scrollHeight > lineHeight + 24); // 24 = paddingY
   }, []);
 
   const handleChange = useCallback((e) => {
@@ -90,10 +96,6 @@ export default function ChatInterface({
     setLocalUserInput(value);
     if (!value) setIsExpanded(false);
   }, []);
-
-  const handleInput = useCallback(() => {
-    checkExpanded();
-  }, [checkExpanded]);
 
   const handlePaste = usePasteHandler(
     textareaRef,
@@ -141,10 +143,18 @@ export default function ChatInterface({
     [buttonContainerHeight],
   );
 
+  // Shared base button classes matching PublicChatInterface
+  const baseButtonCls = twMerge(
+    "w-max p-2.5 sm:p-3 aspect-square justify-center rounded-full",
+    "min-w-[44px] min-h-[44px]",
+    buttonClassName,
+  );
+
   return (
     <motion.div
       className={twMerge(
-        "w-full relative max-w-220 mx-auto py-4 flex flex-col",
+        "w-full relative max-w-3xl mx-auto py-3 sm:py-4 flex flex-col overflow-hidden",
+        "pb-[calc(env(safe-area-inset-bottom)+1rem)]",
         className,
       )}
     >
@@ -157,7 +167,7 @@ export default function ChatInterface({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.15 }}
-            className="flex flex-wrap gap-2 bottom-full h-30 overflow-y-auto"
+            className="flex flex-wrap gap-2 mb-2 max-h-28 overflow-y-auto"
           >
             {attachments.map((attachment) => (
               <AttachmentThumbnail
@@ -173,7 +183,8 @@ export default function ChatInterface({
       {/* Input container */}
       <motion.div
         className={twMerge(
-          "bg-neutral-900 flex flex-col justify-end relative my-px",
+          "bg-neutral-900 flex flex-col justify-end relative mb-6 sm:mb-8",
+          "rounded-2xl",
           containerClassName,
         )}
         variants={containerVariant}
@@ -181,10 +192,8 @@ export default function ChatInterface({
         animate={isExpanded ? "animate" : "initial"}
         transition={{ duration: 0.2, ease: "easeOut" }}
       >
-        <div
-          className="flex justify-between items-center"
-          style={{ height: `${buttonContainerHeight}px` }}
-        >
+        <div className="flex items-center justify-between gap-1 p-1.5">
+          {/* Hidden file input */}
           <input
             ref={fileInputRef}
             type="file"
@@ -192,17 +201,19 @@ export default function ChatInterface({
             accept={ACCEPTED_FILE_TYPES}
             onChange={handleFileSelect}
             className="hidden"
+            aria-hidden="true"
           />
 
           {/* Attach button */}
           <PrimaryButton
             className={twMerge(
-              "w-max min-w-10 h-10 justify-center ml-2 rounded-full",
-              buttonClassName,
+              baseButtonCls,
+              "border-transparent hover:border-neutral-900/50 hover:bg-neutral-800",
               attachmentButtonClassName,
             )}
             disabled={isLoading}
             tooltip="Add files"
+            aria-label="Add files"
             onClick={() => fileInputRef.current?.click()}
           >
             <Plus size={buttonIconSize} />
@@ -215,32 +226,38 @@ export default function ChatInterface({
             id="user-input"
             placeholder={placeholder}
             className={twMerge(
-              "resize-none w-full p-3 overflow-y-auto no-scrollbar outline-none disabled:opacity-50 disabled:cursor-not-allowed",
+              "resize-none flex-1 min-w-0 p-2",
+              "text-sm sm:text-base leading-relaxed",
+              "overflow-y-auto no-scrollbar outline-none",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              "touch-manipulation",
               textareaClassName,
-              isExpanded && `w-auto ${textareaExpandedClassName}`,
+              isExpanded && textareaExpandedClassName,
             )}
             value={localUserInput}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            onInput={handleInput}
+            onInput={checkExpanded}
             variants={textAreaVariant}
             initial="initial"
             animate={isExpanded ? "animate" : "initial"}
             rows={1}
             disabled={isLoading}
-            autoFocus={autofocus}
+            autoFocus={autofocus && !isMobile}
+            aria-label="Message input"
           />
 
           {/* Send / Stop button */}
           {isLoading ? (
             <PrimaryButton
               className={twMerge(
-                "w-max min-w-10 h-10 justify-center mr-2 rounded-full bg-transparent border-neutral-600 hover:bg-transparent",
-                buttonClassName,
+                baseButtonCls,
+                "bg-transparent border-neutral-600 hover:bg-transparent",
                 sendButtonClassName,
               )}
-              tooltip="Stop"
+              tooltip="Stop generation"
+              aria-label="Stop generation"
               filled
               onClick={stopGeneration}
             >
@@ -252,11 +269,12 @@ export default function ChatInterface({
           ) : (
             <PrimaryButton
               className={twMerge(
-                "w-max min-w-10 h-10 justify-center mr-2 rounded-full hover:bg-neutral-100 hover:text-neutral-950",
-                buttonClassName,
+                baseButtonCls,
+                "hover:bg-neutral-100 hover:text-neutral-950",
                 sendButtonClassName,
               )}
-              tooltip="Send"
+              tooltip="Send message"
+              aria-label="Send message"
               onClick={handleSend}
             >
               <ArrowUp size={buttonIconSize} />
@@ -264,6 +282,8 @@ export default function ChatInterface({
           )}
         </div>
       </motion.div>
+
+      {/* Footer indicator */}
       {indicator && <ChatFooterMessage />}
     </motion.div>
   );

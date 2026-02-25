@@ -98,7 +98,7 @@ export default function MobileContextMenu({
             i !== 0 && "border-t border-white/5",
           )}
         >
-          <Icon size={15} className="opacity-70 flex-shrink-0" />
+          <Icon size={15} className="opacity-70 shrink-0" />
           <span className="font-medium">{title}</span>
         </button>
       ))}

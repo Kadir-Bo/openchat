@@ -7,6 +7,7 @@ import {
   buildApiMessages,
   extractAndSaveUserMemory,
   generateTitleFromResponse,
+  extractAndSaveProjectMemory,
 } from "@/lib";
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -166,9 +166,7 @@ export default function ChatsPage() {
       onSortChange={setSortBy}
       searchQuery={searchQuery}
       onSearch={setSearchQuery}
-      searchPlaceholder={
-        isChats ? "Search chats or projects..." : "Search projects..."
-      }
+      searchPlaceholder={isChats ? "Search chats" : "Search projects..."}
       selectedCount={selectedCount}
       hasItems={hasItems}
       itemType={isChats ? "chat" : "project"}

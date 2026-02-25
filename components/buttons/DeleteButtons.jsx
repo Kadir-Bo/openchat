@@ -25,7 +25,7 @@ export default function DeleteButtons({
       ) : (
         hasItems && (
           <PrimaryButton className={redClass} onClick={onDeleteAll}>
-            {`Delete all ${label}s`}
+            {`Delete all ${label}`}
             <Trash2 size={14} />
           </PrimaryButton>
         )

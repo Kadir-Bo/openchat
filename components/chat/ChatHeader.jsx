@@ -5,7 +5,7 @@ import { LogoButton, PrimaryButton } from "@/components";
 export default function ChatHeader({ handleToggleSidebar }) {
   return (
     <div className="w-full bg-neutral-900">
-      <div className="max-w-550 mx-auto flex justify-between items-center px-2 py-1 h-12">
+      <div className="max-w-550 mx-auto flex justify-between items-center px-2 py-2 h-max">
         <div className="flex-1">
           <button
             className="outline-none p-3 h-full md:hidden"

@@ -27,9 +27,10 @@ export default function PrimaryButton({
     border-neutral-500/30
     hover:border-neutral-500/50
     hover:bg-neutral-900
-    px-4
+    px-3
+    py-2
     md:px-3
-    py-2.5
+    md:py-2.5
     rounded-lg
     cursor-pointer
     outline-none

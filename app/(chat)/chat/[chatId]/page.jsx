@@ -52,7 +52,7 @@ export default function ChatIDPage() {
       />
       <div
         ref={interfaceRef}
-        className="absolute bottom-10 left-0 right-0 z-998 bg-[rgb(15,15,15)] flex justify-center items-start"
+        className="absolute bottom-10 left-0 right-0 z-998 bg-[rgb(15,15,15)] flex justify-center items-start px-2 pb-8 md:pb-0"
       >
         <ChatInterface project_id={project?.id ?? null} project={project} />
       </div>

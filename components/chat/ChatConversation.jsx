@@ -187,11 +187,11 @@ export default function ChatConversation({
   if (!conversationId) return <EmptyStateConversation />;
 
   return (
-    <div style={{ paddingBottom: bottomPadding }} className="h-dvh">
+    <div className="h-dvh">
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="w-full overflow-y-auto h-full"
+        className="w-full overflow-y-auto h-full px-4 pb-40"
       >
         <div className="space-y-3 max-w-220 mx-auto">
           {messages.map((message) => (

@@ -6,7 +6,9 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col items-center justify-center h-full">
       <ChatConversation />
-      <ChatInterface />
+      <div className="w-full px-4">
+        <ChatInterface />
+      </div>
     </div>
   );
 }

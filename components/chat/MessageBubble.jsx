@@ -195,7 +195,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
 
       <div
         ref={bubbleRef}
-        className={`flex select-none md:select-auto ${isUser ? "justify-end mt-12" : "justify-start"}`}
+        className={`flex select-none md:select-auto ${isUser ? "justify-end" : "justify-start"}`}
       >
         <div
           className={`flex flex-col w-full ${isUser ? "items-end" : "items-start"}`}

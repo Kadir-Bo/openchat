@@ -21,6 +21,8 @@ export default function ChatPageShell({
   hasItems,
   itemType,
   actions,
+  headerActionTitle = "New Chat",
+  headerActionLink = "/chat",
   children,
 }) {
   const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
@@ -31,30 +33,32 @@ export default function ChatPageShell({
         <h1 className="text-3xl font-light">{title}</h1>
         <PrimaryButton
           className="w-max justify-center text-sm min-w-32"
-          href="/chat"
+          href={headerActionLink}
           filled
         >
-          New Chat
+          {headerActionTitle}
           <Plus size={17} />
         </PrimaryButton>
       </header>
 
-      <div className="flex items-center gap-1 border-b border-neutral-800">
-        {tabs.map(({ key, label, count }) => (
-          <button
-            key={key}
-            onClick={() => onTabChange(key)}
-            className={`px-4 py-2 text-sm capitalize transition-colors duration-150 border-b-2 -mb-px ${
-              activeTab === key
-                ? "border-neutral-300 text-neutral-100"
-                : "border-transparent text-neutral-500 hover:text-neutral-300"
-            }`}
-          >
-            {label}
-            <span className="ml-2 text-xs text-neutral-600">{count}</span>
-          </button>
-        ))}
-      </div>
+      {tabs && (
+        <div className="flex items-center gap-1 border-b border-neutral-800">
+          {tabs.map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => onTabChange(key)}
+              className={`px-4 py-2 text-sm capitalize transition-colors duration-150 border-b-2 -mb-px ${
+                activeTab === key
+                  ? "border-neutral-300 text-neutral-100"
+                  : "border-transparent text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              {label}
+              <span className="ml-2 text-xs text-neutral-600">{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex justify-end items-center gap-3">
         <span className="text-neutral-400 text-sm">Sort by:</span>

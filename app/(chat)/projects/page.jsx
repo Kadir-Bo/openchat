@@ -9,20 +9,9 @@ import React, {
   useState,
 } from "react";
 import { Archive, Plus, Trash2 } from "react-feather";
-import {
-  PrimaryButton,
-  ProjectCard,
-  Searchbar,
-  Select,
-  SelectionStatus,
-} from "@/components";
+import { PrimaryButton, ProjectCard, ChatPageShell } from "@/components";
 import { useRouter } from "next/navigation";
-
-const FILTER_OPTIONS = [
-  { id: "recent", value: "activity", label: "Recent activity" },
-  { id: "name", value: "name", label: "Name" },
-  { id: "date", value: "date", label: "Date created" },
-];
+import { FILTER_OPTIONS } from "@/lib";
 
 export default function ProjectsPage() {
   const { subscribeToProjects, deleteProject, toggleArchiveProject } =
@@ -137,56 +126,26 @@ export default function ProjectsPage() {
   }, [deleteProject]);
 
   const selectedCount = selectedIds.size;
-  const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
   const hasProjects = projects.length > 0;
 
-  if (isInitialLoading) {
-    return null;
-  }
+  if (isInitialLoading) return null;
 
   return (
-    <div className="flex-1 flex flex-col max-w-220 mx-auto py-8 gap-6 w-full px-4">
-      <header className="flex items-center justify-between">
-        <h1 className="text-3xl font-light">Projects</h1>
-        <PrimaryButton
-          className="w-max justify-center text-sm min-w-32"
-          href="/projects/create"
-          filled
-        >
-          New Project
-          <Plus size={17} />
-        </PrimaryButton>
-      </header>
-
-      <div className="flex justify-end items-center gap-3">
-        <span className="text-neutral-400 text-sm">Sort by:</span>
-        <Select
-          id="project-sort"
-          name="sort"
-          label=""
-          value={activeSort?.label || "Sort by"}
-          list={FILTER_OPTIONS}
-          onChange={(e) => setSortBy(e.target.value)}
-          containerClassName="w-auto min-w-40"
-          labelClassName="hidden"
-          buttonClassName="text-sm px-3 min-w-32 justify-center"
-        />
-      </div>
-
-      <Searchbar
-        onSearch={(q) => setSearchQuery(q)}
-        placeholder="Search Projects"
-      />
-
-      <div className="flex items-center justify-between h-10">
-        <SelectionStatus
-          selectedCount={selectedCount}
-          itemType={selectedCount === 1 ? "project" : "project"}
-          hasItems={hasProjects}
-        />
-
-        {selectedCount > 0 && (
-          <div className="flex items-center gap-2">
+    <ChatPageShell
+      title="Projects"
+      sortBy={sortBy}
+      onSortChange={setSortBy}
+      searchQuery={searchQuery}
+      onSearch={setSearchQuery}
+      searchPlaceholder="Search Projects"
+      selectedCount={selectedCount}
+      hasItems={hasProjects}
+      itemType={selectedCount === 1 ? "project" : "projects"}
+      headerActionTitle={"New Project"}
+      headerActionLink={"/projects/create"}
+      actions={
+        selectedCount > 0 && (
+          <>
             <PrimaryButton
               className="w-max text-sm px-4"
               onClick={handleArchiveSelected}
@@ -201,10 +160,10 @@ export default function ProjectsPage() {
               <Trash2 size={14} />
               {`Delete ${selectedCount} ${selectedCount === 1 ? "project" : "projects"}`}
             </PrimaryButton>
-          </div>
-        )}
-      </div>
-
+          </>
+        )
+      }
+    >
       {filteredAndSortedProjects.length > 0 ? (
         <div className="grid grid-cols-3 gap-4">
           {filteredAndSortedProjects.map((project) => (
@@ -225,7 +184,7 @@ export default function ProjectsPage() {
             <div className="flex flex-col items-center gap-4">
               <p>No projects yet</p>
               <PrimaryButton
-                className="w-max justify-center text-sm px-4 "
+                className="w-max justify-center text-sm px-4"
                 href="/projects/create"
               >
                 <Plus size={17} />
@@ -235,6 +194,6 @@ export default function ProjectsPage() {
           )}
         </div>
       )}
-    </div>
+    </ChatPageShell>
   );
 }

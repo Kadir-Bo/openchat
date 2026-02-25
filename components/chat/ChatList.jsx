@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useDatabase, useModal } from "@/context";
 
 import {
-  DeleteChatModal,
+  DeleteConfirmModal,
   DropdownMenu,
   ProcessingIndicator,
 } from "@/components";
@@ -29,7 +29,8 @@ export default function ChatList({
   listItemClasses = "",
   pendingIds = null,
 }) {
-  const { updateConversation, toggleArchiveConversation } = useDatabase();
+  const { updateConversation, toggleArchiveConversation, deleteConversation } =
+    useDatabase();
   const { openModal, openMessage } = useModal();
   const [isOpen, setIsOpen] = useState(defaultExpanded);
   const [editingId, setEditingId] = useState(null);
@@ -91,10 +92,21 @@ export default function ChatList({
   );
 
   const handleDeleteChat = useCallback(
-    (id, title) => {
-      openModal(<DeleteChatModal title={title} id={id} />);
+    (id) => {
+      openModal(
+        <DeleteConfirmModal
+          title="Chat löschen"
+          description="Are you sure you want to delete this chat? This action cannot be undone."
+          onConfirm={async () => {
+            const result = await deleteConversation(id);
+            if (result) {
+              openMessage("Chat deleted successfully!", "success");
+            }
+          }}
+        />,
+      );
     },
-    [openModal],
+    [openModal, deleteConversation, openMessage],
   );
 
   const handleKeyDownById = useCallback(
@@ -128,7 +140,7 @@ export default function ChatList({
         id: "delete-chat",
         label: "Löschen",
         icon: Trash,
-        action: () => handleDeleteChat(item.id, item.title),
+        action: () => handleDeleteChat(item.id),
       },
     ],
     [handleRenameChat, handleArchiveChat, handleDeleteChat],

@@ -1,6 +1,6 @@
 "use client";
 
-import { useDatabase } from "@/context";
+import { useDatabase, useModal } from "@/context";
 import React, {
   useCallback,
   useEffect,
@@ -9,7 +9,12 @@ import React, {
   useState,
 } from "react";
 import { Archive, Plus, Trash2 } from "react-feather";
-import { PrimaryButton, ProjectCard, ChatPageShell } from "@/components";
+import {
+  PrimaryButton,
+  ProjectCard,
+  ChatPageShell,
+  DeleteConfirmModal,
+} from "@/components";
 import { useRouter } from "next/navigation";
 import { FILTER_OPTIONS } from "@/lib";
 
@@ -23,6 +28,7 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].value);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const { openModal } = useModal();
 
   const selectedIdsRef = useRef(selectedIds);
   const lastClickedIndexRef = useRef(null);
@@ -125,6 +131,34 @@ export default function ProjectsPage() {
     lastClickedIndexRef.current = null;
   }, [deleteProject]);
 
+  const handleDeleteAll = useCallback(async () => {
+    await Promise.all(projects.map((p) => deleteProject(p.id)));
+    setSelectedIds(new Set());
+    lastClickedIndexRef.current = null;
+  }, [projects, deleteProject]);
+
+  const handleDeleteAction = () => {
+    if (selectedCount > 0) {
+      openModal(
+        <DeleteConfirmModal
+          title={`${selectedCount} ${selectedCount > 1 ? "Projects" : "Project"}`}
+          description={`Are you sure you want to delete ${selectedCount} selected ${
+            selectedCount === 1 ? "project" : "projects"
+          }? This action cannot be undone.`}
+          onConfirm={handleDeleteSelected}
+        />,
+      );
+    } else {
+      openModal(
+        <DeleteConfirmModal
+          title="All Projects"
+          description="Are you sure you want to delete ALL projects? This action cannot be undone."
+          onConfirm={handleDeleteAll}
+        />,
+      );
+    }
+  };
+
   const selectedCount = selectedIds.size;
   const hasProjects = projects.length > 0;
 
@@ -144,21 +178,28 @@ export default function ProjectsPage() {
       headerActionTitle={"New Project"}
       headerActionLink={"/projects/create"}
       actions={
-        selectedCount > 0 && (
+        hasProjects && (
           <>
-            <PrimaryButton
-              className="w-max text-sm px-4"
-              onClick={handleArchiveSelected}
-            >
-              <Archive size={14} />
-              {`Archive ${selectedCount}`}
-            </PrimaryButton>
+            {selectedCount > 0 && (
+              <PrimaryButton
+                className="w-max text-sm px-4"
+                onClick={handleArchiveSelected}
+              >
+                <Archive size={14} />
+                {`Archive ${selectedCount}`}
+              </PrimaryButton>
+            )}
+
             <PrimaryButton
               className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
-              onClick={handleDeleteSelected}
+              onClick={handleDeleteAction}
             >
               <Trash2 size={14} />
-              {`Delete ${selectedCount} ${selectedCount === 1 ? "project" : "projects"}`}
+              {selectedCount > 0
+                ? `Delete ${selectedCount} ${
+                    selectedCount === 1 ? "project" : "projects"
+                  }`
+                : "Delete All projects"}
             </PrimaryButton>
           </>
         )

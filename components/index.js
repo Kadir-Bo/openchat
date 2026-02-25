@@ -56,10 +56,9 @@ export { default as DropdownMenu } from "./dropdown/DropdownMenu";
 
 // MODAl COMPONENTS
 export { default as RenameProjectModal } from "./modal/RenameProjectModal";
-export { default as DeleteProjectModal } from "./modal/DeleteProjectModal";
-export { default as DeleteChatModal } from "./modal/DeleteChatModal";
 export { default as RenameChatModal } from "./modal/RenameChatModal";
 export { default as DeleteAccountModal } from "./modal/DeleteAccountModal";
+export { default as DeleteConfirmModal } from "./modal/DeleteConfirmModal";
 
 // INPUT COMPONENTS
 export { default as Input } from "./input/Input";

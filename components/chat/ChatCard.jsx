@@ -2,7 +2,11 @@
 
 import React, { useState } from "react";
 import { useDatabase, useModal } from "@/context";
-import { DeleteChatModal, RenameChatModal, DropdownMenu } from "@/components";
+import {
+  RenameChatModal,
+  DropdownMenu,
+  DeleteConfirmModal,
+} from "@/components";
 import { Archive, Edit2, Folder, Trash } from "react-feather";
 import { twMerge } from "tailwind-merge";
 
@@ -14,13 +18,20 @@ export default function ChatCard({
   project = null,
 }) {
   const { title, id, isArchived } = conversation;
-  const { toggleArchiveConversation } = useDatabase();
-  const { openModal, openMessage } = useModal();
+  const { toggleArchiveConversation, deleteConversation } = useDatabase();
+  const { openModal, openMessage, closeModal } = useModal();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleArchiveChat = async (id) => {
     const result = await toggleArchiveConversation(id);
     if (result) openMessage("Chat archived", "success");
+  };
+
+  const handleDeleteChat = async (id) => {
+    const result = await deleteConversation(id);
+    if (result) {
+      openMessage("Chat deleted", "success");
+    }
   };
 
   const ChatDropDownMenu = [
@@ -45,10 +56,10 @@ export default function ChatCard({
       icon: Trash,
       action: () =>
         openModal(
-          <DeleteChatModal
-            title={conversation.title}
-            id={conversation.id}
-            type="chat"
+          <DeleteConfirmModal
+            title="chat"
+            description="Are you sure you want to delete this chat? This action cannot be undone."
+            onConfirm={() => handleDeleteChat(id)}
           />,
         ),
     },

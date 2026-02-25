@@ -5,10 +5,10 @@ import { formatDate } from "@/lib";
 import { useDatabase, useModal } from "@/context";
 import {
   DropdownMenu,
-  DeleteProjectModal,
   RenameProjectModal,
+  DeleteConfirmModal,
 } from "@/components";
-import { Archive, Check, Edit2, Trash } from "react-feather";
+import { Archive, Edit2, Trash } from "react-feather";
 import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 
@@ -19,16 +19,21 @@ export default function ProjectCard({
   onCardClick = () => null,
 }) {
   const { title, description, updatedAt, createdAt, id, isArchived } = project;
-  const { toggleArchiveProject } = useDatabase();
+  const { toggleArchiveProject, deleteProject } = useDatabase();
   const { openModal, openMessage } = useModal();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const router = useRouter();
 
   const handleArchiveProject = async () => {
     const result = await toggleArchiveProject(id, !project.isArchived);
     if (result) openMessage("Project archived", "success");
   };
 
+  const handleDeleteProject = async (id) => {
+    const result = await deleteProject(id);
+    if (result) {
+      openMessage("Chat deleted", "success");
+    }
+  };
   const ProjectDropDownMenu = [
     {
       id: "rename-project",
@@ -53,7 +58,14 @@ export default function ProjectCard({
       id: "delete-project",
       label: "Löschen",
       icon: Trash,
-      action: () => openModal(<DeleteProjectModal title={title} id={id} />),
+      action: () =>
+        openModal(
+          <DeleteConfirmModal
+            title={title}
+            description={`Are you sure you want to delete the project "${title}"? This action cannot be undone.`}
+            onConfirm={() => handleDeleteProject(id)}
+          />,
+        ),
     },
   ];
 

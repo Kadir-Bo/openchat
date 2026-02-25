@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDatabase, useModal } from "@/context";
 import {
-  DeleteProjectModal,
   RenameProjectModal,
   ChatCard,
   DropdownMenu,
+  DeleteConfirmModal,
 } from "@/components";
 import { Archive, ChevronDown, Edit2, Folder, Trash } from "react-feather";
 import { twMerge } from "tailwind-merge";
@@ -21,7 +21,7 @@ export default function StackedProjectCard({
   onChatClick = () => null,
 }) {
   const { title, description, id, isArchived } = project;
-  const { toggleArchiveProject } = useDatabase();
+  const { toggleArchiveProject, deleteProject } = useDatabase();
   const { openModal, openMessage } = useModal();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -34,6 +34,13 @@ export default function StackedProjectCard({
         isArchived ? "Project unarchived" : "Project archived",
         "success",
       );
+  };
+
+  const handleDeleteProject = async (id) => {
+    const result = await deleteProject(id);
+    if (result) {
+      openMessage("Chat deleted", "success");
+    }
   };
 
   const ProjectDropDownMenu = [
@@ -60,7 +67,14 @@ export default function StackedProjectCard({
       id: "delete-project",
       label: "Löschen",
       icon: Trash,
-      action: () => openModal(<DeleteProjectModal title={title} id={id} />),
+      action: () =>
+        openModal(
+          <DeleteConfirmModal
+            title={title}
+            description={`Are you sure you want to delete the project "${title}"? This action cannot be undone.`}
+            onConfirm={() => handleDeleteProject(id)}
+          />,
+        ),
     },
   ];
 

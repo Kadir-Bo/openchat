@@ -191,7 +191,7 @@ export default function ChatConversation({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="w-full overflow-y-auto h-full px-4 pb-40"
+        className="w-full overflow-y-auto h-full px-4 pt-8 pb-50"
       >
         <div className="space-y-3 max-w-220 mx-auto">
           {messages.map((message) => (

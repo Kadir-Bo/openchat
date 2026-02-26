@@ -11,7 +11,7 @@ export default function InstructionsPanel({ project, onSave }) {
   const [status, setStatus] = useState("idle");
   const saveTimer = useRef(null);
   const isMobile = useIsMobile();
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(!isMobile);
 
   const triggerSave = (value) => {
     clearTimeout(saveTimer.current);
@@ -68,9 +68,9 @@ export default function InstructionsPanel({ project, onSave }) {
               <textarea
                 value={draft}
                 onChange={handleChange}
-                placeholder="e.g. Always reply in English. Use TypeScript. Be concise."
+                placeholder="e.g. Always reply in English. Be concise. You're a Architekt."
                 rows={5}
-                className="w-full bg-transparent border border-neutral-800 hover:border-neutral-700 focus:border-neutral-600 rounded-xl p-3.5 text-sm text-neutral-300 placeholder-neutral-700 resize-none outline-none transition-colors leading-relaxed"
+                className="w-full bg-transparent border border-neutral-800 hover:border-neutral-700 focus:border-neutral-600 rounded-xl p-3.5 text-sm placeholder:text-sm text-neutral-300 placeholder-neutral-700 resize-none outline-none transition-colors leading-relaxed"
               />
               <motion.span
                 animate={{ opacity: status === "idle" ? 0 : 1 }}

@@ -39,6 +39,7 @@ export { default as EmptyStateSearch } from "./ui/EmptyStateSearch";
 export { default as EmptyStateConversation } from "./ui/EmptyStateConversation";
 export { default as Backdrop } from "./ui/Backdrop";
 export { default as MobileContextMenu } from "./ui/MobileContextMenu";
+export { default as Icon } from "./ui/Icon";
 
 // SHELL COMPONENTS
 export { default as ChatPageShell } from "./shell/ChatPageShell";

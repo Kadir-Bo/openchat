@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+  useEffect,
+} from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { twMerge } from "tailwind-merge";
@@ -87,14 +93,22 @@ export default function ChatInterface({
   const checkExpanded = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
+    el.style.height = "auto";
+    if (!el.value) {
+      setIsExpanded(false);
+      return;
+    }
+    el.style.height = `${el.scrollHeight}px`;
     const lineHeight = parseInt(getComputedStyle(el).lineHeight, 10);
-    setIsExpanded(el.scrollHeight > lineHeight + 24); // 24 = paddingY
+    setIsExpanded(el.scrollHeight > lineHeight + 24);
   }, []);
 
+  useEffect(() => {
+    checkExpanded();
+  }, [localUserInput, checkExpanded]);
+
   const handleChange = useCallback((e) => {
-    const value = e.target.value;
-    setLocalUserInput(value);
-    if (!value) setIsExpanded(false);
+    setLocalUserInput(e.target.value);
   }, []);
 
   const handlePaste = usePasteHandler(
@@ -238,7 +252,6 @@ export default function ChatInterface({
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            onInput={checkExpanded}
             variants={textAreaVariant}
             initial="initial"
             animate={isExpanded ? "animate" : "initial"}

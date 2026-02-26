@@ -4,6 +4,7 @@ import {
   detectAttachmentType,
   insertTextAtCursor,
 } from "@/lib";
+
 export const usePasteHandler = (
   textareaRef,
   localUserInput,
@@ -49,7 +50,6 @@ export const usePasteHandler = (
               );
             }
           });
-          // Only handle the first text/plain item.
           return;
         }
       }

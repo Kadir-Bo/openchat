@@ -129,12 +129,12 @@ export default function ProjectIDPage() {
 
           <ChatInterface
             className="pb-0 no-scrollbar overflow-y-scroll"
-            textAreaGrowHeight={160}
+            textAreaGrowHeight={240}
             placeholder="Create a new Chat"
-            attachmentButtonClassName="hidden"
+            attachmentButtonClassName="w-max min-w-0"
             sendButtonClassName="ml-auto"
-            textareaClassName="px-5"
-            textareaExpandedClassName="py-2 px-3"
+            textareaClassName="px-2"
+            textareaExpandedClassName="p-3 mt-2"
             project_id={currentProject.id}
             project={currentProject}
             indicator={false}

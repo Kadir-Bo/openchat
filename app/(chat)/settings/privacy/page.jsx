@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useDatabase } from "@/context";
-import { MemoryItem, PrimaryButton } from "@/components";
+import { Icon, MemoryItem, PrimaryButton } from "@/components";
 import { Plus, Info } from "react-feather";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateId } from "@/lib";
@@ -90,7 +90,11 @@ function PrivacySettingsPage() {
         <h4 className="font-medium">Data & Privacy</h4>
         <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
           <div className="flex items-start gap-3">
-            <Info size={16} className="text-neutral-400 mt-0.5 shrink-0" />
+            <Icon
+              name={Info}
+              size={16}
+              className="text-neutral-400 mt-0.5 shrink-0"
+            />
             <div className="flex flex-col gap-2">
               <p className="text-sm text-neutral-300 font-medium">
                 How your data is used
@@ -136,7 +140,7 @@ function PrivacySettingsPage() {
               onClick={handleAddMemory}
               disabled={!newMemory.trim() || loading}
             >
-              <Plus size={15} />
+              <Icon name={Plus} size="sm" />
             </PrimaryButton>
           </div>
 

@@ -1,6 +1,6 @@
 import { Lock } from "react-feather";
 import { twMerge } from "tailwind-merge";
-import { PrimaryButton, DropdownMenu } from "@/components";
+import { PrimaryButton, DropdownMenu, Icon } from "@/components";
 
 export default function Select({
   id = "",
@@ -47,7 +47,7 @@ export default function Select({
         )}
       >
         {label}
-        {locked && <Lock className="text-neutral-500" size={13} />}
+        {locked && <Icon name={Lock} className="text-neutral-500" size="xs" />}
       </label>
       {list && list.length > 0 && (
         <DropdownMenu

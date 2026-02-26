@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { PrimaryButton } from "@/components";
+import { Icon, PrimaryButton } from "@/components";
 import { FileText, Plus, Trash2, Upload } from "react-feather";
 import { fileTypeLabel, formatBytes } from "@/lib";
 
@@ -78,7 +78,7 @@ export default function FilesPanel({
             tooltip="Upload file"
             className="outline-none border-none  cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max"
           >
-            <Plus size={15} />
+            <Icon name={Plus} size="sm" />
           </PrimaryButton>
         )}
       </div>
@@ -92,7 +92,11 @@ export default function FilesPanel({
                 key={doc.id}
                 className="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-neutral-800/60 group transition-colors"
               >
-                <FileText size={13} className="text-neutral-600 shrink-0" />
+                <Icon
+                  name={FileText}
+                  size="xs"
+                  className="text-neutral-600 shrink-0"
+                />
                 <span className="text-sm text-neutral-300 truncate flex-1 leading-none">
                   {doc.title}
                 </span>
@@ -104,7 +108,7 @@ export default function FilesPanel({
                   className="hidden group-hover:flex items-center justify-center text-neutral-600 hover:text-red-400 transition-colors shrink-0"
                   title="Remove file"
                 >
-                  <Trash2 size={12} />
+                  <Icon name={Trash2} size="xs" />
                 </button>
               </li>
             ))}
@@ -131,8 +135,9 @@ export default function FilesPanel({
             }
           `}
         >
-          <Upload
-            size={isEmpty ? 18 : 13}
+          <Icon
+            name={Upload}
+            size="sm"
             className={`shrink-0 transition-colors ${dragOver ? "text-neutral-300" : "text-neutral-700"}`}
           />
           {isEmpty ? (

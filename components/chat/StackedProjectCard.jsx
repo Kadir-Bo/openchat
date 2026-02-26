@@ -8,6 +8,7 @@ import {
   ChatCard,
   DropdownMenu,
   DeleteConfirmModal,
+  Icon,
 } from "@/components";
 import { Archive, ChevronDown, Edit2, Folder, Trash } from "react-feather";
 import { twMerge } from "tailwind-merge";
@@ -150,7 +151,12 @@ export default function StackedProjectCard({
         <div className="flex items-start gap-3 p-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <Folder size={13} className="text-neutral-500 shrink-0 mt-0.5" />
+              <Icon
+                name={Folder}
+                size="xs"
+                className="text-neutral-500 shrink-0 mt-0.5"
+              />
+
               <h4
                 className="font-medium truncate leading-snug hover:underline py-1"
                 onClick={() => handleNavigateToPage("project", id)}
@@ -180,7 +186,7 @@ export default function StackedProjectCard({
                 transition={{ duration: 0.2, ease: "easeInOut" }}
                 className="p-1 text-neutral-600"
               >
-                <ChevronDown size={14} />
+                <Icon name={ChevronDown} size="xs" />
               </motion.div>
             )}
             {/* Dropdown — stop propagation so it doesn't toggle accordion */}

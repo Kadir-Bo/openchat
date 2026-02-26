@@ -9,6 +9,7 @@ import {
   LogoButton,
   DropdownMenu,
   Backdrop,
+  Icon,
 } from "@/components";
 
 import { useAuth, useDatabase } from "@/context";
@@ -157,9 +158,9 @@ export default function Sidebar({
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
           >
             {!isOpen && !isMobile ? (
-              <Menu size={20} />
+              <Icon name={Menu} size="md" />
             ) : (
-              <ArrowLeft size={20} />
+              <Icon name={ArrowLeft} size="md" />
             )}
           </button>
         </div>
@@ -178,28 +179,28 @@ export default function Sidebar({
             >
               <div className="flex flex-col gap-1 p-2">
                 <PrimaryButton href="/chat" className="hover:bg-neutral-800">
-                  <Plus size={16} />
+                  <Icon name={Plus} size="sm" />
                   New Chat
                 </PrimaryButton>
                 <PrimaryButton
                   href="/projects"
                   className="border-transparent  hover:border-transparent hover:bg-neutral-800 gap-2"
                 >
-                  <FolderPlus size={16} />
+                  <Icon name={FolderPlus} size="sm" />
                   Projects
                 </PrimaryButton>
                 <PrimaryButton
                   href="/chats"
                   className="border-transparent  hover:border-transparent hover:bg-neutral-800 gap-2"
                 >
-                  <List size={16} />
+                  <Icon name={List} size="sm" />
                   Chats
                 </PrimaryButton>
                 <PrimaryButton
                   href="/archive"
                   className="border-transparent  hover:border-transparent hover:bg-neutral-800 gap-2"
                 >
-                  <Archive size={16} />
+                  <Icon name={Archive} size="sm" />
                   Archive
                 </PrimaryButton>
               </div>
@@ -235,7 +236,7 @@ export default function Sidebar({
                   <UserProfileImage image={userImage} username={username} />
                   <div className="flex flex-1 justify-between items-center">
                     {username}
-                    <ChevronUp size={15} />
+                    <Icon name={ChevronUp} size="sm" />
                   </div>
                 </PrimaryButton>
               </DropdownMenu>

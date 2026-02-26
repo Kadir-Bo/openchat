@@ -14,6 +14,7 @@ import { useDatabase, useModal } from "@/context";
 import {
   DeleteConfirmModal,
   DropdownMenu,
+  Icon,
   ProcessingIndicator,
 } from "@/components";
 
@@ -285,7 +286,7 @@ const ChatListItem = React.memo(
               onClick={handleNavigate}
               className="truncate py-1 pl-3 w-full flex items-center gap-1 text-left hover:text-neutral-100 cursor-pointer"
             >
-              {listIcon && listIcon}
+              {listIcon && <Icon name={listIcon} size="md" />}
               <AnimatePresence mode="wait" initial={false}>
                 {isPending ? (
                   <motion.span

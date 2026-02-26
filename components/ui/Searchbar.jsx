@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { Search, X } from "react-feather";
 import { twMerge } from "tailwind-merge";
+import { Icon } from "@/components";
 
 export default function Searchbar({
   placeholder = "Search",
@@ -49,7 +50,7 @@ export default function Searchbar({
         aria-label="Search"
         tabIndex={-1}
       >
-        <Search size={19} />
+        <Icon name={Search} size="md" />
       </button>
 
       <input
@@ -71,7 +72,7 @@ export default function Searchbar({
           type="button"
           aria-label="Clear search"
         >
-          <X size={19} />
+          <Icon name={X} size="md" />
         </button>
       )}
     </div>

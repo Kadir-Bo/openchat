@@ -2,7 +2,7 @@
 
 import { useDatabase, useModal } from "@/context";
 import React, { useState } from "react";
-import { PrimaryButton } from "..";
+import { PrimaryButton } from "@/components";
 
 export default function RenameChatModal({ title, id }) {
   const { loading, updateConversation } = useDatabase();

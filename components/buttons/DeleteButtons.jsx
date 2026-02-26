@@ -1,7 +1,7 @@
 "use client";
 
 import { Trash2 } from "react-feather";
-import { PrimaryButton, DeleteConfirmModal } from "@/components";
+import { PrimaryButton, DeleteConfirmModal, Icon } from "@/components";
 import { useModal } from "@/context";
 const redClass =
   "w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60";
@@ -51,7 +51,7 @@ export default function DeleteButtons({
         hasItems && (
           <PrimaryButton className={redClass} onClick={openDeleteAllModal}>
             {`Delete all ${label}`}
-            <Trash2 size={14} />
+            <Icon name={Trash2} size="md" />
           </PrimaryButton>
         )
       )}

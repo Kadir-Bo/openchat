@@ -5,6 +5,7 @@ import {
   DropdownItem,
   DropdownSeparator,
   DropdownTrigger,
+  Icon,
 } from "@/components";
 import { MoreHorizontal } from "react-feather";
 
@@ -39,8 +40,9 @@ export default function DropdownMenu({
               onClick={menuItem.href ? undefined : (e) => onClick(e, menuItem)}
             >
               {menuItem.icon && (
-                <menuItem.icon
-                  size={15}
+                <Icon
+                  name={menuItem.icon}
+                  size="sm"
                   strokeWidth={1.5}
                   className="shrink-0"
                 />

@@ -1,6 +1,6 @@
 import React from "react";
 import { Menu, MessageSquare } from "react-feather";
-import { LogoButton, PrimaryButton } from "@/components";
+import { Icon, PrimaryButton } from "@/components";
 
 export default function ChatHeader({ handleToggleSidebar }) {
   return (
@@ -12,7 +12,7 @@ export default function ChatHeader({ handleToggleSidebar }) {
             onClick={handleToggleSidebar}
             aria-label="Open sidebar"
           >
-            <Menu size={20} />
+            <Icon name={Menu} size="md" />
           </button>
         </div>
         <div className="flex items-center justify-center flex-1"></div>
@@ -23,7 +23,7 @@ export default function ChatHeader({ handleToggleSidebar }) {
             tooltipPosition="left"
             href={"/chat"}
           >
-            <MessageSquare size={18} />
+            <Icon name={MessageSquare} size="md" />
           </PrimaryButton>
         </div>
       </div>

@@ -13,6 +13,7 @@ import {
   AttachmentThumbnail,
   Backdrop,
   MobileContextMenu,
+  Icon,
 } from "@/components";
 import { getBubbleRadius, getCodeText, copyToClipboard } from "@/lib";
 import { AnimatePresence } from "framer-motion";
@@ -287,7 +288,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                             onClick={() => handleCopy(getCodeText(children))}
                             className="absolute right-2 top-2 flex items-center justify-center gap-1 text-[11px] opacity-80 md:opacity-0 group-hover/code:opacity-100 transition-opacity p-1.5 rounded bg-neutral-900 hover:bg-neutral-700 z-10 cursor-pointer"
                           >
-                            <CopyIcon.icon size={14} />
+                            <Icon name={CopyIcon.icon} size="xs" />
                             {CopyIcon.text}
                           </button>
                           <pre className="overflow-x-auto mt-2 p-1 rounded-xl [&>code]:rounded-md">
@@ -315,14 +316,14 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                     : "justify-start ml-2"
                 }`}
               >
-                {actions.map(({ id, Icon, onClick, title }) => (
+                {actions.map(({ id, Icon: actionIcon, onClick, title }) => (
                   <PrimaryButton
                     key={id}
                     className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                     onClick={onClick}
                     tooltip={title}
                   >
-                    <Icon size={14} />
+                    <Icon name={actionIcon} size="xs" />
                   </PrimaryButton>
                 ))}
               </div>
@@ -335,13 +336,13 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                   onClick={handleEditCancel}
                   className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                 >
-                  <X size={14} />
+                  <Icon name={X} size="xs" />
                 </PrimaryButton>
                 <PrimaryButton
                   onClick={handleEditSubmit}
                   className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                 >
-                  <Check size={14} />
+                  <Icon name={Check} size="xs" />
                 </PrimaryButton>
               </div>
             )}

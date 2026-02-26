@@ -9,7 +9,6 @@ import {
   DeleteConfirmModal,
 } from "@/components";
 import { Archive, Edit2, Trash } from "react-feather";
-import { useRouter } from "next/navigation";
 import { twMerge } from "tailwind-merge";
 
 export default function ProjectCard({

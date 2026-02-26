@@ -1,5 +1,5 @@
 import { Plus } from "react-feather";
-import { PrimaryButton } from "@/components";
+import { Icon, PrimaryButton } from "@/components";
 
 export default function EmptyStateSearch({
   searchQuery,
@@ -23,7 +23,7 @@ export default function EmptyStateSearch({
             filled={!icon}
           >
             {hrefLabel}
-            {icon ?? <Plus size={17} />}
+            {icon ?? <Icon name={Plus} size="sm" />}
           </PrimaryButton>
         </div>
       )}

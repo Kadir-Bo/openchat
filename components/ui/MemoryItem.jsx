@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Edit2, Trash2, X } from "react-feather";
+import { Icon } from "@/components";
 
 export default function MemoryItem({ memory, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -60,7 +61,7 @@ export default function MemoryItem({ memory, onDelete, onUpdate }) {
               onClick={handleSave}
               className="text-neutral-400 hover:text-green-400 transition-colors p-1 md:p-1"
             >
-              <Check size={14} />
+              <Icon name={Check} size="xs" />
             </button>
             <button
               onClick={handleCancel}
@@ -75,13 +76,13 @@ export default function MemoryItem({ memory, onDelete, onUpdate }) {
               onClick={() => setIsEditing(true)}
               className="text-neutral-600 hover:text-neutral-300 transition-colors p-1 md:p-1"
             >
-              <Edit2 size={14} />
+              <Icon name={Edit2} size="xs" />
             </button>
             <button
               onClick={() => onDelete(memory.id)}
               className="text-neutral-600 hover:text-red-400 transition-colors  p-1 md:p-1"
             >
-              <Trash2 size={14} />
+              <Icon name={Trash2} size="xs" />
             </button>
           </>
         )}

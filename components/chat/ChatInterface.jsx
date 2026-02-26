@@ -10,6 +10,7 @@ import {
   PrimaryButton,
   AttachmentThumbnail,
   ChatFooterMessage,
+  Icon,
 } from "@/components";
 import { useChat, useDatabase } from "@/context";
 import {
@@ -35,7 +36,6 @@ export default function ChatInterface({
   buttonClassName = "",
   attachmentButtonClassName = "",
   sendButtonClassName = "",
-  buttonIconSize = 20,
   textAreaGrowHeight = 180,
   buttonContainerHeight = 50,
   placeholder = "ask anything",
@@ -216,7 +216,7 @@ export default function ChatInterface({
             aria-label="Add files"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Plus size={buttonIconSize} />
+            <Icon name={Plus} size="md" />
           </PrimaryButton>
 
           {/* Textarea */}
@@ -261,8 +261,9 @@ export default function ChatInterface({
               filled
               onClick={stopGeneration}
             >
-              <Square
-                size={buttonIconSize}
+              <Icon
+                name={Square}
+                size="md"
                 className="fill-white stroke-transparent scale-95"
               />
             </PrimaryButton>
@@ -277,7 +278,7 @@ export default function ChatInterface({
               aria-label="Send message"
               onClick={handleSend}
             >
-              <ArrowUp size={buttonIconSize} />
+              <Icon name={ArrowUp} size="md" />
             </PrimaryButton>
           )}
         </div>

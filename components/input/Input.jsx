@@ -1,5 +1,6 @@
 import { Lock } from "react-feather";
 import { twMerge } from "tailwind-merge";
+import { Icon } from "@/components";
 
 export default function Input({
   id = "",
@@ -41,7 +42,7 @@ export default function Input({
         )}
       >
         {label}
-        {locked && <Lock className="text-neutral-500" size={13} />}
+        {locked && <Icon name={Lock} className="text-neutral-500" size="xs" />}
       </label>
       <input
         type={type}

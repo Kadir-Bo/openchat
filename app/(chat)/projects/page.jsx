@@ -8,12 +8,13 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Archive, Plus, Trash2 } from "react-feather";
+import { Archive, Plus, Trash, Trash2 } from "react-feather";
 import {
   PrimaryButton,
   ProjectCard,
   ChatPageShell,
   DeleteConfirmModal,
+  Icon,
 } from "@/components";
 import { useRouter } from "next/navigation";
 import { FILTER_OPTIONS } from "@/lib";
@@ -185,7 +186,8 @@ export default function ProjectsPage() {
                 className="w-max text-sm px-4"
                 onClick={handleArchiveSelected}
               >
-                <Archive size={14} />
+                <Icon name={Archive} size="sm" />
+
                 {`Archive ${selectedCount}`}
               </PrimaryButton>
             )}
@@ -194,7 +196,8 @@ export default function ProjectsPage() {
               className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
               onClick={handleDeleteAction}
             >
-              <Trash2 size={14} />
+              <Icon name={Trash} size="sm" />
+
               {selectedCount > 0
                 ? `Delete ${selectedCount} ${
                     selectedCount === 1 ? "project" : "projects"
@@ -228,7 +231,7 @@ export default function ProjectsPage() {
                 className="w-max justify-center text-sm px-4"
                 href="/projects/create"
               >
-                <Plus size={17} />
+                <Icon name={Plus} size="sm" />
                 Create your first project
               </PrimaryButton>
             </div>

@@ -6,6 +6,7 @@ import {
   RenameChatModal,
   DropdownMenu,
   DeleteConfirmModal,
+  Icon,
 } from "@/components";
 import { Archive, Edit2, Folder, Trash } from "react-feather";
 import { twMerge } from "tailwind-merge";
@@ -107,7 +108,7 @@ export default function ChatCard({
         </h4>
         {project && (
           <span className="flex gap-1 mt-2 text-xs text-neutral-600 truncate max-w-48 leading-none">
-            <Folder size={9} className="shrink-0" />
+            <Icon name={Folder} size="xs" className="shrink-0" />
             {project.title}
           </span>
         )}

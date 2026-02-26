@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
 import { Lock } from "react-feather";
+import { Icon } from "@/components";
 
 export default function Textarea({
   id = "",
@@ -68,7 +69,7 @@ export default function Textarea({
         )}
       >
         {label}
-        {locked && <Lock className="text-neutral-500" size={13} />}
+        {locked && <Icon name={Lock} className="text-neutral-500" size="xs" />}
       </label>
       <textarea
         name={name || id}

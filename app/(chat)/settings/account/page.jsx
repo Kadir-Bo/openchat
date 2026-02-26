@@ -1,6 +1,6 @@
 "use client";
 
-import { DeleteAccountModal, PrimaryButton } from "@/components";
+import { DeleteAccountModal, Icon, PrimaryButton } from "@/components";
 import { useAuth, useModal } from "@/context";
 import { useState } from "react";
 import { LogOut, Trash2 } from "react-feather";
@@ -59,7 +59,7 @@ function AccountSettingsPage() {
             disabled={isLoggingOut}
           >
             {isLoggingOut ? "Logging out..." : "Log out"}
-            <LogOut size={15} />
+            <Icon name={LogOut} size="sm" />
           </PrimaryButton>
         </div>
       </div>
@@ -79,7 +79,8 @@ function AccountSettingsPage() {
             className="min-w-36 w-full md:w-max justify-center border-red-700/60 text-red-500 hover:bg-red-700/10"
             onClick={handleDeleteAccount}
           >
-            Delete Account <Trash2 size={15} />
+            Delete Account
+            <Icon name={Trash2} size="sm" />
           </PrimaryButton>
         </div>
       </div>

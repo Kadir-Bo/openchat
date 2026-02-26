@@ -3,6 +3,7 @@
 import { X, File, Image as ImageIcon, FileText, Code } from "react-feather";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { Icon } from "@/components";
 
 export default function AttachmentThumbnail({
   attachment,
@@ -34,15 +35,15 @@ export default function AttachmentThumbnail({
   const getIcon = () => {
     switch (type) {
       case "code":
-        return <Code size={10} className="text-blue-400" />;
+        return <Icon name={Code} size="xs" className="text-blue-400" />;
       case "image":
-        return <ImageIcon size={10} className="text-green-400" />;
+        return <Icon name={ImageIcon} size="xs" className="text-green-400" />;
       case "document":
-        return <File size={10} className="text-purple-400" />;
+        return <Icon name={File} size="xs" className="text-purple-400" />;
       case "text":
-        return <FileText size={10} className="text-yellow-400" />;
+        return <Icon name={FileText} size="xs" className="text-yellow-400" />;
       default:
-        return <File size={10} className="text-neutral-400" />;
+        return <Icon name={File} size="xs" className="text-neutral-400" />;
     }
   };
 
@@ -65,7 +66,7 @@ export default function AttachmentThumbnail({
             className="p-1 rounded hover:bg-neutral-800 transition-colors shrink-0 cursor-pointer"
             aria-label="Remove attachment"
           >
-            <X size={14} className="text-neutral-400" />
+            <Icon name={X} size="sm" className="text-neutral-400" />
           </button>
         )}
       </div>
@@ -164,7 +165,7 @@ function GenericFilePreview({ name }) {
   return (
     <div className="flex items-center gap-3 p-3 bg-neutral-950 rounded">
       <div className="w-12 h-12 bg-neutral-700/50 rounded flex items-center justify-center">
-        <File size={20} className="text-neutral-400" />
+        <Icon name={File} size="sm" className="text-neutral-400" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-neutral-300 truncate">{name}</p>

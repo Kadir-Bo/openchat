@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft } from "react-feather";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthGuard } from "@/hooks";
-import { Input, PrimaryButton, AuthFormShell } from "@/components";
+import { Input, PrimaryButton, AuthFormShell, Icon } from "@/components";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -34,7 +34,7 @@ export default function SignInPage() {
         href="/"
         className="fixed top-0 left-0 w-max min-w-0 p-4 border-none  justify-center hover:bg-transparent text-white"
       >
-        <ArrowLeft size={16} />
+        <Icon name={ArrowLeft} size="sm" />
       </PrimaryButton>
 
       <AuthFormShell

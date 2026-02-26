@@ -1,5 +1,6 @@
 import { Plus } from "react-feather";
 import {
+  Icon,
   PrimaryButton,
   Searchbar,
   Select,
@@ -37,7 +38,7 @@ export default function ChatPageShell({
           filled
         >
           {headerActionTitle}
-          <Plus size={17} />
+          <Icon name={Plus} size="sm" />
         </PrimaryButton>
       </header>
 

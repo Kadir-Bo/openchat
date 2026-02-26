@@ -4,6 +4,7 @@ import {
   ChatCard,
   ChatInterface,
   FilesPanel,
+  Icon,
   PrimaryButton,
 } from "@/components";
 import InstructionsPanel from "@/components/chat/InstructionsPanel";
@@ -105,7 +106,7 @@ export default function ProjectIDPage() {
         className="border-none hover:bg-transparent text-neutral-400 hover:text-neutral-100 w-max text-sm"
       >
         All Projects
-        <ArrowLeft size={15} />
+        <Icon name={ArrowLeft} size="sm" />
       </PrimaryButton>
 
       <div className="flex w-full gap-8 items-start justify-between">
@@ -118,10 +119,10 @@ export default function ProjectIDPage() {
             </div>
             <div className="flex">
               <PrimaryButton className="outline-none border-none  cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
-                <MoreVertical size={17} />
+                <Icon name={MoreVertical} size="sm" />
               </PrimaryButton>
               <PrimaryButton className="outline-none border-none  cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
-                <Star size={17} />
+                <Icon name={Star} size="sm" />
               </PrimaryButton>
             </div>
           </div>

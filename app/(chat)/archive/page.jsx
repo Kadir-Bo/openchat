@@ -16,6 +16,7 @@ import {
   DeleteButtons,
   EmptyStateSearch,
   PrimaryButton,
+  Icon,
 } from "@/components";
 import { useSelectionHandlers } from "@/hooks";
 import { useRouter } from "next/navigation";
@@ -226,7 +227,7 @@ export default function ArchivePage() {
             itemType="archived chat"
             href="/chats"
             hrefLabel="Go to Chats"
-            icon={<ArrowLeft size={15} />}
+            icon={<Icon name={ArrowLeft} size="sm" />}
           />
         )
       ) : filteredProjects.length > 0 ? (

@@ -209,7 +209,7 @@ export default function ProjectsPage() {
       }
     >
       {filteredAndSortedProjects.length > 0 ? (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 mt-4 md:mt-0 gap-2 md:gap-4">
           {filteredAndSortedProjects.map((project) => (
             <ProjectCard
               key={project.id}
@@ -217,6 +217,7 @@ export default function ProjectsPage() {
               sort={sortBy}
               isSelected={selectedIds.has(project.id)}
               onCardClick={handleCardClick}
+              className="col-span-3 md:col-span-1"
             />
           ))}
         </div>

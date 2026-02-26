@@ -15,6 +15,7 @@ export default function ProjectCard({
   project,
   sort,
   isSelected = false,
+  className = "",
   onCardClick = () => null,
 }) {
   const { title, description, updatedAt, createdAt, id, isArchived } = project;
@@ -84,7 +85,7 @@ export default function ProjectCard({
 
   return (
     <div
-      className={twMerge(defaultClasses, selectedClasses, isActive)}
+      className={twMerge(defaultClasses, selectedClasses, isActive, className)}
       onClick={handleClick}
     >
       <h4 className="font-medium">{title}</h4>

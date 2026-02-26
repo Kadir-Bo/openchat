@@ -29,6 +29,7 @@ export default function ChatList({
   defaultExpanded = true,
   listItemClasses = "",
   pendingIds = null,
+  activeChatId = null,
 }) {
   const { updateConversation, toggleArchiveConversation, deleteConversation } =
     useDatabase();
@@ -204,6 +205,7 @@ export default function ChatList({
                 getMenuItems={getDropDownMenuItems}
                 listIcon={listIcon}
                 listItemClasses={listItemClasses}
+                isActive={activeChatId === item.id}
               />
             ))}
           </motion.ul>
@@ -227,9 +229,9 @@ const ChatListItem = React.memo(
     getMenuItems,
     listIcon,
     listItemClasses,
+    isActive = null,
   }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
     // Bind item-specific values inside the item itself so the parent
     // never needs to create per-item inline closures.
     const handleSave = useCallback(
@@ -259,7 +261,8 @@ const ChatListItem = React.memo(
     const editingClasses = isEditing
       ? "border-neutral-500 bg-neutral-900/50"
       : "hover:bg-neutral-800 border-transparent";
-    const activeClasses = isDropdownOpen && "bg-neutral-800 border-transparent";
+    const activeClasses =
+      isDropdownOpen || isActive ? "bg-neutral-800 border-transparent" : "";
 
     return (
       <li
@@ -345,6 +348,7 @@ function arePropsEqual(prev, next) {
   if (prev.editTitle !== next.editTitle) return false;
   if (prev.listItemClasses !== next.listItemClasses) return false;
   if (prev.listIcon !== next.listIcon) return false;
+  if (prev.isActive !== next.isActive) return false; // ← THIS IS MISSING
 
   if (prev.onTitleChange !== next.onTitleChange) return false;
   if (prev.onSave !== next.onSave) return false;
@@ -353,9 +357,6 @@ function arePropsEqual(prev, next) {
   if (prev.onNavigate !== next.onNavigate) return false;
   if (prev.getMenuItems !== next.getMenuItems) return false;
 
-  // Compare only the fields actually rendered/used.
-  // Firestore adds metadata fields (updatedAt, etc.) that change on every write
-  // but are irrelevant to what ChatListItem displays.
   if (prev.item.id !== next.item.id) return false;
   if (prev.item.title !== next.item.title) return false;
   if (prev.item.type !== next.item.type) return false;

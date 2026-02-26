@@ -13,7 +13,7 @@ import {
 } from "@/components";
 
 import { useAuth, useDatabase } from "@/context";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -39,6 +39,7 @@ export default function Sidebar({
   handleCloseSidebar,
 }) {
   const router = useRouter();
+  const params = useParams();
   const [conversations, setConversations] = useState([]);
 
   const { user, logout } = useAuth();
@@ -214,6 +215,7 @@ export default function Sidebar({
                     list={recentChats}
                     defaultExpanded={true}
                     pendingIds={_globalPendingIds}
+                    activeChatId={params.chatId}
                   />
                 ) : (
                   <span className="text-neutral-400 text-sm flex justify-center">

@@ -4,7 +4,7 @@ import { Trash2 } from "react-feather";
 import { PrimaryButton, DeleteConfirmModal, Icon } from "@/components";
 import { useModal } from "@/context";
 const redClass =
-  "w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60";
+  "w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60 font-normal";
 
 export default function DeleteButtons({
   selectedCount,
@@ -45,13 +45,13 @@ export default function DeleteButtons({
       {selectedCount > 0 ? (
         <PrimaryButton className={redClass} onClick={openDeleteSelectedModal}>
           {`Delete ${selectedCount} ${label}`}
-          <Trash2 size={14} />
+          <Icon name={Trash2} size="sm" />
         </PrimaryButton>
       ) : (
         hasItems && (
           <PrimaryButton className={redClass} onClick={openDeleteAllModal}>
             {`Delete all ${label}`}
-            <Icon name={Trash2} size="md" />
+            <Icon name={Trash2} size="sm" />
           </PrimaryButton>
         )
       )}

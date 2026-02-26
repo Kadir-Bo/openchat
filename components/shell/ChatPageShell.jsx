@@ -70,9 +70,9 @@ export default function ChatPageShell({
           value={activeSort?.label || "Sort by"}
           list={FILTER_OPTIONS}
           onChange={(e) => onSortChange(e.target.value)}
-          containerClassName="w-auto min-w-40"
+          containerClassName="w-max min-w-0"
           labelClassName="hidden"
-          buttonClassName="text-sm px-3 min-w-32"
+          buttonClassName="text-sm px-3 w-max justify-center font-normal"
         />
       </div>
 

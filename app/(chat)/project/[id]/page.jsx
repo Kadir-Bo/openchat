@@ -100,18 +100,18 @@ export default function ProjectIDPage() {
   if (!currentProject) return null;
 
   return (
-    <div className="max-w-220 mx-auto h-dvh flex flex-col items-start justify-start gap-8 py-8">
+    <div className="max-w-220 mx-auto h-dvh flex flex-col items-start justify-start gap-8 py-8 px-4">
       <PrimaryButton
         href={"/projects"}
-        className="border-none hover:bg-transparent text-neutral-400 hover:text-neutral-100 w-max text-sm"
+        className="border-none hover:bg-transparent text-neutral-400 hover:text-neutral-100 w-max text-sm px-1 md:px-3"
       >
-        All Projects
         <Icon name={ArrowLeft} size="sm" />
+        All Projects
       </PrimaryButton>
 
-      <div className="flex w-full gap-8 items-start justify-between">
+      <div className="flex flex-col md:flex-row w-full gap-8 items-start justify-between">
         {/* ── left column ── */}
-        <div className="flex-1 flex flex-col gap-4">
+        <div className="flex-1 flex flex-col gap-4 w-full">
           <div className="flex items-start gap-4 pl-2">
             <div className="flex flex-col gap-2">
               <h3 className="text-2xl">{currentProject.title}</h3>
@@ -152,7 +152,7 @@ export default function ProjectIDPage() {
         </div>
 
         {/* ── right column ── */}
-        <div className="max-w-sm w-full border border-neutral-700 rounded-2xl overflow-hidden">
+        <div className="max-w-sm w-full md:border border-neutral-700 rounded-2xl overflow-hidden">
           <InstructionsPanel
             project={currentProject}
             onSave={handleSaveInstructions}

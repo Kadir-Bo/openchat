@@ -20,6 +20,11 @@ export default function StackedProjectCard({
   isSelected = false,
   onCardClick = () => null,
   onChatClick = () => null,
+  onLongPressStart = () => null,
+  onLongPressCancel = () => null,
+  onChatLongPressStart = () => null,
+  onChatLongPressCancel = () => null,
+  selectedChatIds = new Set(),
 }) {
   const { title, description, id, isArchived } = project;
   const { toggleArchiveProject, deleteProject } = useDatabase();
@@ -86,7 +91,6 @@ export default function StackedProjectCard({
       onCardClick(e, id);
       return;
     }
-    // If there are conversations, toggle accordion; otherwise navigate
     if (conversations.length > 0) {
       setIsExpanded((prev) => !prev);
     } else {
@@ -137,15 +141,22 @@ export default function StackedProjectCard({
           "relative flex flex-col w-full border rounded-xl cursor-pointer select-none transition-colors duration-150",
           "border-neutral-500/20 bg-neutral-950/10 shadow shadow-neutral-950/10",
           "hover:border-neutral-500/40 hover:bg-neutral-950/60",
-          isSelected &&
-            "border-neutral-500/60 bg-neutral-900 shadow-neutral-950/50",
           isExpanded && "border-neutral-500/35 bg-neutral-950/80",
+          isSelected &&
+            "border-neutral-500/60 bg-neutral-900 shadow-neutral-950/50 hover:bg-neutral-900 hover:border-neutral-500/60", // ← moved last, stronger hover overrides
           isDropdownOpen &&
             !isSelected &&
             "border-neutral-500/50 bg-neutral-950",
         )}
         style={{ zIndex: 2 }}
         onClick={handleHeaderClick}
+        onMouseDown={(e) => onLongPressStart(e, id)}
+        onMouseUp={onLongPressCancel}
+        onMouseLeave={onLongPressCancel}
+        onTouchStart={(e) => onLongPressStart(e, id)}
+        onTouchEnd={onLongPressCancel}
+        onTouchMove={onLongPressCancel}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {/* Header row */}
         <div className="flex items-start gap-3 p-4">
@@ -233,16 +244,17 @@ export default function StackedProjectCard({
                     transition={{ delay: index * 0.04, duration: 0.18 }}
                   >
                     <ChatCard
+                      isSelected={selectedChatIds.has(conversation.id)}
                       conversation={conversation}
                       onCardClick={(e, id) => {
-                        if (e.metaKey || e.ctrlKey) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onChatClick(e, id);
-                        } else {
-                          handleNavigateToPage("chat", conversation.id);
-                        }
+                        e.stopPropagation();
+                        onChatClick(e, id);
                       }}
+                      onLongPressStart={(e, id) => {
+                        e.stopPropagation();
+                        onChatLongPressStart(e, id);
+                      }}
+                      onLongPressCancel={onChatLongPressCancel}
                       className="border-neutral-500/10 bg-neutral-900/40 hover:bg-neutral-900/80"
                     />
                   </motion.div>

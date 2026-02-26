@@ -16,11 +16,13 @@ export default function ChatCard({
   className = "",
   isSelected = false,
   onCardClick = () => null,
+  onLongPressStart = () => null,
+  onLongPressCancel = () => null,
   project = null,
 }) {
   const { title, id, isArchived } = conversation;
   const { toggleArchiveConversation, deleteConversation } = useDatabase();
-  const { openModal, openMessage, closeModal } = useModal();
+  const { openModal, openMessage } = useModal();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleArchiveChat = async (id) => {
@@ -30,9 +32,7 @@ export default function ChatCard({
 
   const handleDeleteChat = async (id) => {
     const result = await deleteConversation(id);
-    if (result) {
-      openMessage("Chat deleted", "success");
-    }
+    if (result) openMessage("Chat deleted", "success");
   };
 
   const ChatDropDownMenu = [
@@ -68,7 +68,6 @@ export default function ChatCard({
 
   const handleClick = (e) => {
     if (e.defaultPrevented) return;
-    if (e.metaKey || e.ctrlKey) e.preventDefault();
     onCardClick(e, id);
   };
 
@@ -85,7 +84,6 @@ export default function ChatCard({
   const selectedClasses = isSelected
     ? "bg-neutral-900 border-neutral-500/60 shadow-neutral-950/50 hover:bg-neutral-900 hover:border-neutral-400"
     : "";
-
   const dropdownActiveClasses =
     isDropdownOpen && !isSelected
       ? "bg-neutral-950 shadow-neutral-950/50 border-neutral-500/50"
@@ -96,11 +94,18 @@ export default function ChatCard({
       className={twMerge(
         defaultClasses,
         projectClasses,
+        className,
         selectedClasses,
         dropdownActiveClasses,
-        className,
       )}
       onClick={handleClick}
+      onMouseDown={(e) => onLongPressStart(e, id)}
+      onMouseUp={onLongPressCancel}
+      onMouseLeave={onLongPressCancel}
+      onTouchStart={(e) => onLongPressStart(e, id)}
+      onTouchEnd={onLongPressCancel}
+      onTouchMove={onLongPressCancel}
+      onContextMenu={(e) => e.preventDefault()}
     >
       <div className="flex flex-col justify-center flex-1 py-2.5 pl-4 min-w-0 gap-0.5">
         <h4 className="font-medium truncate leading-snug">

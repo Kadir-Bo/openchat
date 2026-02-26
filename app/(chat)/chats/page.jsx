@@ -1,7 +1,13 @@
 "use client";
 
 import { useDatabase } from "@/context";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   ChatCard,
@@ -10,7 +16,7 @@ import {
   DeleteButtons,
   EmptyStateSearch,
 } from "@/components";
-import { useSelectionHandlers } from "@/hooks";
+import { useOnClickOutside, useSelectionHandlers } from "@/hooks";
 import {
   buildChatTabItems,
   filterProjects,
@@ -140,18 +146,85 @@ export default function ChatsPage() {
 
   const isChats = activeTab === "chats";
   const selectedCount = isChats
-    ? chatHandlers.selectedIds.size
+    ? (() => {
+        let count = chatHandlers.selectedIds.size;
+        for (const projectId of projectHandlers.selectedIds) {
+          const chatIds = conversationsByProject[projectId] ?? [];
+          const hasSelectedChats = chatIds.some((c) =>
+            chatHandlers.selectedIds.has(c.id),
+          );
+          if (!hasSelectedChats) count += 1;
+        }
+        return count;
+      })()
     : projectHandlers.selectedIds.size;
   const isLoading = isChats ? chatsLoading : projectsLoading;
   const hasItems = isChats
     ? chatTabItems.length > 0
     : activeProjects.length > 0;
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
+  const handleClearSelection = () => {
     chatHandlers.clearSelection();
     projectHandlers.clearSelection();
   };
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    handleClearSelection();
+    projectHandlers.clearSelection();
+  };
+
+  const getProjectChatIds = useCallback(
+    (projectId) => (conversationsByProject[projectId] ?? []).map((c) => c.id),
+    [conversationsByProject],
+  );
+
+  const handleProjectCardClick = useCallback(
+    (e, id) => {
+      projectHandlers.handleCardClick(e, id);
+      const chatIds = getProjectChatIds(id);
+      if (!projectHandlers.selectedIds.has(id)) {
+        // selecting — add all chats
+        chatHandlers.selectIds([...chatHandlers.selectedIds, ...chatIds]);
+      } else {
+        // deselecting — remove all chats
+        const next = new Set(chatHandlers.selectedIds);
+        chatIds.forEach((cid) => next.delete(cid));
+        chatHandlers.selectIds([...next]);
+      }
+    },
+    [projectHandlers, chatHandlers, getProjectChatIds],
+  );
+
+  const handleProjectChatClick = useCallback(
+    (e, id) => {
+      // Let chat handler do its own selection — don't call selectIds after
+      chatHandlers.handleCardClick(e, id);
+
+      const conversation = visibleConversations.find((c) => c.id === id);
+      if (!conversation?.projectId) return;
+      const projectId = conversation.projectId;
+      const chatIds = getProjectChatIds(projectId);
+
+      // Simulate the post-toggle state to decide project selection
+      const currentSelected = chatHandlers.selectedIds;
+      const nextChatSelected = new Set(currentSelected);
+      nextChatSelected.has(id)
+        ? nextChatSelected.delete(id)
+        : nextChatSelected.add(id);
+
+      const allSelected = chatIds.every((cid) => nextChatSelected.has(cid));
+
+      // Only update project selection, don't touch chat selection
+      if (allSelected) {
+        projectHandlers.selectIds([...projectHandlers.selectedIds, projectId]);
+      } else {
+        const next = new Set(projectHandlers.selectedIds);
+        next.delete(projectId);
+        projectHandlers.selectIds([...next]);
+      }
+    },
+    [chatHandlers, projectHandlers, visibleConversations, getProjectChatIds],
+  );
 
   return (
     <ChatPageShell
@@ -170,6 +243,7 @@ export default function ChatsPage() {
       selectedCount={selectedCount}
       hasItems={hasItems}
       itemType={isChats ? "chat" : "project"}
+      clearSelection={handleClearSelection}
       actions={
         <DeleteButtons
           selectedCount={selectedCount}
@@ -202,8 +276,13 @@ export default function ChatsPage() {
                   project={item}
                   conversations={conversationsByProject[item.id] ?? []}
                   isSelected={projectHandlers.selectedIds.has(item.id)}
-                  onCardClick={projectHandlers.handleCardClick}
-                  onChatClick={chatHandlers.handleCardClick}
+                  onCardClick={handleProjectCardClick}
+                  onChatClick={handleProjectChatClick}
+                  onLongPressStart={projectHandlers.handleLongPressStart}
+                  onLongPressCancel={projectHandlers.handleLongPressCancel}
+                  onChatLongPressStart={chatHandlers.handleLongPressStart}
+                  onChatLongPressCancel={chatHandlers.handleLongPressCancel}
+                  selectedChatIds={chatHandlers.selectedIds}
                 />
               ) : (
                 <ChatCard
@@ -211,6 +290,8 @@ export default function ChatsPage() {
                   conversation={item}
                   isSelected={chatHandlers.selectedIds.has(item.id)}
                   onCardClick={chatHandlers.handleCardClick}
+                  onLongPressStart={chatHandlers.handleLongPressStart}
+                  onLongPressCancel={chatHandlers.handleLongPressCancel}
                   project={null}
                 />
               ),
@@ -234,6 +315,9 @@ export default function ChatsPage() {
               isSelected={projectHandlers.selectedIds.has(project.id)}
               onCardClick={projectHandlers.handleCardClick}
               onChatClick={chatHandlers.handleCardClick}
+              onChatLongPressStart={chatHandlers.handleLongPressStart} // ← add
+              onChatLongPressCancel={chatHandlers.handleLongPressCancel} // ← add
+              selectedChatIds={chatHandlers.selectedIds}
             />
           ))}
         </div>
@@ -248,3 +332,4 @@ export default function ChatsPage() {
     </ChatPageShell>
   );
 }
+7;

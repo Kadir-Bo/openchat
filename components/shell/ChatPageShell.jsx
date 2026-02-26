@@ -24,16 +24,18 @@ export default function ChatPageShell({
   actions,
   headerActionTitle = "New Chat",
   headerActionLink = "/chat",
+  clearSelection = () => null,
   children,
 }) {
   const activeSort = FILTER_OPTIONS.find((o) => o.value === sortBy);
 
   return (
     <div className="flex-1 flex flex-col max-w-220 mx-auto py-8 gap-6 w-full px-4">
+      {/* Header */}
       <header className="flex items-center justify-between">
         <h1 className="text-3xl font-light">{title}</h1>
         <PrimaryButton
-          className="w-max justify-center text-sm min-w-32"
+          className="w-max justify-center"
           href={headerActionLink}
           filled
         >
@@ -42,6 +44,7 @@ export default function ChatPageShell({
         </PrimaryButton>
       </header>
 
+      {/* Tabs */}
       {tabs && (
         <div className="flex items-center gap-1 border-b border-neutral-800">
           {tabs.map(({ key, label, count }) => (
@@ -60,7 +63,7 @@ export default function ChatPageShell({
           ))}
         </div>
       )}
-
+      {/* Sort Chats */}
       <div className="flex justify-end items-center gap-3">
         <span className="text-neutral-400 text-sm">Sort by:</span>
         <Select
@@ -75,23 +78,27 @@ export default function ChatPageShell({
           buttonClassName="text-sm px-3 w-max justify-center font-normal"
         />
       </div>
-
-      <Searchbar
-        key={activeTab}
-        onSearch={onSearch}
-        placeholder={searchPlaceholder}
-      />
-
+      {/* Select & Delete */}
       <div className="flex items-center justify-between">
         <SelectionStatus
           selectedCount={selectedCount}
           itemType={itemType}
           hasItems={hasItems}
+          onCancel={clearSelection}
         />
         <div className="flex items-center gap-2">{actions}</div>
       </div>
+      {/* Searchbar & Chats */}
+      <div>
+        <Searchbar
+          key={activeTab}
+          onSearch={onSearch}
+          placeholder={searchPlaceholder}
+          className="mb-3"
+        />
 
-      {children}
+        {children}
+      </div>
     </div>
   );
 }

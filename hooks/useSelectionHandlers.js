@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const LONG_PRESS_MS = 420;
+
 export function useSelectionHandlers({ listRef, onNavigate, deleteOne }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const selectedIdsRef = useRef(selectedIds);
   const lastClickedIndexRef = useRef(null);
+  const longPressTimer = useRef(null);
+  const longPressFired = useRef(false);
 
   useEffect(() => {
     selectedIdsRef.current = selectedIds;
@@ -16,6 +20,12 @@ export function useSelectionHandlers({ listRef, onNavigate, deleteOne }) {
 
   const handleCardClick = useCallback(
     (e, id) => {
+      // Block the click that fires after a long-press
+      if (longPressFired.current) {
+        longPressFired.current = false;
+        return;
+      }
+
       const currentList = listRef.current;
       const index = currentList.findIndex((item) => item.id === id);
       const selected = selectedIdsRef.current;
@@ -48,6 +58,25 @@ export function useSelectionHandlers({ listRef, onNavigate, deleteOne }) {
     [listRef, onNavigate],
   );
 
+  const handleLongPressStart = useCallback(
+    (e, id) => {
+      if (e.button !== undefined && e.button !== 0) return;
+      longPressFired.current = false;
+      longPressTimer.current = setTimeout(() => {
+        longPressFired.current = true;
+        const currentList = listRef.current;
+        const index = currentList.findIndex((item) => item.id === id);
+        setSelectedIds(new Set([id]));
+        lastClickedIndexRef.current = index;
+      }, LONG_PRESS_MS);
+    },
+    [listRef],
+  );
+
+  const handleLongPressCancel = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+  }, []);
+
   const handleDeleteSelected = useCallback(async () => {
     await Promise.all([...selectedIdsRef.current].map((id) => deleteOne(id)));
     clearSelection();
@@ -61,11 +90,17 @@ export function useSelectionHandlers({ listRef, onNavigate, deleteOne }) {
     [deleteOne, clearSelection],
   );
 
+  const selectIds = useCallback((ids) => {
+    setSelectedIds(new Set(ids));
+  }, []);
   return {
     selectedIds,
     handleCardClick,
+    handleLongPressStart,
+    handleLongPressCancel,
     handleDeleteSelected,
     handleDeleteAll,
     clearSelection,
+    selectIds,
   };
 }

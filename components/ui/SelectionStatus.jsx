@@ -1,6 +1,4 @@
 import { useIsMobile } from "@/hooks";
-import { Icon } from "@/components";
-import { X } from "react-feather";
 
 export default function SelectionStatus({
   selectedCount,
@@ -15,10 +13,9 @@ export default function SelectionStatus({
     if (isMobile) {
       return (
         <button
-          className="text-xs text-neutral-600 flex items-center gap-1.5"
+          className="text-xs text-neutral-500 underline underline-offset-2"
           onClick={onCancel}
         >
-          <Icon name={X} size="xs" />
           clear selection
         </button>
       );
@@ -41,18 +38,18 @@ export default function SelectionStatus({
   if (hasItems) {
     if (isMobile) {
       return (
-        <p className="text-xs text-neutral-700 flex items-center gap-1.5">
-          <kbd className="border border-neutral-800 px-1.5 py-0.5 rounded text-[11px]">
-            Hold
+        <p className="text-xs text-neutral-600 flex items-center gap-1.5">
+          <kbd className="border border-neutral-800 p-1.5 rounded text-[10px]">
+            hold
           </kbd>
-          to select
+          <span>to select</span>
         </p>
       );
     }
     return (
-      <p className="text-xs text-neutral-700 flex items-center gap-1.5">
-        <kbd className="border border-neutral-800 px-1.5 py-0.5 rounded text-[11px]">
-          ⌘
+      <p className="text-xs text-neutral-600 flex items-center gap-1.5">
+        <kbd className="border border-neutral-800 p-1.5 rounded text-[10px]">
+          ⌘ / Ctrl
         </kbd>
         <span>click to select</span>
       </p>

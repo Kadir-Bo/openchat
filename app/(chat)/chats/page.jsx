@@ -315,8 +315,10 @@ export default function ChatsPage() {
               isSelected={projectHandlers.selectedIds.has(project.id)}
               onCardClick={projectHandlers.handleCardClick}
               onChatClick={chatHandlers.handleCardClick}
-              onChatLongPressStart={chatHandlers.handleLongPressStart} // ← add
-              onChatLongPressCancel={chatHandlers.handleLongPressCancel} // ← add
+              onLongPressStart={projectHandlers.handleLongPressStart}
+              onLongPressCancel={projectHandlers.handleLongPressCancel}
+              onChatLongPressStart={chatHandlers.handleLongPressStart}
+              onChatLongPressCancel={chatHandlers.handleLongPressCancel}
               selectedChatIds={chatHandlers.selectedIds}
             />
           ))}

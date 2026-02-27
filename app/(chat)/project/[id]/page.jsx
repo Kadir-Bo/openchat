@@ -29,7 +29,6 @@ export default function ProjectIDPage() {
   const [conversations, setConversations] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // ── load project ──
   useEffect(() => {
     const loadProject = async () => {
       if (!projectId) return;
@@ -47,7 +46,6 @@ export default function ProjectIDPage() {
     loadProject();
   }, [projectId, getProject, router]);
 
-  // ── subscribe to conversations ──
   useEffect(() => {
     if (!projectId) return;
     const unsubscribe = subscribeToConversations((allConversations) => {
@@ -57,8 +55,6 @@ export default function ProjectIDPage() {
     });
     return () => unsubscribe();
   }, [projectId, subscribeToConversations]);
-
-  // ── handlers ──
 
   const handleSaveInstructions = async (updates) => {
     await updateProject(projectId, updates);
@@ -87,8 +83,6 @@ export default function ProjectIDPage() {
     router.push(`/chat/${documentId}`);
   };
 
-  // ── render ──
-
   if (isInitialLoading) {
     return (
       <div className="max-w-220 mx-auto h-dvh flex items-center justify-center">
@@ -116,14 +110,6 @@ export default function ProjectIDPage() {
             <div className="flex flex-col gap-2">
               <h3 className="text-2xl">{currentProject.title}</h3>
               <p className="text-neutral-400">{currentProject.description}</p>
-            </div>
-            <div className="flex">
-              <PrimaryButton className="outline-none border-none  cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
-                <Icon name={MoreVertical} size="sm" />
-              </PrimaryButton>
-              <PrimaryButton className="outline-none border-none  cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max">
-                <Icon name={Star} size="sm" />
-              </PrimaryButton>
             </div>
           </div>
 

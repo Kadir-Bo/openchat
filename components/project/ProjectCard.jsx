@@ -86,6 +86,8 @@ export default function ProjectCard({
     !isSelected &&
     `border-neutral-500/50 bg-neutral-950 shadow-neutral-950/50`;
 
+  if (!project) return null;
+
   return (
     <div
       className={twMerge(defaultClasses, selectedClasses, isActive, className)}
@@ -99,11 +101,9 @@ export default function ProjectCard({
       onContextMenu={(e) => e.preventDefault()}
     >
       <h4 className="font-medium">{title}</h4>
-      {description && (
-        <p className="max-h-24 overflow-hidden mt-2 text-neutral-400 text-sm line-clamp-3">
-          {description}
-        </p>
-      )}
+      <p className="max-h-24 overflow-hidden mt-2 text-neutral-400 text-sm line-clamp-3">
+        {description}
+      </p>
 
       <div className="flex justify-between items-center text-sm text-neutral-500">
         <span>

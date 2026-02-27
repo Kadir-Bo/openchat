@@ -12,16 +12,42 @@ import {
 } from "@/components";
 import { motion } from "framer-motion";
 
+function SaveButton({ hasChanges, loading, isSaved, onClick }) {
+  return (
+    <motion.div
+      className="overflow-hidden flex justify-end"
+      initial={{ height: 0, opacity: 0 }}
+      animate={{
+        height: hasChanges ? "auto" : 0,
+        opacity: hasChanges ? 1 : 0,
+      }}
+      transition={{ duration: 0.2, ease: "easeInOut" }}
+    >
+      <PrimaryButton
+        className="w-max px-4"
+        disabled={loading}
+        onClick={onClick}
+      >
+        {loading ? "Saving..." : isSaved ? "Saved!" : "Save Changes"}
+      </PrimaryButton>
+    </motion.div>
+  );
+}
+
 function GeneralSettingsPage() {
   const { user } = useAuth();
   const { getUserProfile, updateUserProfile, loading } = useDatabase();
 
   const [savedProfile, setSavedProfile] = useState(null);
+
+  // Per-field state
   const [fullName, setFullName] = useState("");
   const [modelPreferences, setModelPreferences] = useState("");
   const [userDefaultModel, setUserDefaultModel] = useState(MODELS[0].id);
   const [activeTheme, setActiveTheme] = useState("auto");
-  const [isSaved, setIsSaved] = useState(false);
+
+  // Per-section saved feedback
+  const [savedSection, setSavedSection] = useState(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   useEffect(() => {
@@ -45,7 +71,6 @@ function GeneralSettingsPage() {
           defaultModel: profile.preferences?.defaultModel || MODELS[0].id,
           theme: profile.preferences?.theme || "auto",
         };
-
         setSavedProfile(initial);
         setFullName(initial.fullName);
         setModelPreferences(initial.modelPreferences);
@@ -59,16 +84,56 @@ function GeneralSettingsPage() {
     if (user) loadProfile();
   }, [user, getUserProfile]);
 
-  const hasChanges = useMemo(() => {
-    if (!savedProfile) return false;
+  // Per-section dirty flags
+  const profileChanged = savedProfile && fullName !== savedProfile.fullName;
+  const preferencesChanged =
+    savedProfile && modelPreferences !== savedProfile.modelPreferences;
+  const modelThemeChanged =
+    savedProfile &&
+    (userDefaultModel !== savedProfile.defaultModel ||
+      activeTheme !== savedProfile.theme);
 
-    return (
-      fullName !== savedProfile.fullName ||
-      modelPreferences !== savedProfile.modelPreferences ||
-      userDefaultModel !== savedProfile.defaultModel ||
-      activeTheme !== savedProfile.theme
-    );
-  }, [fullName, modelPreferences, userDefaultModel, activeTheme, savedProfile]);
+  const flashSaved = (section) => {
+    setSavedSection(section);
+    setTimeout(() => setSavedSection(null), 3000);
+  };
+
+  const handleSaveProfile = useCallback(async () => {
+    await updateUserProfile({ displayName: fullName });
+    setSavedProfile((prev) => ({ ...prev, fullName }));
+    flashSaved("profile");
+  }, [fullName, updateUserProfile]);
+
+  const handleSavePreferences = useCallback(async () => {
+    await updateUserProfile({ preferences: { modelPreferences } });
+    setSavedProfile((prev) => ({ ...prev, modelPreferences }));
+    flashSaved("preferences");
+  }, [modelPreferences, updateUserProfile]);
+
+  const handleSaveModelTheme = useCallback(async () => {
+    await updateUserProfile({
+      preferences: {
+        defaultModel: userDefaultModel,
+        theme: activeTheme,
+        language: "de",
+      },
+    });
+    setSavedProfile((prev) => ({
+      ...prev,
+      defaultModel: userDefaultModel,
+      theme: activeTheme,
+    }));
+    document.body.removeAttribute("data-theme");
+    if (activeTheme === "light") {
+      document.body.setAttribute("data-theme", "light");
+    } else if (activeTheme === "auto") {
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+      if (!prefersDark) document.body.setAttribute("data-theme", "light");
+    }
+    flashSaved("modelTheme");
+  }, [userDefaultModel, activeTheme, updateUserProfile]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -76,38 +141,6 @@ function GeneralSettingsPage() {
     else if (name === "preferences") setModelPreferences(value);
     else if (name === "default-model") setUserDefaultModel(value);
   };
-
-  const handleChangeTheme = (theme) => {
-    setActiveTheme(theme);
-  };
-
-  const handleOnSave = useCallback(async () => {
-    await updateUserProfile({
-      displayName: fullName,
-      preferences: {
-        modelPreferences,
-        defaultModel: userDefaultModel,
-        theme: activeTheme,
-        language: "de",
-      },
-    });
-
-    setSavedProfile({
-      fullName,
-      modelPreferences,
-      defaultModel: userDefaultModel,
-      theme: activeTheme,
-    });
-
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
-  }, [
-    fullName,
-    modelPreferences,
-    userDefaultModel,
-    activeTheme,
-    updateUserProfile,
-  ]);
 
   const TextareaPlaceholderExamples = [
     "Ask clarifying questions before answering...",
@@ -124,6 +157,7 @@ function GeneralSettingsPage() {
 
   return (
     <div className="flex flex-col gap-10">
+      {/* ── Profile ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Profile</h4>
         <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
@@ -147,8 +181,15 @@ function GeneralSettingsPage() {
             />
           </div>
         </div>
+        <SaveButton
+          hasChanges={profileChanged}
+          loading={loading}
+          isSaved={savedSection === "profile"}
+          onClick={handleSaveProfile}
+        />
       </div>
 
+      {/* ── Preferences ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Preferences</h4>
         <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
@@ -162,10 +203,17 @@ function GeneralSettingsPage() {
             inputClassName="min-h-32"
           />
         </div>
+        <SaveButton
+          hasChanges={preferencesChanged}
+          loading={loading}
+          isSaved={savedSection === "preferences"}
+          onClick={handleSavePreferences}
+        />
       </div>
 
       <hr className="text-neutral-700" />
 
+      {/* ── Model & Theme ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Model & Theme</h4>
         <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
@@ -180,28 +228,16 @@ function GeneralSettingsPage() {
           <ThemeSelect
             themes={THEMES}
             activeTheme={activeTheme}
-            onClick={handleChangeTheme}
+            onClick={setActiveTheme}
           />
         </div>
+        <SaveButton
+          hasChanges={modelThemeChanged}
+          loading={loading}
+          isSaved={savedSection === "modelTheme"}
+          onClick={handleSaveModelTheme}
+        />
       </div>
-
-      <motion.div
-        className="overflow-hidden flex justify-end"
-        initial={{ height: 0, opacity: 0 }}
-        animate={{
-          height: hasChanges ? "auto" : 0,
-          opacity: hasChanges ? 1 : 0,
-        }}
-        transition={{ duration: 0.2, ease: "easeInOut" }}
-      >
-        <PrimaryButton
-          className="w-max px-4"
-          disabled={loading}
-          onClick={handleOnSave}
-        >
-          {loading ? "Saving..." : isSaved ? "Saved!" : "Save Changes"}
-        </PrimaryButton>
-      </motion.div>
     </div>
   );
 }

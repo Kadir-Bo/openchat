@@ -28,7 +28,7 @@ export default function ThemeSelect({ themes, activeTheme, onClick }) {
                 height={140}
                 src={theme.imageURL}
                 alt={`${theme.id}_theme thumbnail`}
-                className="w-full h-full object-cover group-hover:opacity-100 opacity-80 transition-opacity duration-200"
+                className="w-full min-w-max h-full object-cover group-hover:opacity-100 opacity-80 transition-opacity duration-200"
               />
             </div>
             <span

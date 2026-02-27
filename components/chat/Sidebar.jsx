@@ -235,9 +235,9 @@ export default function Sidebar({
                   menuItem.action?.();
                 }}
                 contentClassName="bg-neutral-950/50 -translate-x-1.5"
-                triggerClassName="border-t border-neutral-800 pb-8 md:py-2"
+                triggerClassName="border-t border-neutral-800 pb-8 pt-4 md:py-2"
               >
-                <PrimaryButton className="gap-2 md:text-sm rounded-none border-none  hover:bg-transparent">
+                <PrimaryButton className="gap-2 md:text-sm rounded-none border-none hover:bg-transparent">
                   <UserProfileImage image={userImage} username={username} />
                   <div className="flex flex-1 justify-between items-center">
                     {username}

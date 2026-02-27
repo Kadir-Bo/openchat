@@ -123,15 +123,6 @@ function GeneralSettingsPage() {
       defaultModel: userDefaultModel,
       theme: activeTheme,
     }));
-    document.body.removeAttribute("data-theme");
-    if (activeTheme === "light") {
-      document.body.setAttribute("data-theme", "light");
-    } else if (activeTheme === "auto") {
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)",
-      ).matches;
-      if (!prefersDark) document.body.setAttribute("data-theme", "light");
-    }
     flashSaved("modelTheme");
   }, [userDefaultModel, activeTheme, updateUserProfile]);
 

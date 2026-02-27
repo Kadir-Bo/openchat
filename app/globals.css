@@ -2,12 +2,12 @@
 @plugin "@tailwindcss/typography";
 
 /* ==================== CSS Variables ==================== */
-body[data-theme="light"] {
+#chat-container[data-theme="light"] {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-body[data-theme="dark"] {
+#chat-container[data-theme="dark"] {
   --background: #0a0a0a;
   --foreground: #ededed;
 }

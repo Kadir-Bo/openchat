@@ -52,7 +52,7 @@ export default function StackedProjectCard({
   const ProjectDropDownMenu = [
     {
       id: "rename-project",
-      label: "Umbenennen",
+      label: "Rename",
       icon: Edit2,
       action: () =>
         openModal(
@@ -65,13 +65,13 @@ export default function StackedProjectCard({
     },
     {
       id: "archive-project",
-      label: isArchived ? "Dearchivieren" : "Archivieren",
+      label: isArchived ? "Unarchive" : "Archive",
       icon: Archive,
       action: handleToggleArchive,
     },
     {
       id: "delete-project",
-      label: "Löschen",
+      label: "Delete",
       icon: Trash,
       action: () =>
         openModal(

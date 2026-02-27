@@ -97,7 +97,7 @@ export default function ChatList({
     (id) => {
       openModal(
         <DeleteConfirmModal
-          title="Chat löschen"
+          title="Chat Delete"
           description="Are you sure you want to delete this chat? This action cannot be undone."
           onConfirm={async () => {
             const result = await deleteConversation(id);
@@ -128,19 +128,19 @@ export default function ChatList({
     (item) => [
       {
         id: "rename-chat",
-        label: "Umbenennen",
+        label: "Rename",
         icon: Edit2,
         action: () => handleRenameChat(item.id, item.title),
       },
       {
         id: "archive-chat",
-        label: "Archivieren",
+        label: "Archive",
         icon: Archive,
         action: () => handleArchiveChat(item.id),
       },
       {
         id: "delete-chat",
-        label: "Löschen",
+        label: "Delete",
         icon: Trash,
         action: () => handleDeleteChat(item.id),
       },

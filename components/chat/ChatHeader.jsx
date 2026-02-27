@@ -32,6 +32,7 @@ export default function ChatHeader({ handleToggleSidebar }) {
     deleteProject,
     getConversation,
     deleteConversation,
+    toggleArchiveConversation,
   } = useDatabase();
   const { openModal, openMessage } = useModal();
 
@@ -96,7 +97,7 @@ export default function ChatHeader({ handleToggleSidebar }) {
     }
   };
   const handleArchiveChat = async () => {
-    const result = await toggleArchiveProject(chatId, !chat?.isArchived);
+    const result = await toggleArchiveConversation(chatId, !chat?.isArchived);
     if (result) {
       openMessage(
         chat?.isArchived ? "Chat unarchived" : "Chat archived",
@@ -135,7 +136,7 @@ export default function ChatHeader({ handleToggleSidebar }) {
         },
         {
           id: "delete-project",
-          label: "Löschen",
+          label: "Delete",
           icon: Trash,
           action: () =>
             openModal(
@@ -182,7 +183,7 @@ export default function ChatHeader({ handleToggleSidebar }) {
         },
         {
           id: "delete-chat",
-          label: "Löschen",
+          label: "Delete",
           icon: Trash,
           action: () =>
             openModal(

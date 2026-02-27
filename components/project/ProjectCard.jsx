@@ -40,7 +40,7 @@ export default function ProjectCard({
   const ProjectDropDownMenu = [
     {
       id: "rename-project",
-      label: "Umbenennen",
+      label: "Rename",
       icon: Edit2,
       action: () =>
         openModal(
@@ -53,13 +53,13 @@ export default function ProjectCard({
     },
     {
       id: "archive-project",
-      label: isArchived ? "Dearchivieren" : "Archivieren",
+      label: isArchived ? "Unarchive" : "Archive",
       icon: Archive,
       action: handleArchiveProject,
     },
     {
       id: "delete-project",
-      label: "Löschen",
+      label: "Delete",
       icon: Trash,
       action: () =>
         openModal(

@@ -38,7 +38,7 @@ export default function ChatCard({
   const ChatDropDownMenu = [
     {
       id: "rename-chat",
-      label: "Umbenennen",
+      label: "Rename",
       icon: Edit2,
       action: () =>
         openModal(
@@ -47,13 +47,13 @@ export default function ChatCard({
     },
     {
       id: "archive-chat",
-      label: isArchived ? "Dearchivieren" : "Archivieren",
+      label: isArchived ? "Unarchive" : "Archive",
       icon: Archive,
       action: () => handleArchiveChat(conversation.id),
     },
     {
       id: "delete-chat",
-      label: "Löschen",
+      label: "Delete",
       icon: Trash,
       action: () =>
         openModal(

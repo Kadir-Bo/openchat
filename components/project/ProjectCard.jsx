@@ -17,6 +17,8 @@ export default function ProjectCard({
   isSelected = false,
   className = "",
   onCardClick = () => null,
+  onLongPressStart = () => null,
+  onLongPressCancel = () => null,
 }) {
   const { title, description, updatedAt, createdAt, id, isArchived } = project;
   const { toggleArchiveProject, deleteProject } = useDatabase();
@@ -34,6 +36,7 @@ export default function ProjectCard({
       openMessage("Chat deleted", "success");
     }
   };
+
   const ProjectDropDownMenu = [
     {
       id: "rename-project",
@@ -75,7 +78,7 @@ export default function ProjectCard({
     onCardClick(e, id);
   };
 
-  const defaultClasses = `group relative flex flex-col gap-4 w-full border p-4 rounded-xl cursor-pointer select-none transition-all duration-150 border-neutral-500/20 bg-neutral-950/10 shadow shadow-neutral-950/10 over:border-neutral-500/50 hover:bg-neutral-950 hover:shadow-neutral-950/50`;
+  const defaultClasses = `group relative flex flex-col gap-4 w-full border p-4 rounded-xl cursor-pointer select-none transition-all duration-150 border-neutral-500/20 bg-neutral-950/10 shadow shadow-neutral-950/10 hover:border-neutral-500/50 hover:bg-neutral-950 hover:shadow-neutral-950/50`;
   const selectedClasses =
     isSelected && `border-neutral-500/50 bg-neutral-950 shadow-neutral-950/50`;
   const isActive =
@@ -87,6 +90,13 @@ export default function ProjectCard({
     <div
       className={twMerge(defaultClasses, selectedClasses, isActive, className)}
       onClick={handleClick}
+      onMouseDown={(e) => onLongPressStart(e, id)}
+      onMouseUp={onLongPressCancel}
+      onMouseLeave={onLongPressCancel}
+      onTouchStart={(e) => onLongPressStart(e, id)}
+      onTouchEnd={onLongPressCancel}
+      onTouchMove={onLongPressCancel}
+      onContextMenu={(e) => e.preventDefault()}
     >
       <h4 className="font-medium">{title}</h4>
       <p className="max-h-24 overflow-hidden mt-2 text-neutral-400 text-sm line-clamp-3">

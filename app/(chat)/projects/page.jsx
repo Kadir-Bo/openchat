@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Archive, Plus, Trash, Trash2 } from "react-feather";
+import { Plus } from "react-feather";
 import {
   PrimaryButton,
   ProjectCard,
@@ -18,6 +18,7 @@ import {
 } from "@/components";
 import { useRouter } from "next/navigation";
 import { FILTER_OPTIONS } from "@/lib";
+import { useSelectionHandlers } from "@/hooks";
 
 export default function ProjectsPage() {
   const { subscribeToProjects, deleteProject, toggleArchiveProject } =
@@ -28,16 +29,9 @@ export default function ProjectsPage() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [sortBy, setSortBy] = useState(FILTER_OPTIONS[0].value);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState(new Set());
   const { openModal } = useModal();
 
-  const selectedIdsRef = useRef(selectedIds);
-  const lastClickedIndexRef = useRef(null);
   const filteredListRef = useRef([]);
-
-  useEffect(() => {
-    selectedIdsRef.current = selectedIds;
-  }, [selectedIds]);
 
   useEffect(() => {
     const unsubscribe = subscribeToProjects((data) => {
@@ -47,17 +41,8 @@ export default function ProjectsPage() {
     return () => unsubscribe?.();
   }, [subscribeToProjects]);
 
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") {
-        setSelectedIds(new Set());
-        lastClickedIndexRef.current = null;
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-
+  // Escape clears selection — handled inside useSelectionHandlers,
+  // but we also wire it here for safety.
   const filteredAndSortedProjects = useMemo(() => {
     const filtered = searchQuery.trim()
       ? projects.filter((p) =>
@@ -82,61 +67,34 @@ export default function ProjectsPage() {
     filteredListRef.current = filteredAndSortedProjects;
   }, [filteredAndSortedProjects]);
 
-  const handleCardClick = useCallback(
-    (e, id) => {
-      const list = filteredListRef.current;
-      const index = list.findIndex((p) => p.id === id);
-      const selected = selectedIdsRef.current;
+  const {
+    selectedIds,
+    handleCardClick,
+    handleLongPressStart,
+    handleLongPressCancel,
+    clearSelection,
+    handleDeleteSelected,
+    handleDeleteAll,
+  } = useSelectionHandlers({
+    listRef: filteredListRef,
+    onNavigate: (id) => router.push(`/project/${id}`),
+    deleteOne: deleteProject,
+  });
 
-      if (
-        e.shiftKey &&
-        lastClickedIndexRef.current !== null &&
-        selected.size > 0
-      ) {
-        const start = Math.min(lastClickedIndexRef.current, index);
-        const end = Math.max(lastClickedIndexRef.current, index);
-        const range = list.slice(start, end + 1).map((p) => p.id);
-        setSelectedIds((prev) => new Set([...prev, ...range]));
-        lastClickedIndexRef.current = index;
-        return;
-      }
-
-      if (e.metaKey || e.ctrlKey || selected.size > 0) {
-        setSelectedIds((prev) => {
-          const next = new Set(prev);
-          next.has(id) ? next.delete(id) : next.add(id);
-          return next;
-        });
-        lastClickedIndexRef.current = index;
-        return;
-      }
-
-      router.push(`/project/${id}`);
-    },
-    [router],
-  );
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") clearSelection();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [clearSelection]);
 
   const handleArchiveSelected = useCallback(async () => {
     await Promise.all(
-      [...selectedIdsRef.current].map((id) => toggleArchiveProject(id, true)),
+      [...selectedIds].map((id) => toggleArchiveProject(id, true)),
     );
-    setSelectedIds(new Set());
-    lastClickedIndexRef.current = null;
-  }, [toggleArchiveProject]);
-
-  const handleDeleteSelected = useCallback(async () => {
-    await Promise.all(
-      [...selectedIdsRef.current].map((id) => deleteProject(id)),
-    );
-    setSelectedIds(new Set());
-    lastClickedIndexRef.current = null;
-  }, [deleteProject]);
-
-  const handleDeleteAll = useCallback(async () => {
-    await Promise.all(projects.map((p) => deleteProject(p.id)));
-    setSelectedIds(new Set());
-    lastClickedIndexRef.current = null;
-  }, [projects, deleteProject]);
+    clearSelection();
+  }, [selectedIds, toggleArchiveProject, clearSelection]);
 
   const handleDeleteAction = () => {
     if (selectedCount > 0) {
@@ -154,7 +112,7 @@ export default function ProjectsPage() {
         <DeleteConfirmModal
           title="All Projects"
           description="Are you sure you want to delete ALL projects? This action cannot be undone."
-          onConfirm={handleDeleteAll}
+          onConfirm={() => handleDeleteAll(filteredAndSortedProjects)}
         />,
       );
     }
@@ -178,31 +136,15 @@ export default function ProjectsPage() {
       itemType={selectedCount === 1 ? "project" : "projects"}
       headerActionTitle={"New Project"}
       headerActionLink={"/projects/create"}
+      clearSelection={clearSelection}
       actions={
         hasProjects && (
           <>
-            {selectedCount > 0 && (
-              <PrimaryButton
-                className="w-max text-sm px-4"
-                onClick={handleArchiveSelected}
-              >
-                <Icon name={Archive} size="sm" />
-
-                {`Archive ${selectedCount}`}
-              </PrimaryButton>
-            )}
-
             <PrimaryButton
-              className="w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
+              className="w-max px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60"
               onClick={handleDeleteAction}
             >
-              <Icon name={Trash} size="sm" />
-
-              {selectedCount > 0
-                ? `Delete ${selectedCount} ${
-                    selectedCount === 1 ? "project" : "projects"
-                  }`
-                : "Delete All projects"}
+              {selectedCount > 0 ? `Delete ${selectedCount}` : "Delete All"}
             </PrimaryButton>
           </>
         )
@@ -217,6 +159,8 @@ export default function ProjectsPage() {
               sort={sortBy}
               isSelected={selectedIds.has(project.id)}
               onCardClick={handleCardClick}
+              onLongPressStart={handleLongPressStart}
+              onLongPressCancel={handleLongPressCancel}
               className="col-span-3 md:col-span-1"
             />
           ))}

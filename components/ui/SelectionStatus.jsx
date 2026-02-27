@@ -1,4 +1,6 @@
 import { useIsMobile } from "@/hooks";
+import { Icon } from "@/components";
+import { X } from "react-feather";
 
 export default function SelectionStatus({
   selectedCount,
@@ -12,28 +14,26 @@ export default function SelectionStatus({
   if (selectedCount > 0) {
     if (isMobile) {
       return (
-        <div className="text-xs text-neutral-600 flex items-center gap-1">
-          <span className="text-xs text-neutral-300 mr-2">
-            {selectedCount} {label} selected
-          </span>
-          <button
-            className="border py-1.5 rounded-md border-none text-neutral-400 min-w-8 text-center"
-            onClick={onCancel}
-          >
-            clear selection
-          </button>
-        </div>
+        <button
+          className="text-xs text-neutral-600 flex items-center gap-1.5"
+          onClick={onCancel}
+        >
+          <Icon name={X} size="xs" />
+          clear selection
+        </button>
       );
     }
     return (
-      <p className="text-xs text-neutral-600 flex items-center gap-1">
-        <span className="text-xs text-neutral-300 mr-2">
+      <p className="text-xs text-neutral-500 flex items-center gap-2">
+        <span className="text-neutral-300">
           {selectedCount} {label} selected
         </span>
-        <span className="border p-1 rounded-md border-neutral-800 text-neutral-600 min-w-8 text-center">
-          Esc
+        <span className="inline-flex items-center gap-1 text-neutral-600">
+          <kbd className="border border-neutral-800 px-1.5 py-0.5 rounded text-[11px]">
+            Esc
+          </kbd>
+          to cancel
         </span>
-        to cancel
       </p>
     );
   }
@@ -41,24 +41,20 @@ export default function SelectionStatus({
   if (hasItems) {
     if (isMobile) {
       return (
-        <p className="text-xs text-neutral-600 flex items-center gap-1">
-          <span className="border p-1 rounded-md border-neutral-800 text-neutral-600 min-w-8 text-center">
-            Press Hold
-          </span>
-          to select Chats
+        <p className="text-xs text-neutral-700 flex items-center gap-1.5">
+          <kbd className="border border-neutral-800 px-1.5 py-0.5 rounded text-[11px]">
+            Hold
+          </kbd>
+          to select
         </p>
       );
     }
     return (
-      <p className="text-xs text-neutral-600 flex items-center gap-1">
-        <span className="border p-1 rounded-md border-neutral-800 text-neutral-600 min-w-8 text-center">
-          ⌘ / Ctrl
-        </span>
-        +
-        <span className="border p-1 rounded-md border-neutral-800 text-neutral-600 min-w-8 text-center">
-          Click
-        </span>
-        to select
+      <p className="text-xs text-neutral-700 flex items-center gap-1.5">
+        <kbd className="border border-neutral-800 px-1.5 py-0.5 rounded text-[11px]">
+          ⌘
+        </kbd>
+        <span>click to select</span>
       </p>
     );
   }

@@ -111,7 +111,7 @@ export default function ProjectIDPage() {
 
       <div className="flex flex-col md:flex-row w-full gap-8 items-start justify-between">
         {/* ── left column ── */}
-        <div className="flex-1 flex flex-col gap-4 w-full">
+        <div className="flex-1 flex flex-col md:gap-4 w-full">
           <div className="flex items-start gap-4 pl-2">
             <div className="flex flex-col gap-2">
               <h3 className="text-2xl">{currentProject.title}</h3>

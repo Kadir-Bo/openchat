@@ -96,16 +96,16 @@ export default function ModalProvider({ children }) {
       <AnimatePresence>
         {messageContent && (
           <div
-            className="fixed top-7 z-10000"
+            className="fixed bottom-30 md:bottom-18 z-10000"
             style={{
               left: `${sidebarWidth}px`,
               width: `calc(100vw - ${sidebarWidth}px)`,
             }}
           >
-            <div className="flex flex-col items-end justify-start max-w-480 mx-auto pr-3">
+            <div className="flex justify-center md:justify-end md:max-w-480 mx-auto md:pr-3">
               <Message
-                message={messageContent.message}
-                variant={messageContent.variant}
+                message={messageContent?.message}
+                variant={messageContent?.variant}
                 onClose={closeMessage}
               />
             </div>

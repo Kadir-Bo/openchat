@@ -12,10 +12,7 @@ import {
 
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
-export default function ChatConversation({
-  onConversationLoad = null,
-  bottomPadding = 260,
-}) {
+export default function ChatConversation({ onConversationLoad = null }) {
   const { chatId: conversationId } = useParams() ?? {};
   const router = useRouter();
 

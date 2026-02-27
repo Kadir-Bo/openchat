@@ -2,15 +2,20 @@
 @plugin "@tailwindcss/typography";
 
 /* ==================== CSS Variables ==================== */
-:root {
+body[data-theme="light"] {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+body[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground: #c74d4d;
   }
     ::-webkit-scrollbar-thumb {
       background: rgba(255, 255, 255, 0.1);

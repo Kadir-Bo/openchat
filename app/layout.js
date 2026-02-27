@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body
-        className={`${notoSans.variable} ${robotoMono.variable} antialiased bg-neutral-950 text-white h-dvh`}
+        className={`${notoSans.variable} ${robotoMono.variable} antialiased bg-neutral-950 text-white h-dvh data-[theme=light]:bg-white data-[theme=light]:text-neutral-950`}
       >
         <Providers>{children}</Providers>
       </body>

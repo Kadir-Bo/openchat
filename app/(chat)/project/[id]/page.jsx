@@ -99,7 +99,7 @@ export default function ProjectIDPage() {
     <div className="max-w-220 mx-auto h-dvh flex flex-col items-start justify-start gap-8 py-8 px-4">
       <PrimaryButton
         href={"/projects"}
-        className="border-none hover:bg-transparent text-neutral-400 light:text-neutral-600 hover:text-neutral-100 w-max text-sm px-1 md:px-3"
+        className="border-none hover:bg-transparent text-neutral-400 light:text-neutral-600 hover:text-neutral-100 light:hover:text-neutral-900 w-max text-sm px-1 md:px-3"
       >
         <Icon name={ArrowLeft} size="sm" />
         All Projects

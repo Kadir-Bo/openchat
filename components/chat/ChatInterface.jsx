@@ -167,8 +167,8 @@ export default function ChatInterface({
   return (
     <motion.div
       className={twMerge(
-        "w-full relative max-w-3xl mx-auto py-3 sm:py-4 flex flex-col overflow-hidden",
-        "pb-[calc(env(safe-area-inset-bottom)+1rem)] focus-within:pb-0",
+        "w-full relative max-w-3xl mx-auto py-3 sm:py-8 flex flex-col",
+        "pb-[calc(env(safe-area-inset-bottom)+1rem)] focus-within:pb-0 md:focus-within:pb-4",
 
         className,
       )}

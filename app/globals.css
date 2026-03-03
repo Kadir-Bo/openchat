@@ -261,7 +261,7 @@
   }
 
   .markdown tbody tr:hover {
-    @apply bg-neutral-800/50;
+    @apply bg-neutral-800/50 light:bg-neutral-300;
   }
 
   /* Images */

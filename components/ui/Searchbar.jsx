@@ -68,7 +68,7 @@ export default function Searchbar({
       {query && (
         <button
           onClick={handleClear}
-          className="outline-none p-3 pl-0 shrink-0 hover:text-neutral-100 transition-colors"
+          className="outline-none p-3 pl-0 shrink-0 hover:text-neutral-100 light:hover:text-neutral-900 transition-colors"
           type="button"
           aria-label="Clear search"
         >

@@ -319,7 +319,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                 {actions.map(({ id, Icon: actionIcon, onClick, title }) => (
                   <PrimaryButton
                     key={id}
-                    className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+                    className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 light:hover:text-neutral-900 light:hover:text-neutral-900 rounded-md"
                     onClick={onClick}
                     tooltip={title}
                   >
@@ -334,13 +334,13 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
               <div className="flex items-center gap-1 justify-end mt-1">
                 <PrimaryButton
                   onClick={handleEditCancel}
-                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 light:hover:text-neutral-900 rounded-md"
                 >
                   <Icon name={X} size="xs" />
                 </PrimaryButton>
                 <PrimaryButton
                   onClick={handleEditSubmit}
-                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
+                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 light:hover:text-neutral-900 rounded-md"
                 >
                   <Icon name={Check} size="xs" />
                 </PrimaryButton>

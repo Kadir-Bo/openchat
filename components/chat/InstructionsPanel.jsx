@@ -33,7 +33,7 @@ export default function InstructionsPanel({ project, onSave }) {
       <div className="flex justify-between items-center p-4 md:px-6 md:pt-6 md:pb-4">
         <div className="flex justify-between w-full">
           <div className="flex flex-col gap-1">
-            <h3 className="text-sm font-medium text-neutral-100">
+            <h3 className="text-sm font-medium text-neutral-100 light:text-neutral-900">
               Instructions
             </h3>
             <p className="text-neutral-500 text-xs">

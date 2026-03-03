@@ -61,7 +61,7 @@ export default function Message({
     max-w-80
     border
     bg-neutral-900
-    text-white light:text-neutral-950
+    text-white light:text-neutral-900 light:text-neutral-950
   `;
 
   const variantClasses = variants[currentVariant] || variants.error;

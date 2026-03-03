@@ -3,7 +3,7 @@
 import { PrimaryButton, DeleteConfirmModal } from "@/components";
 import { useModal } from "@/context";
 const redClass =
-  "w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60 font-normal";
+  "w-max text-sm px-4 text-red-400 border-red-400/30 hover:bg-red-400/10 hover:border-red-400/60 font-normal light:bg-white light:hover:bg-neutral-50";
 
 export default function DeleteButtons({
   selectedCount,

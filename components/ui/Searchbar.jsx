@@ -39,7 +39,7 @@ export default function Searchbar({
   `;
 
   const borderColor = query
-    ? "text-neutral-100 border-neutral-500"
+    ? "text-neutral-100 border-neutral-500 light:text-neutral-900"
     : "text-neutral-500 border-neutral-700 light:border-neutral-300";
 
   return (

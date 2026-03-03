@@ -24,7 +24,7 @@ export default function DeleteAccountModal() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-white light:text-neutral-950 mb-1">
+      <h2 className="text-xl font-semibold text-white light:text-neutral-900 light:text-neutral-950 mb-1">
         Delete Account
       </h2>
       <p className="text-neutral-300 light:text-neutral-800">
@@ -45,7 +45,7 @@ export default function DeleteAccountModal() {
           type="text"
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
-          className="w-full bg-neutral-900 text-white light:text-neutral-950 px-3 py-2 rounded-lg border border-neutral-700 light:border-neutral-300 focus:border-neutral-500 outline-none text-sm"
+          className="w-full bg-neutral-900 text-white light:text-neutral-900 light:text-neutral-950 px-3 py-2 rounded-lg border border-neutral-700 light:border-neutral-300 focus:border-neutral-500 outline-none text-sm"
           placeholder={user?.email}
         />
       </div>
@@ -54,7 +54,7 @@ export default function DeleteAccountModal() {
           Cancel
         </PrimaryButton>
         <PrimaryButton
-          className="w-max px-3 min-w-34 justify-center border-none text-white light:text-neutral-950 bg-red-700/60 hover:bg-red-700/90 hover:text-white light:text-neutral-950 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-max px-3 min-w-34 justify-center border-none text-white light:text-neutral-900 light:text-neutral-950 bg-red-700/60 hover:bg-red-700/90 hover:text-white light:text-neutral-950 disabled:opacity-30 disabled:cursor-not-allowed"
           onClick={handleDeleteAccount}
           disabled={!isConfirmed}
           filled

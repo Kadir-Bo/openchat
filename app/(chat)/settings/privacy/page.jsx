@@ -132,7 +132,7 @@ function PrivacySettingsPage() {
               onKeyDown={handleKeyDown}
               placeholder="e.g. I prefer concise answers... (Shift+Enter for new line)"
               rows={Math.max(1, newMemory.split("\n").length)}
-              className="flex-1 bg-neutral-900 light:bg-white text-white light:text-neutral-950 text-sm px-3 py-2 rounded-lg border border-neutral-700 light:border-neutral-300 focus:border-neutral-500 outline-none placeholder:text-neutral-600 resize-none min-h-32"
+              className="flex-1 bg-neutral-900 light:bg-white text-white light:text-neutral-900 light:text-neutral-950 text-sm px-3 py-2 rounded-lg border border-neutral-700 light:border-neutral-300 focus:border-neutral-500 outline-none placeholder:text-neutral-600 resize-none min-h-32"
             />
             <PrimaryButton
               text="Add"

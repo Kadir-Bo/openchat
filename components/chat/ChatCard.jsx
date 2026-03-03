@@ -76,13 +76,13 @@ export default function ChatCard({
     border rounded-xl cursor-pointer select-none
     transition-all duration-150
     border-neutral-500/20 hover:border-neutral-500/50
-    bg-neutral-950/10 hover:bg-neutral-950
-    shadow shadow-neutral-950/10 hover:shadow-neutral-950/50
+    bg-neutral-950/10 hover:bg-neutral-950 light:bg-neutral-100 light:hover:bg-neutral-200
+    shadow shadow-neutral-950/10 hover:shadow-neutral-950/50 light:hover:hover:shadow-neutral-200/50
   `;
   const projectClasses =
     project && `border-blue-200/30 hover:border-blue-200/40`;
   const selectedClasses = isSelected
-    ? "bg-neutral-900 border-neutral-500/60 shadow-neutral-950/50 hover:bg-neutral-900 hover:border-neutral-400"
+    ? "bg-neutral-900 border-neutral-500/60 shadow-neutral-950/50 hover:bg-neutral-900 hover:border-neutral-400 light:bg-neutral-200 light:border-neutral-300 light:shadow-neutral-500/20 light:hover:bg-neutral-300/80 light:hover:border-neutral-500"
     : "";
   const dropdownActiveClasses =
     isDropdownOpen && !isSelected

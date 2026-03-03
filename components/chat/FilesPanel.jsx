@@ -64,7 +64,9 @@ export default function FilesPanel({
       {/* header */}
       <div className="flex justify-between items-center px-6 pt-6 pb-4">
         <div className="flex flex-col gap-1">
-          <h3 className="text-sm font-medium text-neutral-100">Files</h3>
+          <h3 className="text-sm font-medium text-neutral-100 light:text-neutral-900">
+            Files
+          </h3>
           <p className="text-neutral-500 text-xs">
             {isEmpty
               ? "Shared across all chats in this project"

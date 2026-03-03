@@ -22,7 +22,7 @@ export default function DeleteConfirmModal({ title, description, onConfirm }) {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-white light:text-neutral-950 mb-1">
+      <h2 className="text-xl font-semibold text-white light:text-neutral-900 light:text-neutral-950 mb-1">
         Delete {title}
       </h2>
 
@@ -38,7 +38,7 @@ export default function DeleteConfirmModal({ title, description, onConfirm }) {
         </PrimaryButton>
 
         <PrimaryButton
-          className="w-max px-3 min-w-32 justify-center border-none text-white light:text-neutral-950 bg-red-600/50 hover:bg-red-700/30 light:bg-red-600/80 light:hover:bg-red-700/80"
+          className="w-max px-3 min-w-32 justify-center border-none text-white light:text-neutral-900 light:text-neutral-950 bg-red-600/50 hover:bg-red-700/30 light:bg-red-600/80 light:hover:bg-red-700/80"
           onClick={handleConfirm}
           disabled={loading}
           filled

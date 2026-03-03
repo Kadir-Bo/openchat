@@ -28,7 +28,7 @@ export default function PrimaryButton({
     border-neutral-500/30
     hover:border-neutral-500/50
     hover:bg-neutral-900
-    light:hover:bg-neutral-200
+    light:hover:bg-neutral-200/50
     light:hover:border-neutral-200
     light:text-neutral-950
     px-3
@@ -51,7 +51,7 @@ export default function PrimaryButton({
     : "";
 
   const activeClasses = active
-    ? "bg-neutral-800 hover:bg-neutral-800 border-neutral-500/60 light:bg-neutral-200 light:hover:bg-neutral-100 light:border-neutral-50"
+    ? "bg-neutral-800 hover:bg-neutral-800 border-neutral-500/60 light:bg-neutral-200 light:hover:bg-neutral-200 light:border-neutral-50"
     : "";
 
   const hasActiveClassName = active && activeClassName ? activeClassName : "";

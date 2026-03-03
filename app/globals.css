@@ -5,31 +5,22 @@
 #chat-container[data-theme="light"] {
   --background: #ffffff;
   --foreground: #171717;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.25);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.4);
 }
 
 #chat-container[data-theme="dark"] {
   --background: #0a0a0a;
   --foreground: #ededed;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
 }
-/* Light Mode Selector */
-@custom-variant light (&:where([data-theme=light], [data-theme=light] *));
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #c74d4d;
+/* ==================== Light Mode Variant ==================== */
+@custom-variant light {
+  &:where([data-theme="light"], [data-theme="light"] *) {
+    @slot;
   }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    * {
-      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-    }
 }
 
 /* ==================== Theme Configuration ==================== */
@@ -42,7 +33,6 @@
 }
 
 /* ==================== Base Styles ==================== */
-
 @layer base {
   * {
     touch-action: pan-x pan-y !important;
@@ -65,8 +55,7 @@
   input:-webkit-autofill:focus,
   input:-webkit-autofill:active {
     transition: background-color 5000s ease-in-out 0s;
-    -webkit-box-shadow: 0 0 0px 1000px var(--input-box-shadow-color, #0f0f0f)
-      inset;
+    -webkit-box-shadow: 0 0 0px 1000px var(--input-box-shadow-color, #0f0f0f) inset;
     -webkit-text-fill-color: white;
     -webkit-text-size-adjust: inherit;
   }
@@ -82,18 +71,28 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1);
+    background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.1));
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--scrollbar-thumb-hover, rgba(0, 0, 0, 0.2));
   }
 
   /* Scrollbar Styles - Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+    scrollbar-color: var(--scrollbar-thumb, rgba(0, 0, 0, 0.1)) transparent;
+  }
+
+  /* Dark mode system preference fallback */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #0a0a0a;
+      --foreground: #ededed;
+      --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+      --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+    }
   }
 }
 
@@ -102,7 +101,7 @@
   @apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
 }
 
-/* ==================== Markdown/Prose Styles ==================== */
+/* ==================== Prose / Markdown Variables ==================== */
 @layer utilities {
   .prose-custom {
     --tw-prose-body: rgb(229 229 229);
@@ -122,19 +121,38 @@
     --tw-prose-th-borders: rgb(64 64 64);
     --tw-prose-td-borders: rgb(82 82 82);
   }
+
+  [data-theme="light"] .prose-custom {
+    --tw-prose-body: rgb(38 38 38);
+    --tw-prose-headings: rgb(10 10 10);
+    --tw-prose-lead: rgb(64 64 64);
+    --tw-prose-links: rgb(37 99 235);
+    --tw-prose-bold: rgb(10 10 10);
+    --tw-prose-counters: rgb(82 82 82);
+    --tw-prose-bullets: rgb(115 115 115);
+    --tw-prose-hr: rgb(212 212 212);
+    --tw-prose-quotes: rgb(64 64 64);
+    --tw-prose-quote-borders: rgb(212 212 212);
+    --tw-prose-captions: rgb(82 82 82);
+    --tw-prose-code: rgb(10 10 10);
+    --tw-prose-pre-code: rgb(38 38 38);
+    --tw-prose-pre-bg: rgb(245 245 245);
+    --tw-prose-th-borders: rgb(212 212 212);
+    --tw-prose-td-borders: rgb(229 229 229);
+  }
 }
 
-/* ==================== Component Styles ==================== */
+/* ==================== Markdown / Component Styles ==================== */
 @layer components {
-  /* Markdown Container */
+  /* Container */
   .markdown {
-    @apply text-neutral-200 text-sm leading-relaxed;
+    @apply text-neutral-200 light:text-neutral-800 text-sm leading-relaxed;
     overflow-x: clip;
     overflow-y: visible;
   }
 
   .markdown > * {
-    @apply max-w-full;
+    @apply max-w-full light:text-neutral-950;
   }
 
   /* Headings */
@@ -147,21 +165,10 @@
     @apply font-bold text-neutral-100 light:text-neutral-900 mb-3;
   }
 
-  .markdown h1 {
-    @apply text-2xl mt-6 first:mt-0;
-  }
-
-  .markdown h2 {
-    @apply text-xl mt-5 first:mt-0;
-  }
-
-  .markdown h3 {
-    @apply text-lg mt-4 first:mt-0;
-  }
-
-  .markdown h4 {
-    @apply text-base mt-3 first:mt-0;
-  }
+  .markdown h1 { @apply text-2xl mt-6 first:mt-0; }
+  .markdown h2 { @apply text-xl mt-5 first:mt-0; }
+  .markdown h3 { @apply text-lg mt-4 first:mt-0; }
+  .markdown h4 { @apply text-base mt-3 first:mt-0; }
 
   /* Paragraphs */
   .markdown p {
@@ -174,21 +181,10 @@
     @apply ml-5 space-y-2;
   }
 
-  .markdown ul {
-    @apply list-disc;
-  }
-
-  .markdown ol {
-    @apply list-decimal;
-  }
-
-  .markdown li {
-    @apply ml-1;
-  }
-
-  .markdown li > p {
-    @apply mb-2;
-  }
+  .markdown ul { @apply list-disc; }
+  .markdown ol { @apply list-decimal; }
+  .markdown li { @apply ml-1; }
+  .markdown li > p { @apply mb-2; }
 
   /* Nested Lists */
   .markdown ul ul,
@@ -204,7 +200,7 @@
   }
 
   .markdown pre {
-    @apply bg-neutral-900 p-2 rounded-lg border border-neutral-800;
+    @apply bg-neutral-900 p-2 rounded-lg border border-neutral-800 light:border-neutral-200;
     overflow-x: auto;
     max-width: 100%;
   }
@@ -216,7 +212,7 @@
 
   /* Links */
   .markdown a {
-    @apply text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors;
+    @apply text-blue-400 hover:text-blue-300 light:text-blue-600 light:hover:text-blue-500 underline underline-offset-2 transition-colors;
   }
 
   /* Blockquotes */
@@ -239,7 +235,7 @@
 
   /* Horizontal Rule */
   .markdown hr {
-    @apply border-neutral-800 my-6;
+    @apply border-neutral-800 light:border-neutral-200 my-6;
   }
 
   /* Tables */
@@ -275,7 +271,7 @@
 
   /* Inline Code in Links */
   .markdown a code {
-    @apply text-blue-400;
+    @apply text-blue-400 light:text-blue-600;
   }
 
   /* Task Lists */
@@ -284,7 +280,7 @@
   }
 }
 
-/* Prevent iOS Safari auto-zoom on focused inputs */
+/* ==================== iOS Safari Auto-zoom Prevention ==================== */
 input,
 textarea,
 select {

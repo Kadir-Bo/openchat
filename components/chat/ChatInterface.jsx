@@ -198,7 +198,7 @@ export default function ChatInterface({
       {/* Input container */}
       <motion.div
         className={twMerge(
-          "bg-neutral-900 flex flex-col justify-end relative",
+          "bg-neutral-900 light:bg-white flex flex-col justify-end relative",
           "rounded-2xl",
           containerClassName,
         )}

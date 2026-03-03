@@ -225,12 +225,12 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                 menuOpen && "relative z-9999",
                 isUser
                   ? clsx(
-                      "text-neutral-950 w-max max-w-[90%] lg:max-w-[80%] border",
+                      "text-neutral-950 light:text-neutral-900 w-max max-w-[90%] lg:max-w-[80%] border",
                       isEditing
-                        ? "text-neutral-950 bg-neutral-500/5 border-neutral-500"
-                        : "bg-neutral-200",
+                        ? "text-neutral-950 bg-neutral-500/5 border-neutral-500 light:bg-white light:border-neutral-300"
+                        : "bg-neutral-200 light:bg-white light:border-neutral-200",
                     )
-                  : "text-neutral-100",
+                  : "text-neutral-100 light:text-neutral-800",
               )}
               style={{
                 transformOrigin: isUser ? "bottom right" : "bottom left",
@@ -239,7 +239,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                   : {}),
               }}
               whileTap={
-                canAnimate && !didScrollRef.current
+                canAnimate && !didScrollRef.current && isMobile
                   ? {
                       y: 2,
                       transition: {
@@ -271,7 +271,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                   </p>
                 )
               ) : (
-                <div className="markdown prose prose-invert max-w-none min-w-0 w-full">
+                <div className="markdown prose prose-invert light:prose-strong:text-neutral-800 max-w-none min-w-0 w-full">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight, rehypeRaw]}

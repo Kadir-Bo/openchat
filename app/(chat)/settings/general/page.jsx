@@ -89,10 +89,7 @@ function GeneralSettingsPage() {
   const preferencesChanged =
     savedProfile && modelPreferences !== savedProfile.modelPreferences;
   const modelThemeChanged =
-    savedProfile &&
-    (userDefaultModel !== savedProfile.defaultModel ||
-      activeTheme !== savedProfile.theme);
-
+    savedProfile && userDefaultModel !== savedProfile.defaultModel;
   const flashSaved = (section) => {
     setSavedSection(section);
     setTimeout(() => setSavedSection(null), 3000);
@@ -110,22 +107,20 @@ function GeneralSettingsPage() {
     flashSaved("preferences");
   }, [modelPreferences, updateUserProfile]);
 
-  const handleSaveModelTheme = useCallback(async () => {
-    await updateUserProfile({
-      preferences: {
-        defaultModel: userDefaultModel,
-        theme: activeTheme,
-        language: "de",
-      },
-    });
-    setSavedProfile((prev) => ({
-      ...prev,
-      defaultModel: userDefaultModel,
-      theme: activeTheme,
-    }));
-    flashSaved("modelTheme");
-  }, [userDefaultModel, activeTheme, updateUserProfile]);
-
+  const handleThemeChange = useCallback(
+    async (theme) => {
+      setActiveTheme(theme);
+      await updateUserProfile({
+        preferences: {
+          defaultModel: userDefaultModel,
+          theme,
+          language: "de",
+        },
+      });
+      setSavedProfile((prev) => ({ ...prev, theme }));
+    },
+    [userDefaultModel, updateUserProfile],
+  );
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === "full-name") setFullName(value);
@@ -219,15 +214,9 @@ function GeneralSettingsPage() {
           <ThemeSelect
             themes={THEMES}
             activeTheme={activeTheme}
-            onClick={setActiveTheme}
+            onClick={handleThemeChange}
           />
         </div>
-        <SaveButton
-          hasChanges={modelThemeChanged}
-          loading={loading}
-          isSaved={savedSection === "modelTheme"}
-          onClick={handleSaveModelTheme}
-        />
       </div>
     </div>
   );

@@ -18,7 +18,10 @@
 
 /* ==================== Light Mode Variant ==================== */
 @custom-variant light {
-  &:where([data-theme="light"], [data-theme="light"] *) {
+  &:where(
+    [data-theme="light"],
+    [data-theme="light"] *
+  ) {
     @slot;
   }
 }

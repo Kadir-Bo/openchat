@@ -54,11 +54,12 @@ export default function Select({
           dropdownList={list}
           onClick={handleSelect}
           triggerClassName="w-full"
+          itemClassName="light:hover:bg-neutral-200"
           contentSide="bottom"
         >
           <PrimaryButton
             className={twMerge(
-              "border w-full px-3 py-2 rounded-lg border-neutral-700 light:border-neutral-300 outline-none focus:ring-1 focus:ring-blue-500/30 justify-between text-left bg-transparent",
+              "border w-full px-3 py-2 rounded-lg border-neutral-700 light:border-neutral-300 outline-none focus:ring-1 focus:ring-blue-500/30 justify-between text-left bg-transparent light:hover:bg-neutral-100",
               !value && "text-neutral-500",
               buttonClassName,
               lockedClasses,

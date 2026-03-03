@@ -32,7 +32,7 @@ export default function SignInPage() {
     <>
       <PrimaryButton
         href="/"
-        className="fixed top-0 left-0 w-max min-w-0 p-4 border-none  justify-center hover:bg-transparent text-white"
+        className="fixed top-0 left-0 w-max min-w-0 p-4 border-none  justify-center hover:bg-transparent text-white light:text-neutral-950"
       >
         <Icon name={ArrowLeft} size="sm" />
       </PrimaryButton>
@@ -44,7 +44,7 @@ export default function SignInPage() {
           <>
             <Link
               href="/reset-password"
-              className="block mb-2 text-neutral-400 hover:underline"
+              className="block mb-2 text-neutral-400 light:text-neutral-600 hover:underline"
             >
               Forgot password?
             </Link>

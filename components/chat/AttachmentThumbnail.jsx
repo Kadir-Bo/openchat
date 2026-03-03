@@ -43,7 +43,13 @@ export default function AttachmentThumbnail({
       case "text":
         return <Icon name={FileText} size="xs" className="text-yellow-400" />;
       default:
-        return <Icon name={File} size="xs" className="text-neutral-400" />;
+        return (
+          <Icon
+            name={File}
+            size="xs"
+            className="text-neutral-400 light:text-neutral-600"
+          />
+        );
     }
   };
 
@@ -66,7 +72,11 @@ export default function AttachmentThumbnail({
             className="p-1 rounded hover:bg-neutral-800 transition-colors shrink-0 cursor-pointer"
             aria-label="Remove attachment"
           >
-            <Icon name={X} size="sm" className="text-neutral-400" />
+            <Icon
+              name={X}
+              size="sm"
+              className="text-neutral-400 light:text-neutral-600"
+            />
           </button>
         )}
       </div>
@@ -100,7 +110,7 @@ function CodePreview({ content }) {
 
   return (
     <div className="relative bg-neutral-950 rounded p-2 h-20 overflow-hidden">
-      <pre className="text-[10px] font-mono text-neutral-400 overflow-hidden">
+      <pre className="text-[10px] font-mono text-neutral-400 light:text-neutral-600 overflow-hidden">
         <code className="whitespace-pre-wrap break-all">
           {preview}
           {hasMore && (
@@ -152,7 +162,7 @@ function TextPreview({ content, name }) {
 
   return (
     <div className="relative bg-neutral-950 rounded p-2 max-h-20 overflow-hidden">
-      <p className="text-[10px] text-neutral-400 whitespace-pre-wrap wrap-break-words">
+      <p className="text-[10px] text-neutral-400 light:text-neutral-600 whitespace-pre-wrap wrap-break-words">
         {preview}
         {hasMore && <span className="text-neutral-600">...</span>}
       </p>
@@ -165,7 +175,11 @@ function GenericFilePreview({ name }) {
   return (
     <div className="flex items-center gap-3 p-3 bg-neutral-950 rounded">
       <div className="w-12 h-12 bg-neutral-700/50 rounded flex items-center justify-center">
-        <Icon name={File} size="sm" className="text-neutral-400" />
+        <Icon
+          name={File}
+          size="sm"
+          className="text-neutral-400 light:text-neutral-600"
+        />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-neutral-300 truncate">{name}</p>

@@ -47,9 +47,11 @@ export default function RenameChatModal({ title, id }) {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-white mb-4">Rename Chat</h2>
+      <h2 className="text-xl font-semibold text-white light:text-neutral-950 light:text-neutral-950 mb-4">
+        Rename Chat
+      </h2>
       <div className="mb-4">
-        <label className="block text-sm text-neutral-400 mb-2">
+        <label className="block text-sm text-neutral-400 light:text-neutral-600 light:text-neutral-800 mb-2">
           Chat Title
         </label>
         <input
@@ -57,7 +59,7 @@ export default function RenameChatModal({ title, id }) {
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full bg-neutral-900 text-white px-3 py-2 rounded-lg border border-neutral-700 focus:border-neutral-500 outline-none"
+          className="w-full bg-neutral-900 light:bg-neutral-100 text-white light:text-neutral-950 px-3 py-2 rounded-lg border border-neutral-700 light:border-neutral-300 focus:border-neutral-500 light:border-neutral-300 light:focus:border-neutral-400 light:text-neutral-900 outline-none"
           placeholder="Enter chat title"
           autoFocus
         />

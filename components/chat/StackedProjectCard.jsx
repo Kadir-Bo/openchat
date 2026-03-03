@@ -185,7 +185,7 @@ export default function StackedProjectCard({
           <div className="flex items-center gap-1 shrink-0">
             {/* Chat count badge */}
             {chatCount > 0 && (
-              <span className="text-xs text-neutral-400 bg-neutral-800/60 rounded-md px-2 py-0.5 tabular-nums">
+              <span className="text-xs text-neutral-400 light:text-neutral-600 bg-neutral-800/60 rounded-md px-2 py-0.5 tabular-nums">
                 {chatCount} {chatCount === 1 ? "chat" : "chats"}
               </span>
             )}

@@ -154,7 +154,7 @@ export default function ChatList({
     <div className="py-2.5 w-full">
       {label && (
         <button
-          className="group min-w-max w-full pl-2.5 text-sm text-neutral-300/90 light:text-neutral-400 light:hover:text-neutral-600 flex items-center gap-px ml-1 cursor-pointer hover:text-neutral-200/80 transition-all duration-75"
+          className="group min-w-max w-full pl-2.5 text-sm text-neutral-300/90 light:text-neutral-400 light:text-neutral-600 light:hover:text-neutral-600 flex items-center gap-px ml-1 cursor-pointer hover:text-neutral-200/80 transition-all duration-75"
           onClick={handleToggleChats}
           aria-expanded={isOpen}
           aria-label={`${isOpen ? "Minimieren" : "Erweitern"} ${label}`}

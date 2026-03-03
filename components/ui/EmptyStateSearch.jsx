@@ -9,7 +9,7 @@ export default function EmptyStateSearch({
   icon,
 }) {
   return (
-    <div className="text-center py-12 text-neutral-400">
+    <div className="text-center py-12 text-neutral-400 light:text-neutral-600">
       {searchQuery ? (
         <p>
           No {itemType}s found matching &quot;{searchQuery}&quot;

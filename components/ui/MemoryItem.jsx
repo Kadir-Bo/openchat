@@ -34,7 +34,7 @@ export default function MemoryItem({ memory, onDelete, onUpdate }) {
 
   return (
     <div
-      className={`flex items-start justify-between gap-3 p-3 rounded-lg border bg-neutral-900/50 group ${isEditing ? "border-neutral-600" : "border-neutral-800"}`}
+      className={`flex items-start justify-between gap-3 p-3 rounded-lg border bg-neutral-900/50 light:bg-neutral-50 group ${isEditing ? "border-neutral-600 light:border-neutral-400" : "border-neutral-800 light:border-neutral-300"}`}
     >
       {isEditing ? (
         <textarea
@@ -44,10 +44,10 @@ export default function MemoryItem({ memory, onDelete, onUpdate }) {
           onBlur={handleCancel}
           autoFocus
           rows={Math.max(2, editText.split("\n").length)}
-          className="flex-1 bg-transparent text-sm text-neutral-300 leading-relaxed outline-none resize-none"
+          className="flex-1 bg-transparent text-sm text-neutral-300 light:text-neutral-800 leading-relaxed outline-none resize-none"
         />
       ) : (
-        <p className="flex-1 text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap">
+        <p className="flex-1 text-sm text-neutral-300 light:text-neutral-800 leading-relaxed whitespace-pre-wrap">
           {memory.text}
         </p>
       )}
@@ -59,13 +59,13 @@ export default function MemoryItem({ memory, onDelete, onUpdate }) {
           <>
             <button
               onClick={handleSave}
-              className="text-neutral-400 hover:text-green-400 transition-colors p-1 md:p-1"
+              className="text-neutral-400 light:text-neutral-600 hover:text-green-400 transition-colors p-1 md:p-1"
             >
               <Icon name={Check} size="xs" />
             </button>
             <button
               onClick={handleCancel}
-              className="text-neutral-400 hover:text-red-400 transition-colors p-1 md:p-1"
+              className="text-neutral-400 light:text-neutral-600 hover:text-red-400 transition-colors p-1 md:p-1"
             >
               <X size={14} />
             </button>

@@ -36,7 +36,7 @@ export default function ThemeSelect({ themes, activeTheme, onClick }) {
                 "flex justify-center text-sm capitalize group-hover:text-neutral-200  transition-colors duration-200",
                 theme.id === activeTheme
                   ? "text-neutral-200"
-                  : "text-neutral-400",
+                  : "text-neutral-400 light:text-neutral-600",
               )}
             >
               {theme.theme}

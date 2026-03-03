@@ -76,7 +76,7 @@ export default function FilesPanel({
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             tooltip="Upload file"
-            className="outline-none border-none  cursor-pointer p-1.5 text-neutral-400 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max"
+            className="outline-none border-none  cursor-pointer p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 rounded w-max min-w-max"
           >
             <Icon name={Plus} size="sm" />
           </PrimaryButton>
@@ -131,7 +131,7 @@ export default function FilesPanel({
             ${
               dragOver
                 ? "border-neutral-500 bg-neutral-800/40"
-                : "border-neutral-800 hover:border-neutral-700 hover:bg-neutral-800/20"
+                : "border-neutral-800 hover:border-neutral-700 light:border-neutral-300 hover:bg-neutral-800/20"
             }
           `}
         >

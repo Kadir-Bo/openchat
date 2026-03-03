@@ -66,7 +66,7 @@ export default function ProjectCreatePage() {
     <div className="max-w-md mx-auto h-full flex flex-col gap-8 items-center justify-start py-8 px-4">
       <div className="flex flex-col gap-2 w-full">
         <h3 className="text-3xl">Create Project</h3>
-        <p className="text-neutral-400">
+        <p className="text-neutral-400 light:text-neutral-600">
           Get started by adding a title and description
         </p>
       </div>

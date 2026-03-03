@@ -22,9 +22,11 @@ export default function DeleteConfirmModal({ title, description, onConfirm }) {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-white mb-1">Delete {title}</h2>
+      <h2 className="text-xl font-semibold text-white light:text-neutral-950 mb-1">
+        Delete {title}
+      </h2>
 
-      <p className="text-neutral-300">{description}</p>
+      <p className="text-neutral-300 light:text-neutral-800">{description}</p>
 
       <div className="flex justify-end items-center gap-2 mt-6">
         <PrimaryButton
@@ -36,7 +38,7 @@ export default function DeleteConfirmModal({ title, description, onConfirm }) {
         </PrimaryButton>
 
         <PrimaryButton
-          className="w-max px-3 min-w-32 justify-center border-none text-white bg-red-600/50 hover:bg-red-700/30"
+          className="w-max px-3 min-w-32 justify-center border-none text-white light:text-neutral-950 bg-red-600/50 hover:bg-red-700/30 light:bg-red-600/80 light:hover:bg-red-700/80"
           onClick={handleConfirm}
           disabled={loading}
           filled

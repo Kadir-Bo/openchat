@@ -151,7 +151,7 @@ function GeneralSettingsPage() {
       {/* ── Profile ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Profile</h4>
-        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
+        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50">
           <div className="flex flex-col md:flex-row items-start justify-between gap-6">
             <Input
               label="What would you like to be called?"
@@ -183,7 +183,7 @@ function GeneralSettingsPage() {
       {/* ── Preferences ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Preferences</h4>
-        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
+        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50">
           <Textarea
             label="What personal preferences should Claude consider in responses?"
             value={modelPreferences}
@@ -202,12 +202,12 @@ function GeneralSettingsPage() {
         />
       </div>
 
-      <hr className="text-neutral-700" />
+      <hr className="text-neutral-700 light:text-neutral-300" />
 
       {/* ── Model & Theme ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Model & Theme</h4>
-        <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
+        <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50">
           <Select
             id="default-model"
             name="default-model"

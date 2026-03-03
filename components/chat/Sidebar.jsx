@@ -221,7 +221,7 @@ export default function Sidebar({
                     activeChatId={params.chatId}
                   />
                 ) : (
-                  <span className="text-neutral-400 text-sm flex justify-center">
+                  <span className="text-neutral-400 light:text-neutral-600 text-sm flex justify-center">
                     No Recent Chats
                   </span>
                 )}

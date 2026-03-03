@@ -83,10 +83,10 @@ export default function ModalProvider({ children }) {
   return (
     <ModalContext.Provider value={values}>
       {modalContent && (
-        <div className="fixed inset-0 bg-neutral-950/80 z-9999 flex items-center justify-center">
+        <div className="fixed inset-0 bg-neutral-950/80 light:bg-neutral-950/40 z-9999 flex items-center justify-center">
           <div
             ref={modalContentRef}
-            className="relative p-6 bg-neutral-900 border border-neutral-700 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-auto"
+            className="relative p-6 bg-neutral-900 light:bg-white border border-neutral-700 light:border-neutral-300 light:border-neutral-500 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-auto"
           >
             {modalContent}
           </div>

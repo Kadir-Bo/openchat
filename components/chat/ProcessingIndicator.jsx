@@ -15,7 +15,7 @@ export default function ProcessingIndicator({ message }) {
               ease: "easeInOut",
             },
           }}
-          className="text-xs text-neutral-400 tracking-wide px-1"
+          className="text-xs text-neutral-400 light:text-neutral-600 tracking-wide px-1"
         >
           {message}
         </motion.span>

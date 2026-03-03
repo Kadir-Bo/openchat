@@ -70,7 +70,7 @@ export default function InstructionsPanel({ project, onSave }) {
                 onChange={handleChange}
                 placeholder="e.g. Always reply in English. Be concise. You're a Architekt."
                 rows={5}
-                className="w-full bg-transparent border border-neutral-800 hover:border-neutral-700 focus:border-neutral-600 rounded-xl p-3.5 text-sm placeholder:text-sm text-neutral-300 placeholder-neutral-700 resize-none outline-none transition-colors leading-relaxed"
+                className="w-full bg-transparent border border-neutral-800 hover:border-neutral-700 light:border-neutral-300 focus:border-neutral-600 rounded-xl p-3.5 text-sm placeholder:text-sm text-neutral-300 placeholder-neutral-700 resize-none outline-none transition-colors leading-relaxed"
               />
               <motion.span
                 animate={{ opacity: status === "idle" ? 0 : 1 }}

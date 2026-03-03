@@ -30,26 +30,30 @@ function AccountSettingsPage() {
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Account</h4>
-        <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
+        <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50 light:border-white light:bg-neutral-50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-neutral-400">{user?.email}</p>
+              <p className="text-sm text-neutral-400 light:text-neutral-600">
+                {user?.email}
+              </p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-white font-medium text-sm">
+            <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-white light:text-neutral-950 font-medium text-sm">
               {user?.email?.[0]?.toUpperCase() || "U"}
             </div>
           </div>
         </div>
       </div>
 
-      <hr className="text-neutral-700" />
+      <hr className="text-neutral-700 light:text-neutral-300" />
 
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Session</h4>
-        <div className="flex items-center justify-between p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
+        <div className="flex items-center justify-between p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50 light:border-white light:bg-neutral-50">
           <div>
-            <p className="text-sm font-medium text-white">Log out</p>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm font-medium text-white light:text-neutral-950">
+              Log out
+            </p>
+            <p className="text-sm text-neutral-400 light:text-neutral-600">
               Sign out of your account on this device
             </p>
           </div>
@@ -64,19 +68,21 @@ function AccountSettingsPage() {
         </div>
       </div>
 
-      <hr className="text-neutral-700" />
+      <hr className="text-neutral-700 light:text-neutral-300" />
 
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Danger Zone</h4>
-        <div className="flex flex-col gap-8 md:flex-row items-center justify-between p-4 rounded-xl border border-red-900/30 bg-red-950/10">
+        <div className="flex flex-col gap-8 md:flex-row items-center justify-between p-4 rounded-xl border border-red-900/30 bg-red-950/10 light:bg-neutral-200 light:border-red-500/40">
           <div>
-            <p className="text-sm font-medium text-white">Delete Account</p>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm font-medium text-white light:text-neutral-950">
+              Delete Account
+            </p>
+            <p className="text-sm text-neutral-400 light:text-neutral-600">
               Permanently delete your account and all associated data
             </p>
           </div>
           <PrimaryButton
-            className="min-w-36 w-full md:w-max justify-center border-red-700/60 text-red-500 hover:bg-red-700/10"
+            className="min-w-36 w-full md:w-max justify-center border-red-700/60 text-red-500 hover:bg-red-700/10 light:bg-red-600/50 light:hover:bg-red-700/80 light:hover:border-red-700"
             onClick={handleDeleteAccount}
           >
             Delete Account

@@ -40,7 +40,7 @@ export default function Searchbar({
 
   const borderColor = query
     ? "text-neutral-100 border-neutral-500"
-    : "text-neutral-500 border-neutral-700";
+    : "text-neutral-500 border-neutral-700 light:border-neutral-300";
 
   return (
     <div className={twMerge(defaultClasses, borderColor, className)} {...props}>

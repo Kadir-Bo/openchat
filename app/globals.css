@@ -221,7 +221,7 @@
 
   /* Blockquotes */
   .markdown blockquote {
-    @apply border-l-4 border-neutral-700 pl-4 italic text-neutral-400 my-4;
+    @apply border-l-4 border-neutral-700 light:border-neutral-300 pl-4 italic text-neutral-400 light:text-neutral-600 my-4;
   }
 
   .markdown blockquote p {
@@ -257,11 +257,11 @@
   }
 
   .markdown th {
-    @apply border border-neutral-700 px-4 py-2 font-semibold text-left;
+    @apply border border-neutral-700 light:border-neutral-300 px-4 py-2 font-semibold text-left;
   }
 
   .markdown td {
-    @apply border border-neutral-700 px-4 py-2;
+    @apply border border-neutral-700 light:border-neutral-300 px-4 py-2;
   }
 
   .markdown tbody tr:hover {

@@ -50,7 +50,7 @@ export default function ChatLayout({ children }) {
           handleCloseSidebar={handleCloseSidebar}
           handleToggleSidebar={handleToggleSidebar}
         />
-        <div className="bg-neutral-900/40 flex flex-col w-full relative">
+        <div className="bg-neutral-900/40 light:bg-neutral-400/20 flex flex-col w-full relative">
           <ChatHeader
             handleToggleSidebar={handleToggleSidebar}
             handleCloseSidebar={handleCloseSidebar}

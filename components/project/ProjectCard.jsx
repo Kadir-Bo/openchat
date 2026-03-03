@@ -101,7 +101,7 @@ export default function ProjectCard({
       onContextMenu={(e) => e.preventDefault()}
     >
       <h4 className="font-medium">{title}</h4>
-      <p className="max-h-24 overflow-hidden mt-2 text-neutral-400 text-sm line-clamp-3">
+      <p className="max-h-24 overflow-hidden mt-2 text-neutral-400 light:text-neutral-600 text-sm line-clamp-3">
         {description}
       </p>
 

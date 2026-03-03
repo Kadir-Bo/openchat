@@ -10,6 +10,7 @@ export default function PrimaryButton({
   filled = false,
   tooltip = null,
   tooltipPosition = "top",
+  activeClassName = "",
   cta = null,
   children,
   ...props
@@ -46,12 +47,14 @@ export default function PrimaryButton({
   `;
 
   const filledClasses = filled
-    ? "bg-neutral-200 text-neutral-950 border-neutral-200 hover:bg-neutral-100 border-transparent"
+    ? "bg-neutral-200 text-neutral-950 border-neutral-200 hover:bg-neutral-100 border-transparent light:bg-neutral-900 light:text-white light:text-neutral-950 light:hover:bg-neutral-950 light:hover:text-white light:text-neutral-950 light:hover:border-neutral-900"
     : "";
 
   const activeClasses = active
-    ? "bg-neutral-800 hover:bg-neutral-800 border-neutral-500/60"
+    ? "bg-neutral-800 hover:bg-neutral-800 border-neutral-500/60 light:bg-neutral-200 light:hover:bg-neutral-100 light:border-neutral-50"
     : "";
+
+  const hasActiveClassName = active && activeClassName ? activeClassName : "";
 
   const tooltipPositionClasses = {
     top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
@@ -78,6 +81,7 @@ export default function PrimaryButton({
         defaultClasses,
         filledClasses,
         activeClasses,
+        hasActiveClassName,
         ctaClasses,
         className,
       )}
@@ -93,6 +97,7 @@ export default function PrimaryButton({
         defaultClasses,
         filledClasses,
         activeClasses,
+        hasActiveClassName,
         ctaClasses,
         className,
       )}

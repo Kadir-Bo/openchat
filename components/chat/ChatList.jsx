@@ -154,7 +154,7 @@ export default function ChatList({
     <div className="py-2.5 w-full">
       {label && (
         <button
-          className="group min-w-max w-full pl-2.5 text-sm text-neutral-300/90 flex items-center gap-px ml-1 cursor-pointer hover:text-neutral-200/80 transition-all duration-75"
+          className="group min-w-max w-full pl-2.5 text-sm text-neutral-300/90 light:text-neutral-400 light:hover:text-neutral-600 flex items-center gap-px ml-1 cursor-pointer hover:text-neutral-200/80 transition-all duration-75"
           onClick={handleToggleChats}
           aria-expanded={isOpen}
           aria-label={`${isOpen ? "Minimieren" : "Erweitern"} ${label}`}
@@ -259,10 +259,12 @@ const ChatListItem = React.memo(
     const defaultClasses =
       "w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border py-1.5";
     const editingClasses = isEditing
-      ? "border-neutral-500 bg-neutral-900/50"
-      : "hover:bg-neutral-800 border-transparent";
+      ? "border-neutral-500 bg-neutral-900/50 light:border-neutral-400 bg-neutral-100 text-neutral-200 light:text-neutral-800"
+      : "hover:bg-neutral-800 light:hover:bg-neutral-200 hover:text-neutral-100 light:hover:text-neutral-900 border-transparent";
     const activeClasses =
-      isDropdownOpen || isActive ? "bg-neutral-800 border-transparent" : "";
+      isDropdownOpen || isActive
+        ? "bg-neutral-800 light:bg-neutral-300 border-transparent"
+        : "";
 
     return (
       <li
@@ -281,13 +283,13 @@ const ChatListItem = React.memo(
             onKeyDown={handleKeyDown}
             onBlur={handleSave}
             autoFocus
-            className="w-full bg-transparent text-neutral-200 py-1 px-3 border-transparent outline-none"
+            className="w-full bg-transparent py-1 px-3 border-transparent outline-none"
           />
         ) : (
           <>
             <button
               onClick={handleNavigate}
-              className="truncate py-1 pl-3 w-full flex items-center gap-1 text-left hover:text-neutral-100 cursor-pointer"
+              className="truncate py-1 pl-3 w-full flex items-center gap-1 text-left cursor-pointer"
             >
               {listIcon && <Icon name={listIcon} size="md" />}
               <AnimatePresence mode="wait" initial={false}>

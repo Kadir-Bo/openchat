@@ -11,6 +11,8 @@
   --background: #0a0a0a;
   --foreground: #ededed;
 }
+/* Light Mode Selector */
+@custom-variant light (&:where([data-theme=light], [data-theme=light] *));
 
 @media (prefers-color-scheme: dark) {
   :root {

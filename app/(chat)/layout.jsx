@@ -41,7 +41,7 @@ export default function ChatLayout({ children }) {
       <ThemeBridge />
 
       <main
-        className="h-dvh flex flex-row -neutral-950 text-white data-[theme=light]:bg-white data-[theme=light]:text-neutral-950"
+        className="h-dvh flex flex-row bg-neutral-950 text-white light:bg-white light:text-neutral-950"
         id="chat-container"
       >
         <Sidebar

@@ -4,7 +4,7 @@ import React from "react";
 export default function UserProfileImage({ image, username }) {
   const letter = username.trim().slice(0, 1);
   return (
-    <div className="w-8 h-8 aspect-square rounded-full border border-neutral-800 flex items-center justify-center bg-neutral-950 overflow-hidden">
+    <div className="w-8 h-8 aspect-square rounded-full border border-neutral-800 flex items-center justify-center bg-neutral-950 light:bg-white light:border-neutral-700 overflow-hidden">
       {image ? (
         <Image
           src={image}
@@ -14,7 +14,9 @@ export default function UserProfileImage({ image, username }) {
           className=" object-cover h-full"
         />
       ) : (
-        <span className="uppercase pl-px text-lg">{letter}</span>
+        <span className="uppercase pl-px text-lg light:text-neutral-900">
+          {letter}
+        </span>
       )}
     </div>
   );

@@ -150,7 +150,6 @@ export default function ArchivePage() {
 
   return (
     <ChatPageShell
-      title="Archive"
       tabs={[
         { key: "chats", label: "Chats", count: chats.length },
         { key: "projects", label: "Projects", count: archivedProjects.length },

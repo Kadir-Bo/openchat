@@ -9,7 +9,6 @@ import {
 import { FILTER_OPTIONS } from "@/lib";
 
 export default function ChatPageShell({
-  title,
   tabs,
   activeTab,
   onTabChange,
@@ -22,8 +21,6 @@ export default function ChatPageShell({
   hasItems,
   itemType,
   actions,
-  headerActionTitle = "New Chat",
-  headerActionLink = "/chat",
   clearSelection = () => null,
   children,
 }) {
@@ -34,20 +31,30 @@ export default function ChatPageShell({
       {/* Tabs */}
       {tabs && (
         <div className="flex items-center gap-1 border-b border-neutral-800">
-          {tabs.map(({ key, label, count }) => (
-            <button
-              key={key}
-              onClick={() => onTabChange(key)}
-              className={`px-4 py-2 text-sm capitalize transition-colors duration-150 border-b-2 -mb-px ${
-                activeTab === key
-                  ? "border-neutral-300 text-neutral-100"
-                  : "border-transparent text-neutral-500 hover:text-neutral-300"
-              }`}
-            >
-              {label}
-              <span className="ml-2 text-xs text-neutral-600">{count}</span>
-            </button>
-          ))}
+          {tabs.map(({ key, label, count }) =>
+            tabs.length === 1 ? (
+              <span
+                key={key}
+                className="px-4 py-2 text-sm capitalize border-b-2 -mb-px border-neutral-300 text-neutral-100"
+              >
+                {label}
+                <span className="ml-2 text-xs text-neutral-600">{count}</span>
+              </span>
+            ) : (
+              <button
+                key={key}
+                onClick={() => onTabChange(key)}
+                className={`px-4 py-2 text-sm capitalize transition-colors duration-150 border-b-2 -mb-px ${
+                  activeTab === key
+                    ? "border-neutral-300 text-neutral-100"
+                    : "border-transparent text-neutral-500 hover:text-neutral-300"
+                }`}
+              >
+                {label}
+                <span className="ml-2 text-xs text-neutral-600">{count}</span>
+              </button>
+            ),
+          )}
         </div>
       )}
 

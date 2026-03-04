@@ -228,7 +228,6 @@ export default function ChatsPage() {
 
   return (
     <ChatPageShell
-      title="Chats"
       tabs={[
         { key: "chats", label: "Chats", count: visibleConversations.length },
         { key: "projects", label: "Projects", count: activeProjects.length },

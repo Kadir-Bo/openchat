@@ -125,8 +125,14 @@ export default function ProjectsPage() {
 
   return (
     <ChatPageShell
-      title="Projects"
       sortBy={sortBy}
+      tabs={[
+        {
+          key: "projects",
+          label: "Projects",
+          count: filteredAndSortedProjects.length,
+        },
+      ]}
       onSortChange={setSortBy}
       searchQuery={searchQuery}
       onSearch={setSearchQuery}
@@ -134,8 +140,6 @@ export default function ProjectsPage() {
       selectedCount={selectedCount}
       hasItems={hasProjects}
       itemType={selectedCount === 1 ? "project" : "projects"}
-      headerActionTitle={"New Project"}
-      headerActionLink={"/projects/create"}
       clearSelection={clearSelection}
       actions={
         hasProjects && (

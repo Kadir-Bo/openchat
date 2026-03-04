@@ -167,6 +167,42 @@ export default function DatabaseProvider({ children }) {
     [user, db, handleError, resetError],
   );
 
+  const uploadProfileImage = useCallback(
+    async (file) => {
+      if (!user || !file) return null;
+      resetError();
+      try {
+        const storage = getFirebaseStorage();
+
+        // Delete existing photo if there is one
+        const existing = userProfile?.photoURL;
+        if (existing) {
+          try {
+            // Only delete if it's a Firebase Storage URL (not an external OAuth URL)
+            const url = new URL(existing);
+            if (url.hostname.includes("firebasestorage")) {
+              await deleteObject(ref(storage, `avatars/${user.uid}`));
+            }
+          } catch {
+            // Ignore — file may not exist or URL may be external
+          }
+        }
+
+        const storageRef = ref(storage, `avatars/${user.uid}`);
+        const snapshot = await uploadBytes(storageRef, file, {
+          contentType: file.type,
+          cacheControl: "public, max-age=31536000",
+        });
+
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+      } catch (err) {
+        return handleError(err, "Failed to upload profile image");
+      }
+    },
+    [user, userProfile, handleError, resetError],
+  );
+
   const getUserProfile = useCallback(async () => {
     if (!user || !db) return null;
     resetError();
@@ -921,6 +957,7 @@ export default function DatabaseProvider({ children }) {
         updateUserProfile,
         getUserProfile,
         updateUserPreferences,
+        uploadProfileImage,
 
         // Projects
         createProject,

@@ -39,8 +39,8 @@ export default function Searchbar({
   `;
 
   const borderColor = query
-    ? "text-neutral-100 border-neutral-500 light:text-neutral-900"
-    : "text-neutral-500 border-neutral-700 light:border-neutral-300";
+    ? "text-neutral-100 border-neutral-500"
+    : "text-neutral-500 border-neutral-700";
 
   return (
     <div className={twMerge(defaultClasses, borderColor, className)} {...props}>
@@ -68,7 +68,7 @@ export default function Searchbar({
       {query && (
         <button
           onClick={handleClear}
-          className="outline-none p-3 pl-0 shrink-0 hover:text-neutral-100 light:hover:text-neutral-900 transition-colors"
+          className="outline-none p-3 pl-0 shrink-0 hover:text-neutral-100 transition-colors"
           type="button"
           aria-label="Clear search"
         >

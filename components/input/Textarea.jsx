@@ -63,7 +63,7 @@ export default function Textarea({
       <label
         htmlFor={id}
         className={twMerge(
-          "mb-1.5 text-neutral-400 light:text-neutral-600 text-sm ml-px flex gap-1 items-center justify-start pl-px",
+          "mb-1.5 text-neutral-400  text-sm ml-px flex gap-1 items-center justify-start pl-px",
           labelClassName,
           lockedClasses,
         )}
@@ -85,7 +85,7 @@ export default function Textarea({
         rows={rows}
         maxLength={maxLength}
         className={twMerge(
-          "border w-full px-3 py-2 rounded-lg border-neutral-700 light:border-neutral-300 light:border-neutral-300 outline-none focus:ring-1 focus:ring-blue-500/30 resize-none bg-transparent placeholder:text-neutral-500 disabled:opacity-50 disabled:cursor-not-allowed",
+          "border w-full px-3 py-2 rounded-lg border-neutral-700 outline-none focus:ring-1 focus:ring-blue-500/30 resize-none bg-transparent placeholder:text-neutral-500 disabled:opacity-50 disabled:cursor-not-allowed",
           inputClassName,
           lockedClasses,
         )}
@@ -99,7 +99,7 @@ export default function Textarea({
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.4 }}
             onAnimationComplete={handleAnimationComplete}
-            className="absolute z-50 top-12 md:top-7 left-0 pt-2 pl-3 pointer-events-none select-none text-neutral-400 light:text-neutral-600"
+            className="absolute z-50 top-12 md:top-7 left-0 pt-2 pl-3 pointer-events-none select-none text-neutral-400 "
           >
             {placeholderArray[currentPlaceholderIndex]}
           </motion.span>

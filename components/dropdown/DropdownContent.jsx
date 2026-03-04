@@ -141,7 +141,7 @@ export default function DropdownContent({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.15, ease: "easeOut" }}
         className={twMerge(
-          "bg-neutral-900 light:bg-neutral-100 border border-neutral-500/30 light:border-neutral-300 rounded-xl shadow-lg overflow-hidden p-1.5 max-w-50",
+          "bg-neutral-900 border border-neutral-500/30 rounded-xl shadow-lg overflow-hidden p-1.5 max-w-50",
           className,
         )}
         style={{

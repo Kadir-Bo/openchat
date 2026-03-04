@@ -225,12 +225,12 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                 menuOpen && "relative z-9999",
                 isUser
                   ? clsx(
-                      "text-neutral-950 light:text-neutral-900 w-max max-w-[90%] lg:max-w-[80%] border",
+                      "text-neutral-950 w-max max-w-[90%] lg:max-w-[80%] border",
                       isEditing
-                        ? "text-neutral-950 bg-neutral-500/5 border-neutral-500 light:bg-white light:border-neutral-300"
-                        : "bg-neutral-200 light:bg-white light:border-neutral-200",
+                        ? "text-neutral-950 bg-neutral-500/5 border-neutral-500"
+                        : "bg-neutral-200",
                     )
-                  : "text-neutral-100 light:text-neutral-800",
+                  : "text-neutral-100",
               )}
               style={{
                 transformOrigin: isUser ? "bottom right" : "bottom left",
@@ -262,7 +262,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                       onChange={handleTextareaChange}
                       onKeyDown={handleEditKeyDown}
                       rows={1}
-                      className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-neutral-400 light:text-neutral-600 overflow-hidden"
+                      className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-neutral-400  overflow-hidden"
                     />
                   </div>
                 ) : (
@@ -271,7 +271,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                   </p>
                 )
               ) : (
-                <div className="markdown prose prose-invert light:prose-strong:text-neutral-800 max-w-none min-w-0 w-full">
+                <div className="markdown prose prose-invert max-w-none min-w-0 w-full">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight, rehypeRaw]}
@@ -319,7 +319,7 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
                 {actions.map(({ id, Icon: actionIcon, onClick, title }) => (
                   <PrimaryButton
                     key={id}
-                    className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 light:hover:text-neutral-900 light:hover:text-neutral-900 rounded-md"
+                    className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400  hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                     onClick={onClick}
                     tooltip={title}
                   >
@@ -334,13 +334,13 @@ export default function MessageBubble({ message, onRegenerate, onEdit }) {
               <div className="flex items-center gap-1 justify-end mt-1">
                 <PrimaryButton
                   onClick={handleEditCancel}
-                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 light:hover:text-neutral-900 rounded-md"
+                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400  hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                 >
                   <Icon name={X} size="xs" />
                 </PrimaryButton>
                 <PrimaryButton
                   onClick={handleEditSubmit}
-                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400 light:text-neutral-600 hover:bg-neutral-700/20 hover:text-neutral-100 light:hover:text-neutral-900 rounded-md"
+                  className="outline-none border-none min-w-0 cursor-pointer p-2 md:p-1.5 text-neutral-400  hover:bg-neutral-700/20 hover:text-neutral-100 rounded-md"
                 >
                   <Icon name={Check} size="xs" />
                 </PrimaryButton>

@@ -128,7 +128,7 @@ export default function Sidebar({
       </AnimatePresence>
 
       <motion.aside
-        className={`bg-neutral-900 light:bg-neutral-50 border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-999 h-dvh px-1 ${
+        className={`bg-neutral-900  border-r border-r-neutral-500/10 overflow-hidden flex flex-col shrink-0 z-999 h-dvh px-1 ${
           isMobile ? "fixed top-0 left-0" : "relative"
         }`}
         variants={sidebarVariants}
@@ -209,7 +209,7 @@ export default function Sidebar({
                 </PrimaryButton>
               </div>
 
-              <hr className="text-neutral-800 light:text-neutral-200" />
+              <hr className="text-neutral-800" />
 
               <div className="flex-1 overflow-y-auto overflow-x-hidden p-2s">
                 {recentChats.length > 0 ? (
@@ -221,7 +221,7 @@ export default function Sidebar({
                     activeChatId={params.chatId}
                   />
                 ) : (
-                  <span className="text-neutral-400 light:text-neutral-600 text-sm flex justify-center">
+                  <span className="text-neutral-400  text-sm flex justify-center">
                     No Recent Chats
                   </span>
                 )}
@@ -234,10 +234,10 @@ export default function Sidebar({
                   e.stopPropagation();
                   menuItem.action?.();
                 }}
-                contentClassName="bg-neutral-950/50 light:bg-neutral-100 -translate-x-1.5"
-                triggerClassName="border-t border-neutral-800 light:border-neutral-300 pb-8 pt-4 md:py-2"
+                contentClassName="bg-neutral-950/50 -translate-x-1.5"
+                triggerClassName="border-t border-neutral-800 pb-8 pt-4 md:py-2"
               >
-                <PrimaryButton className="gap-2 md:text-sm rounded-none border-none hover:bg-transparent light:hover:bg-transparent">
+                <PrimaryButton className="gap-2 md:text-sm rounded-none border-none hover:bg-transparent">
                   <UserProfileImage image={userImage} username={username} />
                   <div className="flex flex-1 justify-between items-center">
                     {username}

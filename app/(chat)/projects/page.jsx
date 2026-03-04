@@ -166,7 +166,7 @@ export default function ProjectsPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-neutral-400 light:text-neutral-600 col-span-3">
+        <div className="text-center py-12 text-neutral-400  col-span-3">
           {searchQuery ? (
             <>No projects found matching &quot;{searchQuery}&quot;</>
           ) : (

@@ -3,13 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth, useDatabase } from "@/context";
 import { MODELS, THEMES } from "@/lib";
-import {
-  Input,
-  PrimaryButton,
-  Select,
-  Textarea,
-  ThemeSelect,
-} from "@/components";
+import { Input, PrimaryButton, Select, Textarea } from "@/components";
 import { motion } from "framer-motion";
 
 function SaveButton({ hasChanges, loading, isSaved, onClick }) {
@@ -88,8 +82,6 @@ function GeneralSettingsPage() {
   const profileChanged = savedProfile && fullName !== savedProfile.fullName;
   const preferencesChanged =
     savedProfile && modelPreferences !== savedProfile.modelPreferences;
-  const modelThemeChanged =
-    savedProfile && userDefaultModel !== savedProfile.defaultModel;
   const flashSaved = (section) => {
     setSavedSection(section);
     setTimeout(() => setSavedSection(null), 3000);
@@ -107,20 +99,6 @@ function GeneralSettingsPage() {
     flashSaved("preferences");
   }, [modelPreferences, updateUserProfile]);
 
-  const handleThemeChange = useCallback(
-    async (theme) => {
-      setActiveTheme(theme);
-      await updateUserProfile({
-        preferences: {
-          defaultModel: userDefaultModel,
-          theme,
-          language: "de",
-        },
-      });
-      setSavedProfile((prev) => ({ ...prev, theme }));
-    },
-    [userDefaultModel, updateUserProfile],
-  );
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === "full-name") setFullName(value);
@@ -146,7 +124,7 @@ function GeneralSettingsPage() {
       {/* ── Profile ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Profile</h4>
-        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50">
+        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30  ">
           <div className="flex flex-col md:flex-row items-start justify-between gap-6">
             <Input
               label="What would you like to be called?"
@@ -178,7 +156,7 @@ function GeneralSettingsPage() {
       {/* ── Preferences ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Preferences</h4>
-        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50">
+        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30  ">
           <Textarea
             label="What personal preferences should Claude consider in responses?"
             value={modelPreferences}
@@ -197,12 +175,12 @@ function GeneralSettingsPage() {
         />
       </div>
 
-      <hr className="text-neutral-700 light:text-neutral-300" />
+      <hr className="text-neutral-700" />
 
       {/* ── Model & Theme ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Model & Theme</h4>
-        <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50">
+        <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30  ">
           <Select
             id="default-model"
             name="default-model"
@@ -210,11 +188,6 @@ function GeneralSettingsPage() {
             list={MODELS}
             onChange={handleInputChange}
             value={currentModelLabel}
-          />
-          <ThemeSelect
-            themes={THEMES}
-            activeTheme={activeTheme}
-            onClick={handleThemeChange}
           />
         </div>
       </div>

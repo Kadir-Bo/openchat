@@ -2,25 +2,9 @@
 
 import { ChatHeader, Sidebar } from "@/components";
 import { PrivateRoute } from "@/lib";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useIsMobile } from "@/hooks";
-import { useDatabase } from "@/context";
-
-function ThemeBridge() {
-  const { userProfile } = useDatabase();
-
-  useEffect(() => {
-    const theme = userProfile?.preferences?.theme ?? "dark";
-    const chatContainer = document.getElementById("chat-container");
-
-    document.body.setAttribute("data-theme", theme);
-    chatContainer?.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-  }, [userProfile]);
-
-  return null;
-}
 
 export default function ChatLayout({ children }) {
   const isMobile = useIsMobile();
@@ -38,10 +22,8 @@ export default function ChatLayout({ children }) {
 
   return (
     <PrivateRoute>
-      <ThemeBridge />
-
       <main
-        className="h-dvh flex flex-row bg-neutral-950 text-white light:text-neutral-900 light:bg-white light:text-neutral-950"
+        className="h-dvh flex flex-row bg-neutral-950 text-white"
         id="chat-container"
       >
         <Sidebar
@@ -50,7 +32,7 @@ export default function ChatLayout({ children }) {
           handleCloseSidebar={handleCloseSidebar}
           handleToggleSidebar={handleToggleSidebar}
         />
-        <div className="bg-neutral-900/40 light:bg-neutral-400/20 flex flex-col w-full relative">
+        <div className="bg-neutral-900/40 flex flex-col w-full relative">
           <ChatHeader
             handleToggleSidebar={handleToggleSidebar}
             handleCloseSidebar={handleCloseSidebar}

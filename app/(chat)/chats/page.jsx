@@ -263,7 +263,7 @@ export default function ChatsPage() {
       }
     >
       {isLoading ? (
-        <p className="text-center py-12 text-neutral-400 light:text-neutral-600">
+        <p className="text-center py-12 text-neutral-400 ">
           Loading {isChats ? "chats" : "projects"}...
         </p>
       ) : isChats ? (

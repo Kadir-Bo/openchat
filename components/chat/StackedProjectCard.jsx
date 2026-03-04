@@ -139,8 +139,8 @@ export default function StackedProjectCard({
         layout
         className={twMerge(
           "relative flex flex-col w-full border rounded-xl cursor-pointer select-none transition-colors duration-150",
-          "border-neutral-500/20 light:bg-white bg-neutral-950/10 shadow shadow-neutral-950/10",
-          "hover:border-neutral-500/40 hover:bg-neutral-950/60 light:hover:bg-neutral-50",
+          "border-neutral-500/20 bg-neutral-950/10 shadow shadow-neutral-950/10",
+          "hover:border-neutral-500/40 hover:bg-neutral-950/60",
           isExpanded && "border-neutral-500/35 bg-neutral-950/80",
           isSelected &&
             "border-neutral-500/60 bg-neutral-900 shadow-neutral-950/50 hover:bg-neutral-900 hover:border-neutral-500/60", // ← moved last, stronger hover overrides
@@ -185,7 +185,7 @@ export default function StackedProjectCard({
           <div className="flex items-center gap-1 shrink-0">
             {/* Chat count badge */}
             {chatCount > 0 && (
-              <span className="text-xs text-neutral-400 light:text-neutral-600 bg-neutral-800/60 light:bg-transparent light:border light:border-neutral-300 rounded-md px-2 py-0.5 tabular-nums">
+              <span className="text-xs text-neutral-400  bg-neutral-800/60 rounded-md px-2 py-0.5 tabular-nums">
                 {chatCount} {chatCount === 1 ? "chat" : "chats"}
               </span>
             )}

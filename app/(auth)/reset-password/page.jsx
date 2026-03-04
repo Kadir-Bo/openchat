@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
     <>
       <PrimaryButton
         href="/"
-        className="fixed top-0 left-0 w-max min-w-0 p-4 border-none  justify-center hover:bg-transparent text-white light:text-neutral-900 light:text-neutral-950"
+        className="fixed top-0 left-0 w-max min-w-0 p-4 border-none  justify-center hover:bg-transparent text-white"
       >
         <ArrowLeft size={16} />
       </PrimaryButton>
@@ -52,7 +52,7 @@ export default function ResetPasswordPage() {
             </PrimaryButton>
           }
         >
-          <p className="text-sm text-center text-neutral-400 light:text-neutral-600 -mt-4 mb-2">
+          <p className="text-sm text-center text-neutral-400 -mt-4 mb-2">
             We&apos;ve sent instructions to reset your password.
           </p>
         </AuthFormShell>

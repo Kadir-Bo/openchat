@@ -36,7 +36,7 @@ export default function Input({
       <label
         htmlFor={id}
         className={twMerge(
-          "mb-1.5 text-neutral-400 light:text-neutral-600 text-sm ml-px flex gap-1 items-center justify-start pl-px",
+          "mb-1.5 text-neutral-400  text-sm ml-px flex gap-1 items-center justify-start pl-px",
           labelClassName,
           lockedClasses,
         )}
@@ -59,7 +59,7 @@ export default function Input({
         onFocus={onFocus}
         required={required}
         className={twMerge(
-          "border w-full px-3 py-2 rounded-lg border-neutral-700 light:border-neutral-300 bg-transparent outline-none focus:ring-1 focus:ring-blue-500/30 placeholder:text-neutral-500 disabled:cursor-not-allowed",
+          "border w-full px-3 py-2 rounded-lg border-neutral-700 bg-transparent outline-none focus:ring-1 focus:ring-blue-500/30 placeholder:text-neutral-500 disabled:cursor-not-allowed",
           " placeholder:text-sm md:placeholder:text-base",
           inputClassName,
           lockedClasses,

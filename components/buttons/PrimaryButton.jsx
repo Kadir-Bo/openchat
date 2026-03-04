@@ -28,9 +28,6 @@ export default function PrimaryButton({
     border-neutral-500/30
     hover:border-neutral-500/50
     hover:bg-neutral-900
-    light:hover:bg-neutral-200/50
-    light:hover:border-neutral-200
-    light:text-neutral-950
     px-3
     py-2
     md:px-3
@@ -47,11 +44,11 @@ export default function PrimaryButton({
   `;
 
   const filledClasses = filled
-    ? "bg-neutral-200 text-neutral-950 border-neutral-200 hover:bg-neutral-100 border-transparent light:bg-neutral-900 light:text-white light:text-neutral-950 light:hover:bg-neutral-950 light:hover:text-white light:text-neutral-950 light:hover:border-neutral-900"
+    ? "bg-neutral-200 text-neutral-950 border-neutral-200 hover:bg-neutral-100 border-transparent"
     : "";
 
   const activeClasses = active
-    ? "bg-neutral-800 hover:bg-neutral-800 border-neutral-500/60 light:bg-neutral-200 light:hover:bg-neutral-200 light:border-neutral-50"
+    ? "bg-neutral-800 hover:bg-neutral-800 border-neutral-500/60"
     : "";
 
   const hasActiveClassName = active && activeClassName ? activeClassName : "";
@@ -66,7 +63,7 @@ export default function PrimaryButton({
   const tooltipElement = tooltip && (
     <span
       className={twMerge(
-        "absolute whitespace-nowrap bg-neutral-800 light:bg-white text-neutral-100 light:text-neutral-900 text-sm px-2 py-1 rounded opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-opacity duration-200 group-hover/btn:delay-500 delay-0 z-10",
+        "absolute whitespace-nowrap bg-neutral-800 text-neutral-100 text-sm px-2 py-1 rounded opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-opacity duration-200 group-hover/btn:delay-500 delay-0 z-10",
         tooltipPositionClasses[tooltipPosition],
       )}
     >

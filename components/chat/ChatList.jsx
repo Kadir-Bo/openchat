@@ -154,7 +154,7 @@ export default function ChatList({
     <div className="py-2.5 w-full">
       {label && (
         <button
-          className="group min-w-max w-full pl-2.5 text-sm text-neutral-300/90 light:text-neutral-400 light:text-neutral-600 light:hover:text-neutral-600 flex items-center gap-px ml-1 cursor-pointer hover:text-neutral-200/80 transition-all duration-75"
+          className="group min-w-max w-full pl-2.5 text-sm text-neutral-300/90  flex items-center gap-px ml-1 cursor-pointer hover:text-neutral-200/80 transition-all duration-75"
           onClick={handleToggleChats}
           aria-expanded={isOpen}
           aria-label={`${isOpen ? "Minimieren" : "Erweitern"} ${label}`}
@@ -259,12 +259,10 @@ const ChatListItem = React.memo(
     const defaultClasses =
       "w-full text-left rounded-lg transition duration-75 flex justify-between items-center gap-1 border py-1.5";
     const editingClasses = isEditing
-      ? "border-neutral-500 bg-neutral-900/50 light:border-neutral-400 bg-neutral-100 text-neutral-200 light:text-neutral-800"
-      : "hover:bg-neutral-800 light:hover:bg-neutral-200 hover:text-neutral-100 light:hover:text-neutral-900 light:hover:text-neutral-900 border-transparent";
+      ? "border-neutral-500 bg-neutral-900/50 bg-neutral-100 text-neutral-200"
+      : "hover:bg-neutral-800 hover:text-neutral-100 border-transparent";
     const activeClasses =
-      isDropdownOpen || isActive
-        ? "bg-neutral-800 light:bg-neutral-300 border-transparent"
-        : "";
+      isDropdownOpen || isActive ? "bg-neutral-800 border-transparent" : "";
 
     return (
       <li

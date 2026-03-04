@@ -110,7 +110,6 @@ export default function DatabaseProvider({ children }) {
             displayName: user.displayName || null,
             photoURL: user.photoURL || null,
             preferences: {
-              theme: "dark",
               defaultModel: DEFAULT_MODEL,
               language: "en",
               modelPreferences: "",

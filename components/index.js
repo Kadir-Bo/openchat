@@ -65,7 +65,6 @@ export { default as DeleteConfirmModal } from "./modal/DeleteConfirmModal";
 export { default as Input } from "./input/Input";
 export { default as Textarea } from "./input/Textarea";
 export { default as Select } from "./input/Select";
-export { default as ThemeSelect } from "./input/ThemeSelect";
 
 // Animation Debug
 

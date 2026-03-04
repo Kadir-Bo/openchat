@@ -86,9 +86,7 @@ export default function ProjectIDPage() {
   if (isInitialLoading) {
     return (
       <div className="max-w-220 mx-auto h-dvh flex items-center justify-center">
-        <p className="text-neutral-400 light:text-neutral-600">
-          Loading project...
-        </p>
+        <p className="text-neutral-400 ">Loading project...</p>
       </div>
     );
   }
@@ -99,7 +97,7 @@ export default function ProjectIDPage() {
     <div className="max-w-220 mx-auto h-dvh flex flex-col items-start justify-start gap-8 py-8 px-4">
       <PrimaryButton
         href={"/projects"}
-        className="border-none hover:bg-transparent text-neutral-400 light:text-neutral-600 hover:text-neutral-100 light:hover:text-neutral-900 w-max text-sm px-1 md:px-3"
+        className="border-none hover:bg-transparent text-neutral-400  hover:text-neutral-100 w-max text-sm px-1 md:px-3"
       >
         <Icon name={ArrowLeft} size="sm" />
         All Projects
@@ -111,9 +109,7 @@ export default function ProjectIDPage() {
           <div className="flex items-start gap-4 pl-2">
             <div className="flex flex-col gap-2">
               <h3 className="text-2xl">{currentProject.title}</h3>
-              <p className="text-neutral-400 light:text-neutral-600">
-                {currentProject.description}
-              </p>
+              <p className="text-neutral-400 ">{currentProject.description}</p>
             </div>
           </div>
 
@@ -142,13 +138,13 @@ export default function ProjectIDPage() {
         </div>
 
         {/* ── right column ── */}
-        <div className="max-w-sm w-full md:border border-neutral-700 light:border-neutral-300 rounded-2xl overflow-hidden">
+        <div className="max-w-sm w-full md:border border-neutral-700 rounded-2xl overflow-hidden">
           <InstructionsPanel
             project={currentProject}
             onSave={handleSaveInstructions}
           />
 
-          <hr className="border-neutral-700 light:border-neutral-300" />
+          <hr className="border-neutral-700" />
 
           <FilesPanel
             project={currentProject}

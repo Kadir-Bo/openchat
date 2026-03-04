@@ -88,23 +88,23 @@ function PrivacySettingsPage() {
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Data & Privacy</h4>
-        <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50">
+        <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
           <div className="flex items-start gap-3">
             <Icon
               name={Info}
               size={16}
-              className="text-neutral-400 light:text-neutral-600 mt-0.5 shrink-0"
+              className="text-neutral-400 mt-0.5 shrink-0"
             />
             <div className="flex flex-col gap-2">
               <p className="text-sm text-neutral-300 font-medium">
                 How your data is used
               </p>
-              <p className="text-sm text-neutral-400 light:text-neutral-600 leading-relaxed">
+              <p className="text-sm text-neutral-400 leading-relaxed">
                 Your conversations and interactions may be used to improve our
                 AI models and services. This includes messages you send,
                 feedback you provide, and how you interact with the assistant.
               </p>
-              <p className="text-sm text-neutral-400 light:text-neutral-600 leading-relaxed">
+              <p className="text-sm text-neutral-400 leading-relaxed">
                 We do not sell your personal data to third parties. Data is
                 processed in accordance with our privacy policy and applicable
                 data protection regulations.
@@ -114,17 +114,17 @@ function PrivacySettingsPage() {
         </div>
       </div>
 
-      <hr className="text-neutral-700 light:text-neutral-300" />
+      <hr className="text-neutral-700" />
 
       <div className="flex flex-col gap-5">
         <div>
           <h4 className="font-medium">Memories</h4>
-          <p className="text-sm text-neutral-400 light:text-neutral-600 mt-1">
+          <p className="text-sm text-neutral-400  mt-1">
             Information the assistant remembers about you across conversations.
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30 light:border-white light:bg-neutral-50">
+        <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30  ">
           <div className="flex gap-2 items-start md:items-end relative">
             <textarea
               value={newMemory}
@@ -132,7 +132,7 @@ function PrivacySettingsPage() {
               onKeyDown={handleKeyDown}
               placeholder="e.g. I prefer concise answers... (Shift+Enter for new line)"
               rows={Math.max(1, newMemory.split("\n").length)}
-              className="flex-1 bg-neutral-900 light:bg-white text-white light:text-neutral-900 light:text-neutral-950 text-sm px-3 py-2 rounded-lg border border-neutral-700 light:border-neutral-300 focus:border-neutral-500 outline-none placeholder:text-neutral-600 resize-none min-h-32"
+              className="flex-1 bg-neutral-900 text-white text-sm px-3 py-2 rounded-lg border border-neutral-700 focus:border-neutral-500 outline-none placeholder:text-neutral-600 resize-none min-h-32"
             />
             <PrimaryButton
               text="Add"

@@ -198,7 +198,7 @@ export default function ChatHeader({ handleToggleSidebar }) {
     : [];
 
   return (
-    <div className="w-full bg-neutral-900 light:bg-white">
+    <div className="w-full bg-neutral-900">
       <div className="max-w-550 mx-auto flex justify-between items-center px-2 py-2 md:py-1 h-max">
         {/* Left — sidebar toggle */}
         <div className="">

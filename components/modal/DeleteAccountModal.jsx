@@ -24,28 +24,23 @@ export default function DeleteAccountModal() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-white light:text-neutral-900 light:text-neutral-950 mb-1">
-        Delete Account
-      </h2>
-      <p className="text-neutral-300 light:text-neutral-800">
+      <h2 className="text-xl font-semibold text-white mb-1">Delete Account</h2>
+      <p className="text-neutral-300">
         This action is{" "}
         <span className="text-red-400 font-medium">permanent</span> and cannot
         be undone. All your data including conversations, projects, and settings
         will be deleted.
       </p>
       <div className="flex flex-col gap-2 mt-4">
-        <label className="text-sm text-neutral-400 light:text-neutral-600">
-          Type{" "}
-          <span className="text-white light:text-neutral-950 font-medium">
-            {user?.email}
-          </span>{" "}
-          to confirm
+        <label className="text-sm text-neutral-400 ">
+          Type <span className="text-white font-medium">{user?.email}</span> to
+          confirm
         </label>
         <input
           type="text"
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
-          className="w-full bg-neutral-900 text-white light:text-neutral-900 light:text-neutral-950 px-3 py-2 rounded-lg border border-neutral-700 light:border-neutral-300 focus:border-neutral-500 outline-none text-sm"
+          className="w-full bg-neutral-900 text-white px-3 py-2 rounded-lg border border-neutral-700 focus:border-neutral-500 outline-none text-sm"
           placeholder={user?.email}
         />
       </div>
@@ -54,7 +49,7 @@ export default function DeleteAccountModal() {
           Cancel
         </PrimaryButton>
         <PrimaryButton
-          className="w-max px-3 min-w-34 justify-center border-none text-white light:text-neutral-900 light:text-neutral-950 bg-red-700/60 hover:bg-red-700/90 hover:text-white light:text-neutral-950 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-max px-3 min-w-34 justify-center border-none text-white bg-red-700/60 hover:bg-red-700/90 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
           onClick={handleDeleteAccount}
           disabled={!isConfirmed}
           filled

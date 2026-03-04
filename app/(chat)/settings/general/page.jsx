@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth, useDatabase } from "@/context";
-import { MODELS, THEMES } from "@/lib";
-import { Input, PrimaryButton, Select, Textarea } from "@/components";
+import { MODELS } from "@/lib";
+import {
+  AvatarUpload,
+  Input,
+  PrimaryButton,
+  Select,
+  Textarea,
+} from "@/components";
 import { motion } from "framer-motion";
 
 function SaveButton({ hasChanges, loading, isSaved, onClick }) {
@@ -30,7 +36,8 @@ function SaveButton({ hasChanges, loading, isSaved, onClick }) {
 
 function GeneralSettingsPage() {
   const { user } = useAuth();
-  const { getUserProfile, updateUserProfile, loading } = useDatabase();
+  const { getUserProfile, updateUserProfile, uploadProfileImage, loading } =
+    useDatabase();
 
   const [savedProfile, setSavedProfile] = useState(null);
 
@@ -38,7 +45,8 @@ function GeneralSettingsPage() {
   const [fullName, setFullName] = useState("");
   const [modelPreferences, setModelPreferences] = useState("");
   const [userDefaultModel, setUserDefaultModel] = useState(MODELS[0].id);
-  const [activeTheme, setActiveTheme] = useState("auto");
+  const [avatarFile, setAvatarFile] = useState(null); // File object
+  const [avatarPreview, setAvatarPreview] = useState(null); // data URL or remote URL
 
   // Per-section saved feedback
   const [savedSection, setSavedSection] = useState(null);
@@ -63,13 +71,13 @@ function GeneralSettingsPage() {
           fullName: profile.displayName || "",
           modelPreferences: profile.preferences?.modelPreferences || "",
           defaultModel: profile.preferences?.defaultModel || MODELS[0].id,
-          theme: profile.preferences?.theme || "auto",
+          avatarUrl: profile.photoURL || null,
         };
         setSavedProfile(initial);
         setFullName(initial.fullName);
         setModelPreferences(initial.modelPreferences);
         setUserDefaultModel(initial.defaultModel);
-        setActiveTheme(initial.theme);
+        setAvatarPreview(initial.avatarUrl);
       }
 
       setIsProfileLoading(false);
@@ -78,20 +86,44 @@ function GeneralSettingsPage() {
     if (user) loadProfile();
   }, [user, getUserProfile]);
 
-  // Per-section dirty flags
-  const profileChanged = savedProfile && fullName !== savedProfile.fullName;
+  const profileChanged =
+    savedProfile &&
+    (fullName !== savedProfile.fullName ||
+      avatarPreview !== savedProfile.avatarUrl);
+
   const preferencesChanged =
     savedProfile && modelPreferences !== savedProfile.modelPreferences;
+
   const flashSaved = (section) => {
     setSavedSection(section);
     setTimeout(() => setSavedSection(null), 3000);
   };
 
   const handleSaveProfile = useCallback(async () => {
-    await updateUserProfile({ displayName: fullName });
-    setSavedProfile((prev) => ({ ...prev, fullName }));
+    let photoURL = savedProfile?.avatarUrl ?? null;
+
+    if (avatarFile) {
+      // If your useDatabase exposes uploadProfileImage, use it; otherwise
+      // pass the file to updateUserProfile and let the hook handle upload.
+      if (typeof uploadProfileImage === "function") {
+        photoURL = await uploadProfileImage(avatarFile);
+      }
+    } else if (avatarPreview === null) {
+      photoURL = null; // user removed their photo
+    }
+
+    await updateUserProfile({ displayName: fullName, photoURL });
+    setSavedProfile((prev) => ({ ...prev, fullName, avatarUrl: photoURL }));
+    setAvatarFile(null);
     flashSaved("profile");
-  }, [fullName, updateUserProfile]);
+  }, [
+    fullName,
+    avatarFile,
+    avatarPreview,
+    savedProfile,
+    updateUserProfile,
+    uploadProfileImage,
+  ]);
 
   const handleSavePreferences = useCallback(async () => {
     await updateUserProfile({ preferences: { modelPreferences } });
@@ -104,6 +136,11 @@ function GeneralSettingsPage() {
     if (name === "full-name") setFullName(value);
     else if (name === "preferences") setModelPreferences(value);
     else if (name === "default-model") setUserDefaultModel(value);
+  };
+
+  const handleAvatarChange = (file, preview) => {
+    setAvatarFile(file);
+    setAvatarPreview(preview);
   };
 
   const TextareaPlaceholderExamples = [
@@ -124,7 +161,13 @@ function GeneralSettingsPage() {
       {/* ── Profile ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Profile</h4>
-        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30  ">
+        <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
+          <AvatarUpload
+            currentUrl={avatarPreview}
+            displayName={fullName}
+            onChange={handleAvatarChange}
+          />
+          <hr className="border-neutral-800" />
           <div className="flex flex-col md:flex-row items-start justify-between gap-6">
             <Input
               label="What would you like to be called?"
@@ -156,7 +199,7 @@ function GeneralSettingsPage() {
       {/* ── Preferences ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Preferences</h4>
-        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30  ">
+        <div className="flex flex-col gap-4 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
           <Textarea
             label="What personal preferences should Claude consider in responses?"
             value={modelPreferences}
@@ -180,7 +223,7 @@ function GeneralSettingsPage() {
       {/* ── Model & Theme ── */}
       <div className="flex flex-col gap-5">
         <h4 className="font-medium">Default Model</h4>
-        <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30  ">
+        <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30">
           <Select
             id="default-model"
             name="default-model"

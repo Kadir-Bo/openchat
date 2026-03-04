@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getFirebaseDB, getFirebaseStorage } from "@/lib/firebase/config";
+import { getFirebaseDB } from "@/lib/firebase/config";
 import {
   addDoc,
   collection,
@@ -27,12 +27,7 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import {
-  deleteObject,
-  getDownloadURL,
-  ref,
-  uploadBytes,
-} from "firebase/storage";
+import { compressAndEncodeImage } from "@/lib";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Context

@@ -43,10 +43,11 @@ export default function Sidebar({
   const [conversations, setConversations] = useState([]);
 
   const { user, logout } = useAuth();
-  const { subscribeToConversations } = useDatabase();
+  const { subscribeToConversations, userProfile } = useDatabase();
 
-  const { displayName, email, photoURL: userImage } = user;
-  const username = displayName || email;
+  const { displayName, email } = user;
+  const username = userProfile?.displayName || displayName || email;
+  const userImage = userProfile?.photoURL || null;
 
   const [, forceUpdate] = useState(0);
 
@@ -239,14 +240,12 @@ export default function Sidebar({
               >
                 <PrimaryButton className="gap-2 md:text-sm rounded-none border-none hover:bg-transparent">
                   <UserProfileImage
-                    size="md"
+                    size="sm"
                     image={userImage}
                     username={username}
                   />
-                  <div className="flex flex-1 justify-between items-center">
-                    {username}
-                    <Icon name={ChevronUp} size="sm" />
-                  </div>
+                  <span className="w-full text-left">{username}</span>
+                  <Icon name={ChevronUp} size="sm" />
                 </PrimaryButton>
               </DropdownMenu>
             </motion.nav>

@@ -22,10 +22,7 @@ export default function ChatLayout({ children }) {
 
   return (
     <PrivateRoute>
-      <main
-        className="h-dvh flex flex-row bg-neutral-950 text-white"
-        id="chat-container"
-      >
+      <main className="h-dvh flex flex-row bg-neutral-950 text-white">
         <Sidebar
           isOpen={isOpen}
           isMobile={isMobile}

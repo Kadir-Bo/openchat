@@ -2,13 +2,7 @@
 @plugin "@tailwindcss/typography";
 
 /* ==================== CSS Variables ==================== */
-#chat-container[data-theme=background: #ffffff;
-  --foreground: #171717;
-  --scrollbar-thumb: rgba(0, 0, 0, 0.25);
-  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.4);
-}
-
-#chat-container[data-theme="dark"] {
+body {
   --background: #0a0a0a;
   --foreground: #ededed;
   --scrollbar-thumb: rgba(255, 255, 255, 0.1);
@@ -63,28 +57,18 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.1));
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.1));
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover, rgba(0, 0, 0, 0.2));
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.2));
   }
 
   /* Scrollbar Styles - Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(0, 0, 0, 0.1)) transparent;
-  }
-
-  /* Dark mode system preference fallback */
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: #0a0a0a;
-      --foreground: #ededed;
-      --scrollbar-thumb: rgba(255, 255, 255, 0.1);
-      --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
-    }
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.1)) transparent;
   }
 }
 
@@ -185,7 +169,7 @@
 
   /* Links */
   .markdown a {
-    @apply text-blue-400 hover:text-blue-300-500 underline underline-offset-2 transition-colors;
+    @apply text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors;
   }
 
   /* Blockquotes */

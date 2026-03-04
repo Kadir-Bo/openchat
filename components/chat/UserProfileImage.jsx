@@ -14,7 +14,7 @@ export default function UserProfileImage({ image, username }) {
           className=" object-cover h-full"
         />
       ) : (
-        <span className="uppercase pl-px text-lg">{letter}</span>
+        <span className="uppercase pl-px font-light">{letter}</span>
       )}
     </div>
   );

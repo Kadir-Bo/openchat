@@ -1,12 +1,23 @@
 "use client";
 
-import { DeleteAccountModal, Icon, PrimaryButton } from "@/components";
-import { useAuth, useModal } from "@/context";
+import {
+  DeleteAccountModal,
+  Icon,
+  PrimaryButton,
+  UserProfileImage,
+} from "@/components";
+import { useAuth, useDatabase, useModal } from "@/context";
 import { useState } from "react";
 import { LogOut, Trash2 } from "react-feather";
 
 function AccountSettingsPage() {
   const { user, logout } = useAuth();
+  const { userProfile } = useDatabase();
+
+  const { displayName, email } = user;
+  const username = userProfile?.displayName || displayName || email;
+  const userImage = userProfile?.photoURL || null;
+
   const { openModal, openMessage } = useModal();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -33,11 +44,9 @@ function AccountSettingsPage() {
         <div className="flex flex-col gap-3 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30    ">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-neutral-400 ">{user?.email}</p>
+              <p className="text-sm text-neutral-400 ">{email}</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-white font-medium text-sm">
-              {user?.email?.[0]?.toUpperCase() || "U"}
-            </div>
+            <UserProfileImage size="sm" image={userImage} username={username} />
           </div>
         </div>
       </div>

@@ -31,31 +31,6 @@ export default function ChatPageShell({
 
   return (
     <div className="flex-1 flex flex-col max-w-220 mx-auto py-8 gap-6 w-full px-4">
-      {/* Header */}
-      {/* <header className="flex items-center justify-between">
-        <div className="flex justify-end items-center gap-3">
-          <Select
-            id="sort"
-            name="sort"
-            label=""
-            value={activeSort?.label || "Sort by"}
-            list={FILTER_OPTIONS}
-            onChange={(e) => onSortChange(e.target.value)}
-            containerClassName="w-max min-w-0"
-            labelClassName="hidden"
-            buttonClassName="text-sm px-3 w-max justify-center font-normal"
-          />
-        </div>
-        <PrimaryButton
-          className="w-max justify-center"
-          href={headerActionLink}
-          filled
-        >
-          {headerActionTitle}
-          <Icon name={Plus} size="sm" />
-        </PrimaryButton>
-      </header> */}
-
       {/* Tabs */}
       {tabs && (
         <div className="flex items-center gap-1 border-b border-neutral-800">
@@ -87,16 +62,28 @@ export default function ChatPageShell({
         <div className="flex items-center gap-2">{actions}</div>
       </div>
       {/* Searchbar & Chats */}
-      <div>
+
+      <div className="flex gap-3">
         <Searchbar
           key={activeTab}
           onSearch={onSearch}
           placeholder={searchPlaceholder}
-          className="mb-3"
         />
-
-        {children}
+        <div className="flex justify-end items-center gap-3">
+          <Select
+            id="sort"
+            name="sort"
+            label=""
+            value={activeSort?.label || "Sort by"}
+            list={FILTER_OPTIONS}
+            onChange={(e) => onSortChange(e.target.value)}
+            containerClassName="w-max min-w-20"
+            labelClassName="hidden"
+            buttonClassName="text-sm px-3 w-max justify-center font-normal"
+          />
+        </div>
       </div>
+      {children}
     </div>
   );
 }

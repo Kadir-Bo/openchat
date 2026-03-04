@@ -179,7 +179,7 @@ function GeneralSettingsPage() {
 
       {/* ── Model & Theme ── */}
       <div className="flex flex-col gap-5">
-        <h4 className="font-medium">Model & Theme</h4>
+        <h4 className="font-medium">Default Model</h4>
         <div className="flex flex-col gap-6 p-4 rounded-xl border border-neutral-800 bg-neutral-900/30  ">
           <Select
             id="default-model"

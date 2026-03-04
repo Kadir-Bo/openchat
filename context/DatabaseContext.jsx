@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getFirebaseDB } from "@/lib/firebase/config";
+import { getFirebaseDB, getFirebaseStorage } from "@/lib/firebase/config";
 import {
   addDoc,
   collection,
@@ -27,6 +27,12 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytes,
+} from "firebase/storage";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Context
@@ -172,35 +178,17 @@ export default function DatabaseProvider({ children }) {
       if (!user || !file) return null;
       resetError();
       try {
-        const storage = getFirebaseStorage();
-
-        // Delete existing photo if there is one
-        const existing = userProfile?.photoURL;
-        if (existing) {
-          try {
-            // Only delete if it's a Firebase Storage URL (not an external OAuth URL)
-            const url = new URL(existing);
-            if (url.hostname.includes("firebasestorage")) {
-              await deleteObject(ref(storage, `avatars/${user.uid}`));
-            }
-          } catch {
-            // Ignore — file may not exist or URL may be external
-          }
-        }
-
-        const storageRef = ref(storage, `avatars/${user.uid}`);
-        const snapshot = await uploadBytes(storageRef, file, {
-          contentType: file.type,
-          cacheControl: "public, max-age=31536000",
+        const base64 = await compressAndEncodeImage(file, 256, 0.7);
+        await updateDoc(doc(db, "users", user.uid), {
+          photoURL: base64,
+          updatedAt: serverTimestamp(),
         });
-
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        return downloadURL;
+        return base64;
       } catch (err) {
         return handleError(err, "Failed to upload profile image");
       }
     },
-    [user, userProfile, handleError, resetError],
+    [user, db, handleError, resetError],
   );
 
   const getUserProfile = useCallback(async () => {

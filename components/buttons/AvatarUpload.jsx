@@ -3,17 +3,30 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, X } from "react-feather";
 import { Icon, UserProfileImage } from "@/components";
 
+const MAX_SIZE_MB = 5;
+const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
 export default function AvatarUpload({ currentUrl, displayName, onChange }) {
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(currentUrl || null);
   const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     setPreview(currentUrl || null);
   }, [currentUrl]);
 
   const handleFile = (file) => {
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Only image files are supported.");
+      return;
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      setError(`Image must be under ${MAX_SIZE_MB}MB.`);
+      return;
+    }
+    setError(null);
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreview(e.target.result);
@@ -31,13 +44,13 @@ export default function AvatarUpload({ currentUrl, displayName, onChange }) {
   const handleRemove = (e) => {
     e.stopPropagation();
     setPreview(null);
+    setError(null);
     onChange(null, null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
     <div className="flex items-center gap-5">
-      {/* Avatar with interaction layer */}
       <div
         className={`relative group cursor-pointer shrink-0 rounded-full border-2 transition-colors ${
           isDragging
@@ -54,12 +67,10 @@ export default function AvatarUpload({ currentUrl, displayName, onChange }) {
       >
         <UserProfileImage image={preview} username={displayName} size="lg" />
 
-        {/* Hover overlay */}
         <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
           <Icon name={Camera} size="sm" className="text-white" />
         </div>
 
-        {/* Remove button */}
         {preview && (
           <button
             onClick={handleRemove}
@@ -72,9 +83,13 @@ export default function AvatarUpload({ currentUrl, displayName, onChange }) {
 
       <div className="flex flex-col gap-1">
         <p className="text-sm text-neutral-300">Profile photo</p>
-        <p className="text-xs text-neutral-500">
-          Click or drag an image to upload. JPG, PNG, GIF up to 5MB.
-        </p>
+        {error ? (
+          <p className="text-xs text-red-400">{error}</p>
+        ) : (
+          <p className="text-xs text-neutral-500">
+            Click or drag to upload. JPG, PNG, GIF up to {MAX_SIZE_MB}MB.
+          </p>
+        )}
       </div>
 
       <input
